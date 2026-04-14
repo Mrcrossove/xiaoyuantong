@@ -1,0 +1,90 @@
+.service-page {
+  min-height: 100vh;
+  background: #f5f7fb;
+}
+
+.service-nav {
+  height: 88rpx;
+  padding: 0 24rpx;
+  background: #ffffff;
+  display: grid;
+  grid-template-columns: 88rpx 1fr 88rpx;
+  align-items: center;
+}
+
+.service-title {
+  text-align: center;
+  font-size: 34rpx;
+  font-weight: 700;
+}
+
+.nav-space {
+  width: 88rpx;
+}
+
+.hero-card,
+.panel-card {
+  margin: 20rpx 16rpx 0;
+  background: #ffffff;
+  border-radius: 24rpx;
+  box-shadow: 0 16rpx 36rpx rgba(53, 88, 163, 0.08);
+  padding: 24rpx;
+}
+
+.hero-card {
+  background: linear-gradient(135deg, #f1f7ff, #edf8f0);
+}
+
+.hero-title,
+.section-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #202534;
+}
+
+.hero-desc,
+.help-desc {
+  margin-top: 12rpx;
+  color: #6a778f;
+  font-size: 24rpx;
+  line-height: 1.7;
+}
+
+.help-card + .help-card {
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 2rpx solid #eef2f7;
+}
+
+.help-title,
+.contact-label {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #202534;
+}
+
+.contact-row {
+  margin-top: 18rpx;
+  padding: 20rpx;
+  border-radius: 18rpx;
+  background: #f7f9fd;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+}
+
+.contact-value {
+  margin-top: 8rpx;
+  color: #6d7890;
+  font-size: 24rpx;
+}
+
+.copy-btn {
+  flex: 0 0 auto;
+  padding: 12rpx 18rpx;
+  border-radius: 999rpx;
+  background: #e8f0ff;
+  color: #2f68e3;
+  font-size: 22rpx;
+}

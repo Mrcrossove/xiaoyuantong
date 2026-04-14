@@ -1,0 +1,22 @@
+<view class="category-page" style="padding-top: {{statusBarHeight}}px;">
+  <view class="select-nav">
+    <view class="back-touch" bindtap="goBack">
+      <view class="back-arrow"></view>
+    </view>
+    <view class="select-title">{{pageTitle}}</view>
+    <view class="select-action">{{submitText}}</view>
+  </view>
+
+  <view class="select-header">
+    <text>请选择一个分类</text>
+  </view>
+
+  <view class="sheet-panel">
+    <view class="sheet-title">选择分类</view>
+    <view class="sheet-list">
+      <view class="sheet-item" wx:for="{{categories}}" wx:key="*this" data-category="{{item}}" bindtap="selectCategory">
+        <text>{{item}}</text>
+      </view>
+    </view>
+  </view>
+</view>

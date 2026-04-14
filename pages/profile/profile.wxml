@@ -1,0 +1,89 @@
+<view class="profile-page" style="padding-top: {{statusBarHeight}}px;">
+  <view class="profile-nav">
+    <view class="profile-nav-spacer"></view>
+    <view class="profile-title">我的</view>
+    <view class="topbar-right">
+      <view class="circle-btn more-btn">
+        <view></view>
+        <view></view>
+        <view></view>
+      </view>
+      <view class="ring-btn"></view>
+    </view>
+  </view>
+
+  <view class="profile-card user-card" bindtap="openCampusVerify">
+    <view class="user-avatar">
+      <view wx:if="{{user.verified}}" class="avatar-verified-dot"></view>
+    </view>
+    <view class="user-meta">
+      <view class="user-name-row">
+        <text class="user-name">{{user.name}}</text>
+        <text wx:if="{{user.verified}}" class="verify-badge">已认证</text>
+      </view>
+      <text class="user-school">{{user.school}}</text>
+      <view class="user-verify-entry">
+        <text class="verify-entry-text {{user.verified ? 'done' : ''}}">
+          {{user.verified ? "绿色认证状态已开启" : "去认证，解锁更多校园服务"}}
+        </text>
+        <view class="setting-arrow"></view>
+      </view>
+    </view>
+  </view>
+
+  <view class="profile-card">
+    <view class="section-title">我的内容</view>
+    <view class="content-grid">
+      <view class="content-item" wx:for="{{contentItems}}" wx:key="label" data-icon="{{item.icon}}" bindtap="onContentTap">
+        <view class="content-icon icon-{{item.icon}}"></view>
+        <text>{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="profile-card">
+    <view class="section-title">认证中心</view>
+    <view class="setting-row" bindtap="openCampusVerify">
+      <view class="setting-left">
+        <view class="setting-icon icon-verify"></view>
+        <text>校园认证</text>
+      </view>
+      <view class="setting-right">
+        <text class="setting-status {{user.verified ? 'done' : ''}}">{{user.statusText}}</text>
+        <view class="setting-arrow"></view>
+      </view>
+    </view>
+  </view>
+
+  <view class="profile-card">
+    <view class="section-title">设置与支持</view>
+    <view class="setting-row" wx:for="{{supportItems}}" wx:key="label" data-icon="{{item.icon}}" bindtap="onSupportTap">
+      <view class="setting-left">
+        <view class="setting-icon icon-{{item.icon}}"></view>
+        <text>{{item.label}}</text>
+      </view>
+      <view wx:if="{{item.arrow}}" class="setting-arrow"></view>
+    </view>
+  </view>
+
+  <view class="logout-btn">退出登录</view>
+
+  <view class="tabbar card">
+    <view class="tab" bindtap="goHome">
+      <view class="tab-icon home"></view>
+      <text>首页</text>
+    </view>
+    <view class="tab" bindtap="goStorefront">
+      <view class="tab-icon shop"></view>
+      <text>创业店铺</text>
+    </view>
+    <view class="tab" bindtap="goMessage">
+      <view class="tab-icon message"></view>
+      <text>消息</text>
+    </view>
+    <view class="tab active">
+      <view class="tab-icon user"></view>
+      <text>我的</text>
+    </view>
+  </view>
+</view>

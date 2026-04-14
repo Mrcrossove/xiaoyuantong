@@ -1,0 +1,79 @@
+<view class="address-page">
+  <view class="status-bar" style="height: {{statusBarHeight}}px;"></view>
+  <view class="address-nav">
+    <view class="back-btn" bindtap="goBack"></view>
+    <view class="address-title">{{labels.title}}</view>
+    <view class="nav-space"></view>
+  </view>
+
+  <view class="content-shell" wx:if="{{addressList.length}}">
+    <view class="address-card" wx:for="{{addressList}}" wx:key="id">
+      <view class="address-head">
+        <view class="user-line">
+          <text>{{item.name}}</text>
+          <text>{{item.phone}}</text>
+        </view>
+        <text class="address-tag">{{item.isDefault ? labels.defaultTag : item.tag}}</text>
+      </view>
+      <view class="school-line">{{item.school}}</view>
+      <view class="address-detail">{{item.address}}</view>
+      <view class="address-actions">
+        <view class="address-action" wx:if="{{!item.isDefault}}" data-id="{{item.id}}" bindtap="handleSetDefault">{{labels.setDefault}}</view>
+        <view class="address-action" data-id="{{item.id}}" bindtap="openEditModal">{{labels.edit}}</view>
+        <view class="address-action danger" data-id="{{item.id}}" bindtap="handleDelete">{{labels.remove}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty-shell" wx:elif="{{!loading}}">
+    <view class="empty-title">{{labels.empty}}</view>
+  </view>
+
+  <view class="bottom-bar">
+    <view class="add-btn" bindtap="openCreateModal">{{labels.add}}</view>
+  </view>
+
+  <view class="overlay" wx:if="{{modalVisible}}" bindtap="closeModal"></view>
+  <view class="address-modal" wx:if="{{modalVisible}}">
+    <view class="modal-title">{{editingId ? labels.editTitle : labels.addTitle}}</view>
+
+    <view class="field-item">
+      <view class="field-label">{{labels.school}}</view>
+      <view class="field-value">{{form.school}}</view>
+    </view>
+
+    <view class="field-item">
+      <view class="field-label">{{labels.name}}</view>
+      <input class="field-input" value="{{form.receiverName}}" data-field="receiverName" bindinput="onInput" placeholder="{{labels.placeholders.name}}" />
+    </view>
+
+    <view class="field-item">
+      <view class="field-label">{{labels.phone}}</view>
+      <input class="field-input" type="number" value="{{form.phone}}" data-field="phone" bindinput="onInput" placeholder="{{labels.placeholders.phone}}" />
+    </view>
+
+    <view class="field-item">
+      <view class="field-label">{{labels.detail}}</view>
+      <textarea class="field-textarea" value="{{form.detail}}" data-field="detail" bindinput="onInput" placeholder="{{labels.placeholders.detail}}" />
+    </view>
+
+    <view class="field-item">
+      <view class="field-label">{{labels.tag}}</view>
+      <input class="field-input" value="{{form.tag}}" data-field="tag" bindinput="onInput" placeholder="{{labels.placeholders.tag}}" />
+    </view>
+
+    <view class="switch-row">
+      <text>{{labels.setDefault}}</text>
+      <checkbox-group bindchange="onDefaultChange">
+        <label class="checkbox-label">
+          <checkbox checked="{{form.isDefault}}" />
+        </label>
+      </checkbox-group>
+    </view>
+
+    <view class="modal-actions">
+      <view class="modal-btn ghost" bindtap="closeModal">{{labels.cancel}}</view>
+      <view class="modal-btn" bindtap="submitAddress">{{submitting ? labels.saving : labels.save}}</view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,31 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/search/search",
+    "pages/storefront/storefront",
+    "pages/store-category/store-category",
+    "pages/store-detail/store-detail",
+    "pages/message/message",
+    "pages/profile/profile",
+    "pages/campus-verify/campus-verify",
+    "pages/my-orders/my-orders",
+    "pages/order-detail/order-detail",
+    "pages/my-posts/my-posts",
+    "pages/my-favorites/my-favorites",
+    "pages/open-shop/open-shop",
+    "pages/my-address/my-address",
+    "pages/customer-service/customer-service",
+    "pages/about/about",
+    "pages/wallet/wallet",
+    "pages/category-select/category-select",
+    "pages/publish/publish",
+    "pages/post-detail/post-detail"
+  ],
+  "window": {
+    "navigationStyle": "custom",
+    "backgroundColor": "#f5f7fb",
+    "backgroundTextStyle": "light"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

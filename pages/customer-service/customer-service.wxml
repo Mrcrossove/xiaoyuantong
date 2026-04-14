@@ -1,0 +1,32 @@
+<view class="service-page">
+  <view class="status-bar" style="height: {{statusBarHeight}}px;"></view>
+  <view class="service-nav">
+    <view class="back-btn" bindtap="goBack"></view>
+    <view class="service-title">联系客服</view>
+    <view class="nav-space"></view>
+  </view>
+
+  <view class="hero-card">
+    <view class="hero-title">有问题先找我们</view>
+    <view class="hero-desc">订单、认证、商家入驻、退款等问题都可以在这里快速找到处理入口。</view>
+  </view>
+
+  <view class="panel-card">
+    <view class="section-title">常见帮助</view>
+    <view class="help-card" wx:for="{{helpCards}}" wx:key="title">
+      <view class="help-title">{{item.title}}</view>
+      <view class="help-desc">{{item.desc}}</view>
+    </view>
+  </view>
+
+  <view class="panel-card">
+    <view class="section-title">联系方式</view>
+    <view class="contact-row" wx:for="{{contactList}}" wx:key="label" data-value="{{item.value}}" bindtap="copyText">
+      <view>
+        <view class="contact-label">{{item.label}}</view>
+        <view class="contact-value">{{item.value}}</view>
+      </view>
+      <view class="copy-btn">复制</view>
+    </view>
+  </view>
+</view>

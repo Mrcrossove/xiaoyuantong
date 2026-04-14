@@ -1,0 +1,30 @@
+<view class="sub-page">
+  <view class="status-bar" style="height: {{statusBarHeight}}px;"></view>
+  <view class="sub-nav">
+    <view class="back-btn" bindtap="goBack"></view>
+    <view class="sub-title">我的发布</view>
+    <view class="nav-space"></view>
+  </view>
+
+  <view class="page-tip">{{selectedSchool}} 当前发布内容</view>
+
+  <view class="content-shell">
+    <view class="post-card" wx:for="{{posts}}" wx:key="id" data-id="{{item.id}}" bindtap="openPostDetail">
+      <view class="post-head">
+        <view class="post-tag">{{item.category}}</view>
+        <view class="post-status">{{item.statusText}}</view>
+      </view>
+      <view class="post-title">{{item.title}}</view>
+      <view class="post-content">{{item.content}}</view>
+      <view class="post-footer">
+        <text>{{item.time}}</text>
+        <text>{{item.school}}</text>
+      </view>
+    </view>
+
+    <view wx:if="{{!posts.length}}" class="empty-state">
+      <view class="empty-title">{{loadErrorText || "你还没有发布任何帖子"}}</view>
+      <view class="empty-desc">{{loadErrorText ? "请稍后重试，恢复后会自动显示你的发布记录" : "去首页点击右下角加号，发布你的第一条内容"}}</view>
+    </view>
+  </view>
+</view>

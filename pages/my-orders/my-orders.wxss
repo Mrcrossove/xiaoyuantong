@@ -1,0 +1,174 @@
+.order-page {
+  min-height: 100vh;
+  background: #f5f7fb;
+}
+
+.order-nav {
+  height: 88rpx;
+  padding: 0 24rpx;
+  background: #ffffff;
+  display: grid;
+  grid-template-columns: 88rpx 1fr 88rpx;
+  align-items: center;
+}
+
+.order-title {
+  text-align: center;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #202534;
+}
+
+.nav-space {
+  width: 88rpx;
+}
+
+.tab-row {
+  margin: 20rpx 16rpx 0;
+  padding: 10rpx;
+  border-radius: 24rpx;
+  background: #ffffff;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10rpx;
+}
+
+.tab-item {
+  height: 68rpx;
+  border-radius: 18rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7f8aa0;
+  font-size: 24rpx;
+}
+
+.tab-item.active {
+  background: #edf4ff;
+  color: #2f68e3;
+  font-weight: 700;
+}
+
+.content-shell {
+  padding: 20rpx 16rpx 32rpx;
+  display: grid;
+  gap: 18rpx;
+}
+
+.order-card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  box-shadow: 0 16rpx 36rpx rgba(53, 88, 163, 0.08);
+  padding: 24rpx;
+}
+
+.order-head,
+.order-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.order-id {
+  color: #68758d;
+  font-size: 22rpx;
+}
+
+.order-status {
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.status-pending {
+  color: #ff9b2f;
+}
+
+.status-processing {
+  color: #29a36a;
+}
+
+.status-finished {
+  color: #2f68e3;
+}
+
+.status-canceled {
+  color: #e15b5b;
+}
+
+.order-title-line {
+  margin-top: 14rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #202534;
+}
+
+.order-desc {
+  margin-top: 12rpx;
+  color: #7a869d;
+  font-size: 24rpx;
+  line-height: 1.7;
+}
+
+.order-meta {
+  margin-top: 16rpx;
+  color: #596885;
+  font-size: 24rpx;
+}
+
+.order-time {
+  margin-top: 12rpx;
+  color: #9ca6b9;
+  font-size: 22rpx;
+}
+
+.order-actions {
+  margin-top: 20rpx;
+  display: flex;
+  justify-content: flex-end;
+  gap: 14rpx;
+}
+
+.order-action {
+  min-width: 168rpx;
+  height: 68rpx;
+  border-radius: 999rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.order-action.primary {
+  background: #2f68e3;
+  color: #ffffff;
+}
+
+.order-action.ghost {
+  background: #eef2f8;
+  color: #5f6f8d;
+}
+
+.empty-shell {
+  padding: 180rpx 40rpx 0;
+  text-align: center;
+}
+
+.empty-title {
+  color: #7b879c;
+  font-size: 28rpx;
+}
+
+.empty-btn {
+  width: 280rpx;
+  height: 88rpx;
+  margin: 28rpx auto 0;
+  border-radius: 999rpx;
+  background: #2f68e3;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  font-weight: 700;
+}

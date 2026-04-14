@@ -1,0 +1,81 @@
+<view class="wallet-page">
+  <view class="status-bar" style="height: {{statusBarHeight}}px;"></view>
+  <view class="wallet-nav">
+    <view class="back-touch" bindtap="goBack">
+      <view class="back-arrow"></view>
+    </view>
+    <view class="wallet-title">{{labels.title}}</view>
+    <view class="nav-space"></view>
+  </view>
+
+  <view class="wallet-content">
+    <view class="wallet-card total-card">
+      <text class="wallet-card-label">{{labels.total}}</text>
+      <view class="wallet-amount">\u00a5{{wallet.total}}</view>
+    </view>
+
+    <view class="wallet-grid">
+      <view class="wallet-card frozen-card small-card">
+        <text class="wallet-card-label">{{labels.frozen}}</text>
+        <view class="wallet-small-amount">\u00a5{{wallet.frozen}}</view>
+      </view>
+      <view class="wallet-card available-card small-card">
+        <text class="wallet-card-label">{{labels.available}}</text>
+        <view class="wallet-small-amount">\u00a5{{wallet.available}}</view>
+      </view>
+    </view>
+
+    <view class="stat-grid">
+      <view class="stat-card">
+        <view class="stat-label">{{labels.income}}</view>
+        <view class="stat-value">\u00a5{{wallet.totalIncome}}</view>
+      </view>
+      <view class="stat-card">
+        <view class="stat-label">{{labels.withdrawn}}</view>
+        <view class="stat-value">\u00a5{{wallet.totalWithdrawn}}</view>
+      </view>
+    </view>
+
+    <view class="withdraw-btn" bindtap="openWithdrawModal">{{labels.withdraw}}</view>
+
+    <view class="record-head">
+      <text class="record-title">{{labels.records}}</text>
+      <text class="record-tip">{{labels.recent}}</text>
+    </view>
+
+    <view class="record-list" wx:if="{{records.length}}">
+      <view class="record-card" wx:for="{{records}}" wx:key="id">
+        <view class="record-row">
+          <text class="record-amount">\u00a5{{item.amount}}</text>
+          <text class="record-status">{{item.status}}</text>
+        </view>
+        <view class="record-meta">{{item.accountType}} {{item.accountNo}}</view>
+        <view class="record-meta">{{item.applyTime}}</view>
+      </view>
+    </view>
+
+    <view class="record-empty-card" wx:else>
+      <text>{{labels.noRecord}}</text>
+    </view>
+  </view>
+
+  <view class="overlay" wx:if="{{modalVisible}}" bindtap="closeWithdrawModal"></view>
+  <view class="wallet-modal" wx:if="{{modalVisible}}">
+    <view class="modal-title">{{labels.modalTitle}}</view>
+
+    <view class="field-item">
+      <view class="field-label">{{labels.amount}}</view>
+      <input class="field-input" type="digit" value="{{form.amount}}" data-field="amount" bindinput="onInput" placeholder="{{labels.placeholderAmount}}" />
+    </view>
+
+    <view class="field-item">
+      <view class="field-label">{{labels.account}}</view>
+      <input class="field-input" value="{{form.accountNo}}" data-field="accountNo" bindinput="onInput" placeholder="{{labels.placeholderAccount}}" />
+    </view>
+
+    <view class="modal-actions">
+      <view class="modal-btn ghost" bindtap="closeWithdrawModal">{{labels.cancel}}</view>
+      <view class="modal-btn" bindtap="submitWithdraw">{{submitting ? labels.submitting : labels.confirm}}</view>
+    </view>
+  </view>
+</view>

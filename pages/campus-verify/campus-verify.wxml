@@ -1,0 +1,87 @@
+<view class="verify-page">
+  <view class="status-bar" style="height: {{statusBarHeight}}px;"></view>
+
+  <view class="verify-nav">
+    <view class="nav-left">
+      <view class="back-btn" bindtap="goBack"></view>
+    </view>
+    <view class="verify-title">校园认证</view>
+    <view class="nav-right">
+      <view class="circle-btn more-btn">
+        <view></view>
+        <view></view>
+        <view></view>
+      </view>
+      <view class="ring-btn"></view>
+    </view>
+  </view>
+
+  <view class="verify-banner">
+    <view class="banner-badge">
+      <view class="badge-icon">
+        <view class="badge-layer one"></view>
+        <view class="badge-layer two"></view>
+        <view class="badge-layer three"></view>
+      </view>
+    </view>
+    <view class="banner-title">完成实名认证，解锁更多校园权益</view>
+    <view class="banner-status">
+      <text class="status-label">当前状态：</text>
+      <text class="status-value">{{verification.verified ? "认证通过" : verification.statusText}}</text>
+    </view>
+  </view>
+
+  <view class="content-shell">
+    <view class="info-card">
+      <view class="card-title">认证说明</view>
+      <view class="card-text">学生只需填写姓名、手机号和学校，即可完成校园认证。</view>
+      <view class="card-text">认证信息仅用于校内身份确认，不会对外公开。</view>
+      <view class="card-text">认证通过后，可优先使用校内帖子、创业店铺和消息服务。</view>
+      <view class="divider"></view>
+      <view class="promise-title">当前进度</view>
+      <view class="card-text">认证状态：{{verification.verified ? "已认证" : "未认证"}}</view>
+      <view wx:if="{{verification.reviewNote}}" class="card-text">说明：{{verification.reviewNote}}</view>
+    </view>
+
+    <view class="form-card">
+      <view class="field-block">
+        <view class="field-label">姓名 <text class="required">*</text></view>
+        <input
+          class="field-input"
+          value="{{form.name}}"
+          placeholder="请输入姓名"
+          placeholder-class="input-placeholder"
+          bindinput="onNameInput"
+        />
+      </view>
+
+      <view class="field-block">
+        <view class="field-label">手机号 <text class="required">*</text></view>
+        <input
+          class="field-input"
+          value="{{form.phone}}"
+          type="number"
+          maxlength="11"
+          placeholder="请输入手机号"
+          placeholder-class="input-placeholder"
+          bindinput="onPhoneInput"
+        />
+      </view>
+
+      <view class="field-block">
+        <view class="field-label">学校 <text class="required">*</text></view>
+        <input
+          class="field-input"
+          value="{{form.school}}"
+          placeholder="请输入学校名称"
+          placeholder-class="input-placeholder"
+          bindinput="onSchoolInput"
+        />
+      </view>
+    </view>
+  </view>
+
+  <view class="submit-bar">
+    <view class="submit-btn" bindtap="submitVerify">{{submitting ? "提交中..." : "提交认证"}}</view>
+  </view>
+</view>

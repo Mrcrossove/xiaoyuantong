@@ -1,0 +1,44 @@
+<view class="sub-page">
+  <view class="status-bar" style="height: {{statusBarHeight}}px;"></view>
+  <view class="sub-nav">
+    <view class="back-btn" bindtap="goBack"></view>
+    <view class="sub-title">我的收藏</view>
+    <view class="nav-space"></view>
+  </view>
+
+  <view class="tab-row">
+    <view
+      class="tab-item {{activeTab === item.key ? 'active' : ''}}"
+      wx:for="{{tabs}}"
+      wx:key="key"
+      data-key="{{item.key}}"
+      bindtap="switchTab"
+    >
+      {{item.label}}
+    </view>
+  </view>
+
+  <view class="content-shell" wx:if="{{activeTab === 'posts'}}">
+    <view class="favorite-card" wx:for="{{favoritePosts}}" wx:key="id" data-id="{{item.id}}" bindtap="openPostDetail">
+      <view class="favorite-title">{{item.title}}</view>
+      <view class="favorite-meta">
+        <text>{{item.school}}</text>
+        <text>{{item.tag}}</text>
+        <text>{{item.time}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="content-shell" wx:else>
+    <view class="favorite-card" wx:for="{{favoriteShops}}" wx:key="id" data-id="{{item.id}}" bindtap="openShopDetail">
+      <view class="favorite-title">{{item.name}}</view>
+      <view class="favorite-meta">
+        <text>{{item.school}}</text>
+        <text>{{item.status}}</text>
+      </view>
+      <view class="tag-row">
+        <text class="tag-item" wx:for="{{item.tags}}" wx:key="*this">{{item}}</text>
+      </view>
+    </view>
+  </view>
+</view>

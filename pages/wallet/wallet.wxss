@@ -1,0 +1,277 @@
+.wallet-page {
+  min-height: 100vh;
+  background: #f5f7fb;
+}
+
+.wallet-nav {
+  height: 88rpx;
+  padding: 0 24rpx;
+  display: grid;
+  grid-template-columns: 88rpx 1fr 88rpx;
+  align-items: center;
+  background: #ffffff;
+}
+
+.wallet-title {
+  text-align: center;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #202534;
+}
+
+.nav-space {
+  width: 88rpx;
+}
+
+.back-touch {
+  width: 72rpx;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-arrow {
+  width: 22rpx;
+  height: 22rpx;
+  border-left: 4rpx solid #5d6373;
+  border-bottom: 4rpx solid #5d6373;
+  transform: rotate(45deg);
+}
+
+.wallet-content {
+  padding: 28rpx 16rpx 60rpx;
+}
+
+.wallet-card {
+  border-radius: 24rpx;
+  box-shadow: 0 12rpx 24rpx rgba(46, 69, 113, 0.08);
+  color: #ffffff;
+}
+
+.total-card {
+  min-height: 260rpx;
+  background: linear-gradient(135deg, #21a366, #47c287);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.wallet-card-label {
+  font-size: 30rpx;
+  opacity: 0.95;
+}
+
+.wallet-amount {
+  margin-top: 18rpx;
+  font-size: 64rpx;
+  font-weight: 800;
+}
+
+.wallet-grid {
+  margin-top: 24rpx;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18rpx;
+}
+
+.small-card {
+  min-height: 160rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.frozen-card {
+  background: linear-gradient(135deg, #ff9f43, #ffb55f);
+}
+
+.available-card {
+  background: linear-gradient(135deg, #2f68e3, #4f88ff);
+}
+
+.wallet-small-amount {
+  margin-top: 14rpx;
+  font-size: 40rpx;
+  font-weight: 800;
+}
+
+.stat-grid {
+  margin-top: 20rpx;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18rpx;
+}
+
+.stat-card {
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  box-shadow: 0 10rpx 22rpx rgba(46, 69, 113, 0.06);
+}
+
+.stat-label {
+  color: #7b879c;
+  font-size: 24rpx;
+}
+
+.stat-value {
+  margin-top: 12rpx;
+  color: #202534;
+  font-size: 34rpx;
+  font-weight: 800;
+}
+
+.withdraw-btn {
+  margin-top: 28rpx;
+  height: 96rpx;
+  border-radius: 16rpx;
+  background: #2f68e3;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34rpx;
+  font-weight: 700;
+  box-shadow: 0 12rpx 24rpx rgba(47, 104, 227, 0.22);
+}
+
+.record-head {
+  margin-top: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.record-title {
+  color: #202534;
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.record-tip {
+  color: #99a5ba;
+  font-size: 22rpx;
+}
+
+.record-list {
+  margin-top: 18rpx;
+  display: grid;
+  gap: 16rpx;
+}
+
+.record-card {
+  background: #ffffff;
+  border-radius: 18rpx;
+  padding: 22rpx;
+  box-shadow: 0 10rpx 22rpx rgba(46, 69, 113, 0.06);
+}
+
+.record-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.record-amount {
+  color: #202534;
+  font-size: 30rpx;
+  font-weight: 800;
+}
+
+.record-status {
+  color: #2f68e3;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.record-meta {
+  margin-top: 10rpx;
+  color: #7b879c;
+  font-size: 22rpx;
+}
+
+.record-empty-card {
+  margin-top: 18rpx;
+  min-height: 176rpx;
+  background: #ffffff;
+  border-radius: 16rpx;
+  box-shadow: 0 12rpx 24rpx rgba(46, 69, 113, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c2c7d1;
+  font-size: 30rpx;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(22, 28, 45, 0.36);
+}
+
+.wallet-modal {
+  position: fixed;
+  left: 24rpx;
+  right: 24rpx;
+  bottom: 32rpx;
+  padding: 28rpx 24rpx;
+  border-radius: 28rpx;
+  background: #ffffff;
+  box-shadow: 0 24rpx 60rpx rgba(30, 45, 90, 0.18);
+  z-index: 10;
+}
+
+.modal-title {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: #202534;
+}
+
+.field-item {
+  margin-top: 18rpx;
+}
+
+.field-label {
+  color: #202534;
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+.field-input {
+  margin-top: 12rpx;
+  width: 100%;
+  min-height: 84rpx;
+  padding: 0 22rpx;
+  box-sizing: border-box;
+  border-radius: 18rpx;
+  background: #f6f8fc;
+  color: #4f5d77;
+  font-size: 26rpx;
+}
+
+.modal-actions {
+  margin-top: 28rpx;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+}
+
+.modal-btn {
+  min-height: 88rpx;
+  border-radius: 999rpx;
+  background: #2f68e3;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.modal-btn.ghost {
+  background: #eef2f8;
+  color: #5f6f8d;
+}

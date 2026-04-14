@@ -1,0 +1,144 @@
+<view class="page-shell search-page">
+  <view class="status-bar" style="height: {{statusBarHeight}}px;"></view>
+
+  <view class="topbar">
+    <view class="topbar-left">
+      <view class="back-btn" bindtap="goBack"></view>
+    </view>
+    <view class="topbar-title">{{labels.title}}</view>
+    <view class="topbar-right"></view>
+  </view>
+
+  <view class="search-panel card">
+    <view class="search-input-row">
+      <view class="search-icon"></view>
+      <input
+        value="{{keyword}}"
+        placeholder="{{labels.placeholder}}"
+        placeholder-class="placeholder"
+        bindinput="onKeywordInput"
+        confirm-type="search"
+      />
+      <view wx:if="{{keyword}}" class="clear-btn" bindtap="clearKeyword">{{labels.clear}}</view>
+    </view>
+    <view class="search-school">{{selectedSchool}}</view>
+
+    <view class="scope-row">
+      <view
+        class="scope-item {{scope === item.key ? 'active' : ''}}"
+        wx:for="{{scopeOptions}}"
+        wx:key="key"
+        data-key="{{item.key}}"
+        bindtap="switchScope"
+      >
+        {{item.label}}
+      </view>
+    </view>
+
+    <view class="result-tabs">
+      <view
+        class="result-tab {{activeTab === item.key ? 'active' : ''}}"
+        wx:for="{{resultTabs}}"
+        wx:key="key"
+        data-key="{{item.key}}"
+        bindtap="switchTab"
+      >
+        <text>{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{searching && keyword}}" class="search-notice card">{{labels.searching}}</view>
+  <view wx:if="{{partialErrorText}}" class="search-notice warn card">{{partialErrorText}}</view>
+
+  <view wx:if="{{!keyword}}" class="empty-card card">
+    <view class="empty-title">{{labels.inputHint}}</view>
+    <view class="empty-desc">{{labels.inputDesc}}</view>
+  </view>
+
+  <view wx:elif="{{!postCount && !shopCount && !messageCount}}" class="empty-card card">
+    <view class="empty-title">{{labels.emptyTitle}}</view>
+    <view class="empty-desc">{{labels.emptyDesc}}</view>
+  </view>
+
+  <view wx:else class="result-list">
+    <view wx:if="{{activeTab === 'all' || activeTab === 'posts'}}" class="result-section">
+      <view class="section-head">
+        <view class="section-title">{{labels.posts}}</view>
+        <view class="section-count">{{postCount}} {{labels.countSuffix}}</view>
+      </view>
+      <view wx:if="{{postCount}}">
+        <view class="post-card" wx:for="{{postResults}}" wx:key="id" data-id="{{item.id}}" bindtap="openPostDetail">
+          <view class="post-head">
+            <view class="avatar"></view>
+            <view>
+              <view class="author-name">{{item.author}}</view>
+              <view class="meta-row">
+                <text class="school-name">{{item.school}}</text>
+                <text class="tag">{{item.category}}</text>
+              </view>
+            </view>
+            <text class="post-time">{{item.time}}</text>
+          </view>
+          <view class="post-title">{{item.title}}</view>
+          <view class="post-text">{{item.content}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{activeTab === 'all' || activeTab === 'shops'}}" class="result-section">
+      <view class="section-head">
+        <view class="section-title">{{labels.shops}}</view>
+        <view class="section-count">{{shopCount}} {{labels.countSuffix}}</view>
+      </view>
+      <view wx:if="{{shopCount}}">
+        <view class="shop-card" wx:for="{{shopResults}}" wx:key="id" data-id="{{item.detailId}}" bindtap="openShopDetail">
+          <view wx:if="{{item.coverMode === 'class'}}" class="shop-cover cover-{{item.cover}}"></view>
+          <image wx:else class="shop-cover shop-cover-image" src="{{item.cover}}" mode="aspectFill"></image>
+          <view class="shop-main">
+            <view class="shop-head">
+              <view class="shop-name">{{item.name}}</view>
+              <text class="shop-badge">{{item.badge}}</text>
+            </view>
+            <view class="shop-meta">
+              <text class="star">{{labels.star}}</text>
+              <text>{{item.rating}}</text>
+              <text>|</text>
+              <text>{{labels.monthlySales}} {{item.monthlySales}} 单</text>
+            </view>
+            <view class="shop-service">
+              <text>{{item.delivery}}</text>
+              <text>{{item.price}}</text>
+            </view>
+            <view class="shop-tags">
+              <text wx:if="{{item.hasRecommendedProduct}}" class="shop-tag recommend-tag">推荐商品</text>
+              <text class="shop-tag school-tag">{{item.school}}</text>
+              <text class="shop-tag" wx:for="{{item.tags}}" wx:key="*this">{{item}}</text>
+            </view>
+            <view wx:if="{{item.recommendedProductName}}" class="recommend-preview">
+              <text class="recommend-preview-label">主推</text>
+              <text class="recommend-preview-name">{{item.recommendedProductName}}</text>
+              <text wx:if="{{item.recommendedProductPrice}}" class="recommend-preview-price">{{item.recommendedProductPrice}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{activeTab === 'all' || activeTab === 'messages'}}" class="result-section">
+      <view class="section-head">
+        <view class="section-title">{{labels.messages}}</view>
+        <view class="section-count">{{messageCount}} {{labels.countSuffix}}</view>
+      </view>
+      <view wx:if="{{messageCount}}">
+        <view class="message-card" wx:for="{{messageResults}}" wx:key="id">
+          <view class="message-card-head">
+            <text class="message-category">{{item.category}}</text>
+            <text class="message-school-tag">{{item.school}}</text>
+          </view>
+          <view class="message-content">{{item.content}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

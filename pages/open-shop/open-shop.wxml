@@ -1,0 +1,308 @@
+<view class="shop-page">
+  <view class="status-bar" style="height: {{statusBarHeight}}px;"></view>
+  <view class="shop-nav">
+    <view class="back-btn" bindtap="goBack"></view>
+    <view class="shop-title">{{merchantStore ? labels.merchantTitle : labels.title}}</view>
+    <view class="nav-space"></view>
+  </view>
+
+  <view wx:if="{{merchantStore}}">
+    <view class="banner-card">
+      <view class="banner-title">{{merchantStore.name}}</view>
+      <view class="banner-desc">{{merchantStore.school}} / {{merchantStore.groupLabel}} / {{merchantStore.sectionLabel}}</view>
+    </view>
+
+    <view class="panel-card">
+      <view class="section-header order-header">
+        <view class="section-title">{{labels.orderManage}}</view>
+        <view class="order-summary-row">
+          <view class="order-summary-chip new">{{merchantOrderBoard.summary.newOrderCount}} {{labels.orderNew}}</view>
+          <view class="order-summary-chip pending">{{merchantOrderBoard.summary.pendingOrderCount}} {{labels.orderPending}}</view>
+          <view class="order-summary-chip finished">{{merchantOrderBoard.summary.finishedOrderCount}} {{labels.orderFinished}}</view>
+        </view>
+      </view>
+
+      <view class="order-board-section">
+        <view class="order-board-title">{{labels.orderNew}}</view>
+        <view wx:if="{{merchantOrderBoard.newOrders.length}}" class="order-board-list">
+          <view class="merchant-order-card new" wx:for="{{merchantOrderBoard.newOrders}}" wx:key="id">
+            <view class="merchant-order-head">
+              <view class="merchant-order-no">{{item.displayNo}}</view>
+              <view class="merchant-order-status">{{item.statusText}}</view>
+            </view>
+            <view class="merchant-order-title">{{item.productName}} × {{item.quantity}}</view>
+            <view class="merchant-order-meta">{{labels.orderAmount}} ￥{{item.amount}}</view>
+            <view class="merchant-order-meta">{{labels.orderBuyer}}{{item.receiverName}} {{item.receiverPhone}}</view>
+            <view class="merchant-order-meta">{{labels.orderAddress}}{{item.receiverAddress}}</view>
+            <view class="merchant-order-time">{{labels.orderPaidAt}}{{item.paidAt || item.createdAt}}</view>
+          </view>
+        </view>
+        <view wx:else class="empty-status">{{labels.noNewOrders}}</view>
+      </view>
+
+      <view class="order-board-section">
+        <view class="order-board-title">{{labels.orderPending}}</view>
+        <view wx:if="{{merchantOrderBoard.pendingOrders.length}}" class="order-board-list">
+          <view class="merchant-order-card pending" wx:for="{{merchantOrderBoard.pendingOrders}}" wx:key="id">
+            <view class="merchant-order-head">
+              <view class="merchant-order-no">{{item.displayNo}}</view>
+              <view class="merchant-order-status">{{item.statusText}}</view>
+            </view>
+            <view class="merchant-order-title">{{item.productName}} × {{item.quantity}}</view>
+            <view class="merchant-order-meta">{{labels.orderAmount}} ￥{{item.amount}}</view>
+            <view class="merchant-order-meta">{{labels.orderBuyer}}{{item.receiverName}} {{item.receiverPhone}}</view>
+            <view class="merchant-order-meta">{{labels.orderAddress}}{{item.receiverAddress}}</view>
+            <view class="merchant-order-time">{{labels.orderPaidAt}}{{item.paidAt || item.createdAt}}</view>
+          </view>
+        </view>
+        <view wx:else class="empty-status">{{labels.noPendingOrders}}</view>
+      </view>
+
+      <view class="order-board-section">
+        <view class="order-board-title">{{labels.orderFinished}}</view>
+        <view wx:if="{{merchantOrderBoard.finishedOrders.length}}" class="order-board-list">
+          <view class="merchant-order-card finished" wx:for="{{merchantOrderBoard.finishedOrders}}" wx:key="id">
+            <view class="merchant-order-head">
+              <view class="merchant-order-no">{{item.displayNo}}</view>
+              <view class="merchant-order-status">{{item.statusText}}</view>
+            </view>
+            <view class="merchant-order-title">{{item.productName}} × {{item.quantity}}</view>
+            <view class="merchant-order-meta">{{labels.orderAmount}} ￥{{item.amount}}</view>
+            <view class="merchant-order-meta">{{labels.orderBuyer}}{{item.receiverName}} {{item.receiverPhone}}</view>
+            <view class="merchant-order-meta">{{labels.orderAddress}}{{item.receiverAddress}}</view>
+            <view class="merchant-order-time">{{labels.orderFinishedAt}}{{item.finishedAt || item.createdAt}}</view>
+          </view>
+        </view>
+        <view wx:else class="empty-status">{{labels.noFinishedOrders}}</view>
+      </view>
+    </view>
+
+    <view class="panel-card">
+      <view class="section-title">{{labels.storeManage}}</view>
+
+      <view class="field-item">
+        <view class="field-label">{{labels.storeCover}}</view>
+        <view class="upload-cover" bindtap="chooseStoreCover">
+          <image wx:if="{{merchantForm.cover}}" class="cover-image" src="{{merchantForm.cover}}" mode="aspectFill"></image>
+          <view wx:else class="upload-placeholder">{{labels.placeholders.storeCover}}</view>
+        </view>
+      </view>
+
+      <view class="field-item">
+        <view class="field-label">{{labels.storeBanners}}</view>
+        <view class="banner-list">
+          <view class="banner-item" wx:for="{{merchantForm.banners}}" wx:key="*this">
+            <image class="banner-image" src="{{item}}" mode="aspectFill"></image>
+            <view class="banner-actions">
+              <view class="banner-action" data-index="{{index}}" data-direction="up" bindtap="moveStoreBanner">{{labels.moveUp}}</view>
+              <view class="banner-action" data-index="{{index}}" data-direction="down" bindtap="moveStoreBanner">{{labels.moveDown}}</view>
+              <view class="banner-action danger" data-index="{{index}}" bindtap="removeStoreBanner">{{labels.remove}}</view>
+            </view>
+          </view>
+          <view wx:if="{{merchantForm.banners.length < 5}}" class="upload-cover banner-add" bindtap="addStoreBanner">
+            <view class="upload-placeholder">{{labels.addBanner}}</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="field-item">
+        <view class="field-label">{{labels.storeName}}</view>
+        <input class="field-input" value="{{merchantForm.name}}" data-field="name" bindinput="onMerchantInput" placeholder="{{labels.placeholders.storeName}}" />
+      </view>
+
+      <view class="field-item">
+        <view class="field-label">{{labels.subtitle}}</view>
+        <input class="field-input" value="{{merchantForm.subtitle}}" data-field="subtitle" bindinput="onMerchantInput" placeholder="{{labels.placeholders.subtitle}}" />
+      </view>
+
+      <view class="field-item">
+        <view class="field-label">{{labels.notice}}</view>
+        <textarea class="field-textarea" value="{{merchantForm.notice}}" data-field="notice" bindinput="onMerchantInput" maxlength="120" placeholder="{{labels.placeholders.notice}}" />
+      </view>
+
+      <view class="field-item">
+        <view class="field-label">{{labels.phone}}</view>
+        <input class="field-input" value="{{merchantForm.phone}}" data-field="phone" bindinput="onMerchantInput" placeholder="{{labels.placeholders.phone}}" />
+      </view>
+
+      <view class="field-item">
+        <view class="field-label">{{labels.address}}</view>
+        <input class="field-input" value="{{merchantForm.address}}" data-field="address" bindinput="onMerchantInput" placeholder="{{labels.placeholders.address}}" />
+      </view>
+
+      <view class="submit-inline-btn" bindtap="saveMerchantStore">{{savingStore ? labels.saveStoreLoading : labels.saveStore}}</view>
+    </view>
+
+    <view class="panel-card">
+      <view class="section-header">
+        <view class="section-title">{{labels.goodsManage}}</view>
+        <view class="header-actions">
+          <view class="mini-action-btn secondary" bindtap="toggleBatchMode">{{batchMode ? labels.batchCancel : labels.batchSelect}}</view>
+          <view class="mini-action-btn" bindtap="openCreateProduct">{{labels.addProduct}}</view>
+        </view>
+      </view>
+
+      <view wx:if="{{batchMode}}" class="batch-bar">
+        <view class="batch-count">{{labels.selectedCount}} {{selectedProductIds.length}} {{labels.unitCount}}</view>
+        <view class="batch-btn" bindtap="batchDownProducts">{{labels.batchDown}}</view>
+        <view class="batch-btn danger" bindtap="batchDeleteProducts">{{labels.batchDelete}}</view>
+      </view>
+
+      <view class="product-list" wx:if="{{merchantStore.products.length}}">
+        <view class="product-card" wx:for="{{merchantStore.products}}" wx:key="id">
+          <view class="product-row">
+            <view wx:if="{{batchMode}}" class="select-box {{selectedProductIds.indexOf(item.id) > -1 ? 'active' : ''}}" data-id="{{item.id}}" bindtap="toggleSelectProduct"></view>
+            <image class="product-cover" src="{{item.cover || merchantForm.cover}}" mode="aspectFill"></image>
+            <view class="product-main">
+              <view class="product-title-row">
+                <text class="product-name">{{item.name}}</text>
+                <text class="product-status {{item.status === labels.statusUp ? 'up' : 'down'}}">{{item.status}}</text>
+              </view>
+              <view class="product-desc">{{item.desc}}</view>
+              <view class="product-meta-row">
+                <text wx:if="{{item.recommended}}" class="product-tag highlight">{{labels.recommendedTag}}</text>
+                <text class="product-tag">{{labels.stockTag}} {{item.stock || 0}}</text>
+                <text wx:if="{{item.dailyLimit > 0}}" class="product-tag">{{labels.dailyLimitTag}} {{item.dailyLimit}}</text>
+              </view>
+              <view class="product-price">{{item.price}}</view>
+            </view>
+          </view>
+          <view wx:if="{{!batchMode}}" class="product-actions">
+            <view class="product-action" data-id="{{item.id}}" bindtap="openEditProduct">{{labels.editProduct}}</view>
+            <view class="product-action" data-id="{{item.id}}" data-direction="up" bindtap="moveProduct">{{labels.moveUp}}</view>
+            <view class="product-action" data-id="{{item.id}}" data-direction="down" bindtap="moveProduct">{{labels.moveDown}}</view>
+            <view class="product-action" data-id="{{item.id}}" bindtap="handleToggleProductStatus">{{labels.toggleStatus}}</view>
+            <view class="product-action danger" data-id="{{item.id}}" bindtap="handleDeleteProduct">{{labels.remove}}</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="empty-status" wx:else>{{labels.emptyProduct}}</view>
+    </view>
+  </view>
+
+  <view wx:else>
+    <view class="banner-card">
+      <view class="banner-title">{{labels.bannerTitle}}</view>
+      <view class="banner-desc">{{labels.bannerDescPrefix}}{{selectedSchool}}</view>
+    </view>
+
+    <view class="panel-card">
+      <view class="section-title">{{labels.processTitle}}</view>
+      <view class="step-item">{{labels.process1}}</view>
+      <view class="step-item">{{labels.process2}}</view>
+      <view class="step-item">{{labels.process3}}</view>
+    </view>
+
+    <view class="panel-card">
+      <view class="section-title">{{labels.statusTitle}}</view>
+      <view wx:if="{{currentApply}}" class="status-card">
+        <view class="status-row">
+          <text>{{labels.statusLabel}}</text>
+          <text class="status-text status-{{currentApply.statusClass}}">{{currentApply.status}}</text>
+        </view>
+        <view class="status-row">
+          <text>{{labels.appliedStoreName}}</text>
+          <text>{{currentApply.storeName}}</text>
+        </view>
+        <view class="status-row">
+          <text>{{labels.appliedCategory}}</text>
+          <text>{{currentApply.category}}</text>
+        </view>
+        <view class="status-row">
+          <text>{{labels.appliedTime}}</text>
+          <text>{{currentApply.createdAt}}</text>
+        </view>
+        <view class="status-note" wx:if="{{currentApply.reviewNote}}">{{currentApply.reviewNote}}</view>
+        <view class="status-note retry-note" wx:if="{{currentApply.status === labels.rejected}}">{{labels.retryTip}}</view>
+      </view>
+      <view wx:else class="empty-status">{{loading ? labels.loading : labels.noRecord}}</view>
+    </view>
+
+    <view class="panel-card">
+      <view class="section-title">{{labels.formTitle}}</view>
+
+      <view class="field-item">
+        <view class="field-label">{{labels.currentSchool}}</view>
+        <view class="field-value readonly">{{selectedSchool}}</view>
+      </view>
+
+      <view class="field-item">
+        <view class="field-label">{{labels.storeName}}</view>
+        <input class="field-input" value="{{form.storeName}}" data-field="storeName" bindinput="onInput" placeholder="{{labels.placeholders.storeName}}" />
+      </view>
+
+      <view class="field-item">
+        <view class="field-label">{{labels.category}}</view>
+        <input class="field-input" value="{{form.category}}" data-field="category" bindinput="onInput" placeholder="{{labels.placeholders.category}}" />
+      </view>
+
+      <view class="field-item">
+        <view class="field-label">{{labels.contactName}}</view>
+        <input class="field-input" value="{{form.contactName}}" data-field="contactName" bindinput="onInput" placeholder="{{labels.placeholders.contactName}}" />
+      </view>
+
+      <view class="field-item">
+        <view class="field-label">{{labels.contactPhone}}</view>
+        <input class="field-input" type="number" value="{{form.contactPhone}}" data-field="contactPhone" bindinput="onInput" placeholder="{{labels.placeholders.contactPhone}}" />
+      </view>
+
+      <view class="field-item textarea-item">
+        <view class="field-label">{{labels.description}}</view>
+        <textarea class="field-textarea" value="{{form.description}}" data-field="description" bindinput="onInput" maxlength="300" placeholder="{{labels.placeholders.description}}" />
+      </view>
+    </view>
+
+    <view class="submit-bar">
+      <view class="submit-btn {{submitting ? 'disabled' : ''}}" bindtap="submitApply">{{submitting ? labels.submitting : labels.submit}}</view>
+    </view>
+  </view>
+
+  <view class="overlay" wx:if="{{productModalVisible}}" bindtap="closeProductModal"></view>
+  <view class="product-modal" wx:if="{{productModalVisible}}">
+    <view class="section-title">{{productForm.id ? labels.editProduct : labels.addProduct}}</view>
+
+    <view class="field-item">
+      <view class="field-label">{{labels.productCover}}</view>
+      <view class="upload-cover small" bindtap="chooseProductCover">
+        <image wx:if="{{productForm.cover}}" class="cover-image" src="{{productForm.cover}}" mode="aspectFill"></image>
+        <view wx:else class="upload-placeholder">{{labels.placeholders.productCover}}</view>
+      </view>
+    </view>
+
+    <view class="field-item">
+      <view class="field-label">{{labels.productName}}</view>
+      <input class="field-input" value="{{productForm.name}}" data-field="name" bindinput="onProductInput" placeholder="{{labels.placeholders.productName}}" />
+    </view>
+
+    <view class="field-item">
+      <view class="field-label">{{labels.productDesc}}</view>
+      <input class="field-input" value="{{productForm.desc}}" data-field="desc" bindinput="onProductInput" placeholder="{{labels.placeholders.productDesc}}" />
+    </view>
+
+    <view class="field-item">
+      <view class="field-label">{{labels.productPrice}}</view>
+      <input class="field-input" type="digit" value="{{productForm.price}}" data-field="price" bindinput="onProductInput" placeholder="{{labels.placeholders.productPrice}}" />
+    </view>
+
+    <view class="field-item">
+      <view class="field-label">{{labels.productStock}}</view>
+      <input class="field-input" type="number" value="{{productForm.stock}}" data-field="stock" bindinput="onProductInput" placeholder="{{labels.placeholders.productStock}}" />
+    </view>
+
+    <view class="field-item">
+      <view class="field-label">{{labels.productDailyLimit}}</view>
+      <input class="field-input" type="number" value="{{productForm.dailyLimit}}" data-field="dailyLimit" bindinput="onProductInput" placeholder="{{labels.placeholders.productDailyLimit}}" />
+    </view>
+
+    <view class="field-item switch-field">
+      <view class="field-label">{{labels.productRecommended}}</view>
+      <switch color="#2f68e3" checked="{{productForm.recommended}}" data-field="recommended" bindchange="onProductSwitchChange" />
+    </view>
+
+    <view class="modal-actions">
+      <view class="modal-btn ghost" bindtap="closeProductModal">{{labels.cancel}}</view>
+      <view class="modal-btn" bindtap="saveProduct">{{savingProduct ? labels.saveProductLoading : labels.submitProduct}}</view>
+    </view>
+  </view>
+</view>

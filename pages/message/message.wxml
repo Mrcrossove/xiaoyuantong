@@ -1,0 +1,84 @@
+<view class="message-page" style="padding-top: {{statusBarHeight}}px;">
+  <view class="message-nav">
+    <view class="message-nav-spacer"></view>
+    <view class="message-title">{{labels.pageTitle}}</view>
+    <view class="message-nav-action" bindtap="markCurrentTabRead">{{labels.readAll}}</view>
+  </view>
+
+  <view class="message-school">{{selectedSchool}}</view>
+
+  <view class="message-tabs">
+    <view
+      class="message-tab {{activeTab === item.key ? 'active' : ''}}"
+      wx:for="{{tabs}}"
+      wx:key="key"
+      data-key="{{item.key}}"
+      bindtap="switchTab"
+    >
+      <text>{{item.label}}</text>
+      <view class="unread-dot" wx:if="{{item.key === 'system' ? unreadCount.system : unreadCount.interactive}}">
+        {{item.key === 'system' ? unreadCount.system : unreadCount.interactive}}
+      </view>
+      <view class="message-tab-line"></view>
+    </view>
+  </view>
+
+  <view class="message-panel" wx:if="{{activeTab === 'system'}}">
+    <view class="message-entry">
+      <view class="entry-icon horn"></view>
+      <text>{{labels.officialNotice}}</text>
+    </view>
+    <view class="message-card {{item.read ? 'read' : 'unread'}}" wx:for="{{systemMessages}}" wx:key="id" data-id="{{item.id}}" data-type="system" bindtap="openMessage">
+      <view class="message-card-head">
+        <text class="message-card-category">{{item.category || labels.systemTab}}</text>
+        <view class="message-meta-right">
+          <view class="message-badge" wx:if="{{!item.read}}">{{labels.unread}}</view>
+          <text class="message-card-time" wx:if="{{item.time}}">{{item.time}}</text>
+        </view>
+      </view>
+      <view wx:if="{{item.targetType === 'order'}}" class="message-order-tag">{{labels.orderNotice}}</view>
+      <text class="message-card-content">{{item.content}}</text>
+      <view wx:if="{{item.targetType === 'order'}}" class="message-action-line">{{labels.orderAction}}</view>
+    </view>
+    <view class="empty-text" wx:if="{{!systemMessages.length}}">{{loadFailed ? labels.loadFailed : labels.noSystemMessage}}</view>
+  </view>
+
+  <view class="message-panel" wx:else>
+    <view class="message-entry">
+      <view class="entry-icon heart"></view>
+      <text>{{labels.interactiveTab}}</text>
+    </view>
+    <view class="message-card {{item.read ? 'read' : 'unread'}}" wx:for="{{interactiveMessages}}" wx:key="id" data-id="{{item.id}}" data-type="interactive" bindtap="openMessage">
+      <view class="message-card-head">
+        <text class="message-card-category">{{item.category || labels.interactiveTab}}</text>
+        <view class="message-meta-right">
+          <view class="message-badge" wx:if="{{!item.read}}">{{labels.unread}}</view>
+          <text class="message-card-time" wx:if="{{item.time}}">{{item.time}}</text>
+        </view>
+      </view>
+      <view wx:if="{{item.targetType === 'order'}}" class="message-order-tag">{{labels.orderNotice}}</view>
+      <text class="message-card-content">{{item.content}}</text>
+      <view wx:if="{{item.targetType === 'order'}}" class="message-action-line">{{labels.orderAction}}</view>
+    </view>
+    <view class="empty-text" wx:if="{{!interactiveMessages.length}}">{{loadFailed ? labels.loadFailed : labels.noInteractiveMessage}}</view>
+  </view>
+
+  <view class="tabbar card">
+    <view class="tab" bindtap="goHome">
+      <view class="tab-icon home"></view>
+      <text>{{labels.home}}</text>
+    </view>
+    <view class="tab" bindtap="goStorefront">
+      <view class="tab-icon shop"></view>
+      <text>{{labels.storefront}}</text>
+    </view>
+    <view class="tab active">
+      <view class="tab-icon message"></view>
+      <text>{{labels.pageTitle}}</text>
+    </view>
+    <view class="tab" bindtap="goProfile">
+      <view class="tab-icon user"></view>
+      <text>{{labels.profile}}</text>
+    </view>
+  </view>
+</view>

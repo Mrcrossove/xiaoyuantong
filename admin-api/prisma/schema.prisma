@@ -1,0 +1,580 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model SchoolContent {
+  id             Int      @id @default(autoincrement())
+  school         String
+  userCount      Int
+  postCount      Int
+  storeCount     Int
+  orderCount     Int
+  gmv            Float
+  verifyPassRate String
+  status         String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model AdminRole {
+  id          Int         @id @default(autoincrement())
+  code        String      @unique
+  name        String
+  scopeType   String
+  status      String
+  permissions Json
+  menuPaths   Json
+  users       AdminUser[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model AdminUser {
+  id          Int                @id @default(autoincrement())
+  account     String             @unique
+  password    String
+  name        String
+  status      String
+  schools     Json
+  lastLoginAt DateTime?
+  roleId      Int
+  role        AdminRole          @relation(fields: [roleId], references: [id])
+  reviews     UserVerification[] @relation("VerificationReviewer")
+  postReports MiniPostReport[]   @relation("PostReportReviewer")
+  refunds     MiniRefundRecord[] @relation("RefundReviewer")
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+model MiniUser {
+  id            Int                @id @default(autoincrement())
+  deviceId      String             @unique
+  openid        String?            @unique
+  unionId       String?
+  avatarUrl     String?
+  nickname      String
+  phone         String?
+  school        String?
+  verifyStatus  String             @default("未认证")
+  verifiedAt    DateTime?
+  verifications UserVerification[]
+  posts         MiniPost[]
+  shopApplies   MiniShopApply[]
+  favorites     MiniFavorite[]
+  addresses     MiniAddress[]
+  orders        MiniOrder[]
+  refunds       MiniRefundRecord[] @relation("MiniRefundApplicant")
+  walletAccount MiniWalletAccount?
+  withdraws     MiniWithdrawRecord[]
+  postLikes     MiniPostLike[]
+  postComments  MiniPostComment[]
+  postReports   MiniPostReport[]   @relation("MiniPostReportReporter")
+  messages      MiniMessage[]     @relation("MiniMessageReceiver")
+  messageReads  MiniMessageRead[]
+  ownedStores   MiniStore[]       @relation("MiniStoreOwner")
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+}
+
+model MiniRiskEvent {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  scene     String
+  action    String
+  level     String
+  content   String
+  hitRules  Json
+  decision  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, scene])
+  @@index([createdAt])
+}
+
+model UserVerification {
+  id           Int        @id @default(autoincrement())
+  userId       Int
+  user         MiniUser   @relation(fields: [userId], references: [id])
+  realName     String
+  phone        String
+  school       String
+  status       String
+  reviewerId   Int?
+  reviewer     AdminUser? @relation("VerificationReviewer", fields: [reviewerId], references: [id])
+  reviewNote   String?
+  reviewedAt   DateTime?
+  submitSource String     @default("小程序")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model MiniPost {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        MiniUser @relation(fields: [userId], references: [id])
+  school      String
+  authorName  String
+  category    String
+  title       String
+  content     String
+  images      Json
+  contacts    Json
+  isAnonymous Boolean  @default(false)
+  onlyCampus  Boolean  @default(true)
+  status      String
+  likeCount   Int      @default(0)
+  commentCount Int     @default(0)
+  viewCount   Int      @default(0)
+  likes       MiniPostLike[]
+  comments    MiniPostComment[]
+  reports     MiniPostReport[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model MiniPostLike {
+  id        Int      @id @default(autoincrement())
+  postId    Int
+  post      MiniPost @relation(fields: [postId], references: [id])
+  userId    Int
+  user      MiniUser @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([postId, userId])
+}
+
+model MiniPostComment {
+  id        Int      @id @default(autoincrement())
+  postId    Int
+  post      MiniPost @relation(fields: [postId], references: [id])
+  userId    Int
+  user      MiniUser @relation(fields: [userId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([postId, id])
+}
+
+model MiniStore {
+  id           Int      @id @default(autoincrement())
+  detailId     String   @unique
+  ownerUserId  Int?
+  ownerUser    MiniUser? @relation("MiniStoreOwner", fields: [ownerUserId], references: [id])
+  school       String
+  name         String
+  groupKey     String
+  groupLabel   String
+  sectionKey   String
+  sectionLabel String
+  subtitle     String
+  rating       Float
+  monthlySales String
+  distance     String
+  delivery     String
+  priceText    String
+  tags         Json
+  badge        String
+  cover        String
+  title        String
+  notice       String
+  phone        String
+  address      String
+  soldText     String
+  amountText   String
+  productCount Int
+  banners      Json
+  products     Json
+  status       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model MiniMessage {
+  id             Int               @id @default(autoincrement())
+  school         String
+  type           String
+  category       String
+  content        String
+  status         String
+  receiverUserId Int?
+  receiverUser   MiniUser?         @relation("MiniMessageReceiver", fields: [receiverUserId], references: [id])
+  targetType     String?
+  targetId       String?
+  reads          MiniMessageRead[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+}
+
+model MiniMessageRead {
+  id        Int         @id @default(autoincrement())
+  messageId Int
+  message   MiniMessage @relation(fields: [messageId], references: [id])
+  userId    Int
+  user      MiniUser    @relation(fields: [userId], references: [id])
+  readAt    DateTime    @default(now())
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@unique([messageId, userId])
+}
+
+model MiniShopApply {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         MiniUser @relation(fields: [userId], references: [id])
+  school       String
+  storeName    String
+  category     String
+  contactName  String
+  contactPhone String
+  description  String
+  status       String
+  reviewNote   String?
+  reviewedAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model MiniFavorite {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  user       MiniUser @relation(fields: [userId], references: [id])
+  targetType String
+  targetId   String
+  school     String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, targetType, targetId])
+}
+
+model MiniAddress {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         MiniUser @relation(fields: [userId], references: [id])
+  school       String
+  receiverName String
+  phone        String
+  detail       String
+  tag          String
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model MiniOrder {
+  id              Int       @id @default(autoincrement())
+  orderNo         String    @unique
+  userId          Int
+  user            MiniUser  @relation(fields: [userId], references: [id])
+  school          String
+  storeDetailId   String
+  storeName       String
+  productId       String
+  productName     String
+  productDesc     String?
+  productCover    String?
+  unitPrice       Float
+  quantity        Int       @default(1)
+  amount          Float
+  status          String
+  payStatus       String
+  receiverName    String
+  receiverPhone   String
+  receiverAddress String
+  addressTag      String?
+  remark          String?
+  paidAt          DateTime?
+  canceledAt      DateTime?
+  finishedAt      DateTime?
+  refunds         MiniRefundRecord[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId, status])
+  @@index([userId, createdAt])
+}
+
+model MiniPostReport {
+  id             Int       @id @default(autoincrement())
+  reportNo       String    @unique
+  postId         Int
+  post           MiniPost  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  reporterUserId Int
+  reporter       MiniUser  @relation("MiniPostReportReporter", fields: [reporterUserId], references: [id])
+  school         String
+  reason         String
+  detail         String?
+  status         String
+  reviewNote     String?
+  reviewerId     Int?
+  reviewer       AdminUser? @relation("PostReportReviewer", fields: [reviewerId], references: [id])
+  reviewedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([school, status])
+  @@index([postId])
+  @@index([reporterUserId])
+}
+
+model MiniRefundRecord {
+  id         Int       @id @default(autoincrement())
+  refundNo   String    @unique
+  orderId    Int
+  order      MiniOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  userId     Int
+  user       MiniUser  @relation("MiniRefundApplicant", fields: [userId], references: [id])
+  school     String
+  amount     Float
+  reason     String
+  status     String
+  reviewNote String?
+  reviewerId Int?
+  reviewer   AdminUser? @relation("RefundReviewer", fields: [reviewerId], references: [id])
+  applyTime  DateTime  @default(now())
+  reviewedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([school, status])
+  @@index([orderId])
+  @@index([userId, status])
+}
+
+model MiniWalletAccount {
+  id                 Int      @id @default(autoincrement())
+  userId             Int      @unique
+  user               MiniUser @relation(fields: [userId], references: [id])
+  school             String
+  accountName        String
+  status             String
+  balance            Float    @default(0)
+  frozenAmount       Float    @default(0)
+  withdrawableAmount Float    @default(0)
+  totalIncome        Float    @default(0)
+  totalWithdrawn     Float    @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model MiniWithdrawRecord {
+  id          Int      @id @default(autoincrement())
+  withdrawNo  String   @unique
+  userId      Int
+  user        MiniUser @relation(fields: [userId], references: [id])
+  school      String
+  accountName String
+  amount      Float
+  accountType String
+  accountNo   String
+  status      String
+  reviewNote  String?
+  applyTime   DateTime @default(now())
+  reviewedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([userId, applyTime])
+}
+
+model UserPublishRecord {
+  id        Int      @id @default(autoincrement())
+  school    String
+  user      String
+  type      String
+  title     String
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProductSpec {
+  id          Int      @id @default(autoincrement())
+  school      String
+  storeName   String
+  productName String
+  specGroup   String
+  specValue   String
+  price       Float
+  stock       Int
+  status      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AdminPostCategory {
+  id        Int      @id @default(autoincrement())
+  school    String
+  name      String
+  code      String
+  sort      Int      @default(0)
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([school, name])
+  @@unique([school, code])
+  @@index([school, status])
+  @@index([school, sort])
+}
+
+model AdminStoreCategory {
+  id        Int      @id @default(autoincrement())
+  school    String
+  name      String
+  code      String
+  sort      Int      @default(0)
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([school, name])
+  @@unique([school, code])
+  @@index([school, status])
+  @@index([school, sort])
+}
+
+model AdminProductCategory {
+  id        Int      @id @default(autoincrement())
+  school    String
+  name      String
+  code      String
+  sort      Int      @default(0)
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([school, name])
+  @@unique([school, code])
+  @@index([school, status])
+  @@index([school, sort])
+}
+
+model AdminMessageTemplate {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique
+  name      String
+  school    String
+  channel   String
+  status    String
+  content   String
+  remark    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([school, status])
+}
+
+model AdminSearchWord {
+  id          Int      @id @default(autoincrement())
+  school      String
+  keyword     String
+  searchCount Int      @default(0)
+  sort        Int      @default(0)
+  status      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([school, status])
+}
+
+model AdminHelpArticle {
+  id        Int      @id @default(autoincrement())
+  category  String
+  title     String
+  school    String
+  status    String
+  content   String
+  sort      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category, status])
+}
+
+model AdminBannerConfig {
+  id        Int      @id @default(autoincrement())
+  title     String
+  position  String
+  school    String
+  imageUrl  String?
+  linkUrl   String?
+  sort      Int      @default(0)
+  status    String
+  remark    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([school, status])
+}
+
+model AdminRecommendConfig {
+  id         Int      @id @default(autoincrement())
+  title      String
+  type       String
+  school     String
+  targetName String?
+  targetId   String?
+  sort       Int      @default(0)
+  status     String
+  remark     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([school, status])
+}
+
+model AdminSystemConfig {
+  id           Int      @id @default(autoincrement())
+  sectionKey   String
+  sectionTitle String
+  configKey    String   @unique
+  label        String
+  value        String
+  valueType    String
+  suffix       String?
+  sort         Int      @default(0)
+  status       String
+  remark       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([sectionKey, sort])
+}
+
+model AdminDictType {
+  id        Int             @id @default(autoincrement())
+  name      String
+  code      String          @unique
+  status    String
+  remark    String?
+  sort      Int             @default(0)
+  items     AdminDictItem[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+model AdminDictItem {
+  id        Int           @id @default(autoincrement())
+  typeId    Int
+  type      AdminDictType @relation(fields: [typeId], references: [id], onDelete: Cascade)
+  label     String
+  value     String
+  sort      Int           @default(0)
+  status    String
+  remark    String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([typeId, sort])
+}

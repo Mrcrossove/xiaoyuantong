@@ -1,0 +1,105 @@
+.sub-page {
+  min-height: 100vh;
+  background: #f5f7fb;
+}
+
+.sub-nav {
+  height: 88rpx;
+  padding: 0 24rpx;
+  background: #ffffff;
+  display: grid;
+  grid-template-columns: 88rpx 1fr 88rpx;
+  align-items: center;
+}
+
+.sub-title {
+  text-align: center;
+  font-size: 34rpx;
+  font-weight: 700;
+}
+
+.nav-space {
+  width: 88rpx;
+}
+
+.page-tip {
+  margin: 20rpx 16rpx 0;
+  color: #4b84ff;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.content-shell {
+  padding: 16rpx;
+  display: grid;
+  gap: 18rpx;
+}
+
+.post-card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  padding: 24rpx;
+  box-shadow: 0 16rpx 36rpx rgba(53, 88, 163, 0.08);
+}
+
+.post-head,
+.post-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.post-tag {
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  background: #edf4ff;
+  color: #2f68e3;
+  font-size: 22rpx;
+}
+
+.post-status {
+  color: #26a66a;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.post-title {
+  margin-top: 16rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #202534;
+}
+
+.post-content {
+  margin-top: 12rpx;
+  color: #65738c;
+  font-size: 24rpx;
+  line-height: 1.7;
+}
+
+.post-footer {
+  margin-top: 18rpx;
+  color: #9ba5b8;
+  font-size: 22rpx;
+}
+
+.empty-state {
+  padding: 72rpx 36rpx;
+  border-radius: 24rpx;
+  background: #ffffff;
+  text-align: center;
+  box-shadow: 0 16rpx 36rpx rgba(53, 88, 163, 0.08);
+}
+
+.empty-title {
+  color: #202534;
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.empty-desc {
+  margin-top: 14rpx;
+  color: #8590a7;
+  font-size: 24rpx;
+  line-height: 1.7;
+}

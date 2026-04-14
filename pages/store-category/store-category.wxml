@@ -1,0 +1,74 @@
+<view class="category-page" style="padding-top: {{statusBarHeight}}px;">
+  <view class="category-nav">
+    <view class="back-btn" bindtap="goBack"></view>
+    <view class="category-title">{{pageTitle}}</view>
+    <view class="nav-actions">
+      <view class="nav-icon search-mini"></view>
+      <view class="nav-icon bell-mini"></view>
+    </view>
+  </view>
+
+  <view class="category-search">
+    <view class="category-school">{{selectedSchool}}</view>
+    <view class="search-box">
+      <view class="search-icon"></view>
+      <input
+        value="{{keyword}}"
+        placeholder="搜索商家或商品"
+        placeholder-class="placeholder"
+        bindinput="onKeywordInput"
+      />
+    </view>
+  </view>
+
+  <view class="category-layout" wx:if="{{sections.length}}">
+    <scroll-view class="section-nav" scroll-y enhanced show-scrollbar="{{false}}">
+      <view
+        class="section-item {{activeSectionKey === item.key ? 'active' : ''}}"
+        wx:for="{{sections}}"
+        wx:key="key"
+        data-key="{{item.key}}"
+        bindtap="switchSection"
+      >
+        <view class="section-icon icon-{{item.key}}"></view>
+        <text>{{item.label}}</text>
+      </view>
+    </scroll-view>
+
+    <scroll-view class="section-content" scroll-y enhanced show-scrollbar="{{false}}">
+      <view class="shop-card" wx:for="{{activeShops}}" wx:key="id">
+        <view wx:if="{{item.coverMode === 'class'}}" class="shop-cover cover-{{item.cover}}"></view>
+        <image wx:else class="shop-cover shop-cover-image" src="{{item.cover}}" mode="aspectFill"></image>
+        <view class="shop-body">
+          <view class="shop-head">
+            <view class="shop-name">{{item.name}}</view>
+            <view class="shop-rating">
+              <text class="star">★</text>
+              <text>{{item.rating}}</text>
+            </view>
+          </view>
+          <view class="shop-subtitle">{{item.subtitle}}</view>
+          <view class="shop-tags">
+            <text wx:if="{{item.hasRecommendedProduct}}" class="shop-tag recommend-tag">推荐商品</text>
+            <text class="shop-tag school-tag">{{selectedSchool}}</text>
+            <text class="shop-tag" wx:for="{{item.tags}}" wx:key="*this">{{item}}</text>
+          </view>
+          <view wx:if="{{item.recommendedProductName}}" class="recommend-preview">
+            <text class="recommend-preview-label">主推</text>
+            <text class="recommend-preview-name">{{item.recommendedProductName}}</text>
+            <text wx:if="{{item.recommendedProductPrice}}" class="recommend-preview-price">{{item.recommendedProductPrice}}</text>
+          </view>
+          <view class="shop-footer">
+            <text class="shop-distance">{{item.distance}}</text>
+            <view class="enter-btn" data-id="{{item.id}}" bindtap="enterShop">进店</view>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view wx:else class="category-empty">
+    <view class="category-empty-title">当前分类暂无店铺</view>
+    <view class="category-empty-desc">可以切换高校或等待商家入驻后再查看。</view>
+  </view>
+</view>

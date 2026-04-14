@@ -1,0 +1,160 @@
+<view class="page-shell" bindtap="closeFabMenu">
+  <view class="status-bar" style="height: {{statusBarHeight}}px;"></view>
+
+  <view class="topbar">
+    <view class="topbar-left">
+      <view class="circle-btn user-btn"></view>
+    </view>
+    <view class="topbar-title">校园通</view>
+    <view class="topbar-right">
+      <view class="circle-btn more-btn">
+        <view></view>
+        <view></view>
+        <view></view>
+      </view>
+      <view class="ring-btn"></view>
+    </view>
+  </view>
+
+  <view class="search-row card">
+    <view class="campus-pill" bindtap="openSchoolPicker">
+      <view class="pin"></view>
+      <text class="campus-text">{{selectedSchool}}</text>
+      <view class="campus-arrow"></view>
+    </view>
+    <view class="search-box">
+      <view class="search-icon"></view>
+      <input
+        value="{{searchKeyword}}"
+        placeholder="搜索校园内容"
+        placeholder-class="placeholder"
+        bindinput="onSearchKeywordInput"
+        bindconfirm="openSearchPage"
+        confirm-type="search"
+      />
+    </view>
+    <view class="primary-btn" bindtap="openSearchPage">搜索</view>
+  </view>
+
+  <view class="banner card">
+    <view class="banner-art">
+      <view class="banner-copy">
+        <text class="banner-tag">校园通</text>
+        <view class="banner-title">校园合伙人招募中</view>
+        <view class="banner-desc">提供校园广告、二手交易、兼职信息等本地服务能力</view>
+      </view>
+      <view class="banner-badge">等你来</view>
+    </view>
+    <view class="banner-dots">
+      <view></view>
+      <view class="active"></view>
+      <view></view>
+    </view>
+  </view>
+
+  <view class="services card">
+    <view class="service-item" wx:for="{{services}}" wx:key="label">
+      <view class="service-icon service-{{item.icon}}"></view>
+      <text>{{item.label}}</text>
+    </view>
+  </view>
+
+  <view class="feed">
+    <view class="post-card" wx:for="{{posts}}" wx:key="id" data-id="{{item.id}}" bindtap="openPostDetail">
+      <view class="post-head">
+        <view class="avatar"></view>
+        <view>
+          <view class="author-name">{{item.author}}</view>
+          <view class="meta-row">
+            <text class="school-name">{{item.school}}</text>
+            <text class="tag">{{item.category}}</text>
+          </view>
+        </view>
+        <text class="post-time">{{item.time}}</text>
+      </view>
+      <view class="post-title">{{item.title}}</view>
+      <view class="post-text">{{item.content}}</view>
+      <view class="image-grid">
+        <view class="image-item {{img}}" wx:for="{{item.images}}" wx:for-item="img" wx:key="*this"></view>
+      </view>
+    </view>
+
+    <view wx:if="{{postsLoading}}" class="empty-feed card">
+      <view class="empty-feed-title">正在加载帖子</view>
+      <view class="empty-feed-desc">请稍候，正在获取当前高校的最新内容</view>
+    </view>
+
+    <view wx:elif="{{!posts.length}}" class="empty-feed card">
+      <view class="empty-feed-title">{{postsErrorText || "当前高校暂无帖子内容"}}</view>
+      <view class="empty-feed-desc">{{postsErrorText ? "请稍后重试，或切换其他高校查看" : "可以切换其他高校，或稍后再来看看"}}</view>
+    </view>
+  </view>
+
+  <view class="fab-menu {{fabOpen ? 'open' : ''}}" catchtap="noop">
+    <view
+      class="fab-item"
+      wx:for="{{fabOptions}}"
+      wx:key="label"
+      style="background: {{item.color}};"
+      data-type="{{item.type}}"
+      bindtap="onFabOptionTap"
+    >
+      <view class="fab-badge"></view>
+      <text>{{item.label}}</text>
+    </view>
+  </view>
+
+  <view class="fab" catchtap="toggleFabMenu">
+    <text>+</text>
+  </view>
+
+  <view wx:if="{{schoolPickerOpen}}" class="overlay school-overlay" bindtap="closeSchoolPicker">
+    <view class="school-picker card" catchtap="stopTap">
+      <view class="school-picker-head">
+        <view class="school-picker-title">切换高校</view>
+        <view class="school-picker-close" bindtap="closeSchoolPicker">关闭</view>
+      </view>
+      <view class="school-picker-search">
+        <view class="search-icon"></view>
+        <input
+          value="{{schoolKeyword}}"
+          placeholder="输入高校名称搜索"
+          placeholder-class="placeholder"
+          bindinput="onSchoolKeywordInput"
+        />
+      </view>
+      <scroll-view class="school-list" scroll-y enhanced show-scrollbar="{{false}}">
+        <view
+          class="school-item {{item === selectedSchool ? 'active' : ''}}"
+          wx:for="{{filteredSchools}}"
+          wx:key="*this"
+          data-school="{{item}}"
+          bindtap="selectSchool"
+        >
+          <text>{{item}}</text>
+          <text wx:if="{{item === selectedSchool}}" class="school-item-mark">当前</text>
+        </view>
+        <view wx:if="{{!filteredSchools.length}}" class="school-empty">没有匹配到高校</view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <view class="tabbar card">
+    <view class="tab active">
+      <view class="tab-icon home"></view>
+      <text>首页</text>
+    </view>
+    <view class="tab" bindtap="goStorefront">
+      <view class="tab-icon shop"></view>
+      <text>创业店铺</text>
+    </view>
+    <view class="tab" bindtap="goMessage">
+      <view class="tab-icon message"></view>
+      <text>消息</text>
+    </view>
+    <view class="tab" bindtap="goProfile">
+      <view class="tab-icon user"></view>
+      <text>我的</text>
+    </view>
+  </view>
+</view>

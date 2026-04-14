@@ -1,0 +1,78 @@
+<view class="order-detail-page">
+  <view class="status-bar" style="height: {{statusBarHeight}}px;"></view>
+  <view class="detail-nav">
+    <view class="back-btn" bindtap="goBack"></view>
+    <view class="detail-title">{{labels.title}}</view>
+    <view class="nav-space"></view>
+  </view>
+
+  <view wx:if="{{detail}}" class="detail-content">
+    <view wx:if="{{paySuccessNotice}}" class="result-banner">
+      <view class="result-banner-badge">支付完成</view>
+      <view class="result-banner-title">{{labels.paidBannerTitle}}</view>
+      <view class="result-banner-desc">{{labels.paidBannerDesc}}</view>
+    </view>
+
+    <view class="section-card">
+      <view class="section-title">{{labels.orderInfo}}</view>
+      <view class="info-row">
+        <text>{{labels.orderNo}}</text>
+        <text>{{detail.displayNo}}</text>
+      </view>
+      <view class="info-row">
+        <text>{{labels.orderTime}}</text>
+        <text>{{detail.time}}</text>
+      </view>
+      <view class="info-row">
+        <text>{{labels.status}}</text>
+        <text class="status-text status-{{detail.statusTone}}">{{detail.statusText}}</text>
+      </view>
+      <view class="info-row">
+        <text>{{labels.payStatus}}</text>
+        <text class="status-text status-{{detail.statusTone}}">{{detail.payStatus}}</text>
+      </view>
+      <view class="info-row">
+        <text>{{labels.product}}</text>
+        <text>{{detail.productName}}</text>
+      </view>
+      <view class="info-row">
+        <text>{{labels.quantity}}</text>
+        <text>{{detail.quantity}}</text>
+      </view>
+    </view>
+
+    <view class="section-card">
+      <view class="section-title">{{labels.receiverInfo}}</view>
+      <view class="info-row">
+        <text>{{labels.receiver}}</text>
+        <text>{{detail.receiverName}}</text>
+      </view>
+      <view class="info-row">
+        <text>{{labels.phone}}</text>
+        <text>{{detail.receiverPhone}}</text>
+      </view>
+      <view class="info-block">
+        <view class="info-block-title">{{labels.address}}</view>
+        <view class="info-block-text">{{detail.receiverAddress}}</view>
+      </view>
+    </view>
+
+    <view class="section-card">
+      <view class="section-title">{{labels.amountInfo}}</view>
+      <view class="info-row total-row">
+        <text>{{labels.amount}}</text>
+        <text class="amount-text">¥{{detail.amount}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:elif="{{!loading}}" class="empty-shell">
+    <view class="empty-title">订单不存在或已失效</view>
+  </view>
+
+  <view wx:if="{{detail && (detail.canPay || detail.canCancel || detail.canFinish)}}" class="action-bar">
+    <view class="action-btn ghost" wx:if="{{detail.canCancel}}" bindtap="handleCancel">{{labels.cancel}}</view>
+    <view class="action-btn primary" wx:if="{{detail.canPay}}" bindtap="handlePay">{{processing ? '处理中' : labels.pay}}</view>
+    <view class="action-btn primary" wx:if="{{detail.canFinish}}" bindtap="handleFinish">{{processing ? '处理中' : labels.finish}}</view>
+  </view>
+</view>

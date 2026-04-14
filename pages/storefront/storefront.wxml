@@ -1,0 +1,113 @@
+<view class="storefront-page" style="padding-top: {{statusBarHeight}}px;">
+  <view class="storefront-nav">
+    <view class="nav-spacer"></view>
+    <view class="storefront-title">创业店铺</view>
+    <view class="topbar-right">
+      <view class="circle-btn more-btn">
+        <view></view>
+        <view></view>
+        <view></view>
+      </view>
+      <view class="ring-btn"></view>
+    </view>
+  </view>
+
+  <view class="storefront-body">
+    <view class="current-school">{{selectedSchool}}</view>
+
+    <view class="search-card">
+      <view class="search-field">
+        <view class="search-icon"></view>
+        <input
+          value="{{keyword}}"
+          placeholder="搜索店铺或商品"
+          placeholder-class="search-placeholder"
+          bindinput="onKeywordInput"
+          bindconfirm="openSearchPage"
+          confirm-type="search"
+        />
+      </view>
+    </view>
+
+    <view class="category-card">
+      <view class="category-item" wx:for="{{categories}}" wx:key="key" data-key="{{item.key}}" bindtap="openCategoryPage">
+        <view class="category-badge icon-{{item.icon}}"></view>
+        <text>{{item.label}}</text>
+      </view>
+    </view>
+
+    <view class="banner-card" wx:for="{{banners}}" wx:key="id">
+      <view class="banner-copy">
+        <text class="banner-tag">{{item.tag}}</text>
+        <view class="banner-title">{{item.title}}</view>
+        <view class="banner-desc">{{item.desc}}</view>
+        <view class="banner-cta">{{item.cta}}</view>
+      </view>
+      <view class="banner-art">
+        <view class="art-circle big"></view>
+        <view class="art-circle small"></view>
+        <view class="art-person one"></view>
+        <view class="art-person two"></view>
+        <view class="art-person three"></view>
+      </view>
+    </view>
+
+    <view class="shop-list">
+      <view class="shop-card" wx:for="{{shops}}" wx:key="id" data-id="{{item.detailId}}" bindtap="openStoreDetail">
+        <view wx:if="{{item.coverMode === 'class'}}" class="shop-cover cover-{{item.cover}}"></view>
+        <image wx:else class="shop-cover shop-cover-image" src="{{item.cover}}" mode="aspectFill"></image>
+        <view class="shop-main">
+          <view class="shop-head">
+            <view class="shop-name">{{item.name}}</view>
+            <text class="shop-badge">{{item.badge}}</text>
+          </view>
+          <view class="shop-meta">
+            <text class="star">★</text>
+            <text>{{item.rating}}</text>
+            <text>|</text>
+            <text>月售 {{item.monthlySales}} 单</text>
+          </view>
+          <view class="shop-service">
+            <text>{{item.delivery}}</text>
+            <text>{{item.price}}</text>
+          </view>
+          <view class="shop-tags">
+            <text wx:if="{{item.hasRecommendedProduct}}" class="shop-tag recommend-tag">推荐商品</text>
+            <text class="shop-tag school-tag">{{item.school}}</text>
+            <text class="shop-tag" wx:for="{{item.tags}}" wx:key="*this">{{item}}</text>
+          </view>
+          <view wx:if="{{item.recommendedProductName}}" class="recommend-preview">
+            <text class="recommend-preview-label">主推</text>
+            <text class="recommend-preview-name">{{item.recommendedProductName}}</text>
+            <text wx:if="{{item.recommendedProductPrice}}" class="recommend-preview-price">{{item.recommendedProductPrice}}</text>
+          </view>
+        </view>
+        <view class="shop-distance">{{item.distance}}</view>
+      </view>
+    </view>
+
+    <view wx:if="{{!shops.length}}" class="shop-empty-card">
+      <view class="shop-empty-title">{{loadErrorText || "当前高校暂无创业店铺"}}</view>
+      <view class="shop-empty-desc">{{loadErrorText ? "请稍后重试，或切换其他高校查看" : "后续有新商家入驻后会在这里展示"}}</view>
+    </view>
+  </view>
+
+  <view class="tabbar card">
+    <view class="tab" bindtap="goHome">
+      <view class="tab-icon home"></view>
+      <text>首页</text>
+    </view>
+    <view class="tab active">
+      <view class="tab-icon shop"></view>
+      <text>创业店铺</text>
+    </view>
+    <view class="tab" bindtap="goMessage">
+      <view class="tab-icon message"></view>
+      <text>消息</text>
+    </view>
+    <view class="tab" bindtap="goProfile">
+      <view class="tab-icon user"></view>
+      <text>我的</text>
+    </view>
+  </view>
+</view>

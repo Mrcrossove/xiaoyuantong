@@ -1,0 +1,20 @@
+<view class="about-page">
+  <view class="status-bar" style="height: {{statusBarHeight}}px;"></view>
+  <view class="about-nav">
+    <view class="back-btn" bindtap="goBack"></view>
+    <view class="about-title">关于我们</view>
+    <view class="nav-space"></view>
+  </view>
+
+  <view class="hero-card">
+    <view class="logo-badge">校</view>
+    <view class="app-name">{{aboutInfo.name}}</view>
+    <view class="app-version">{{aboutInfo.version}}</view>
+    <view class="app-intro">{{aboutInfo.intro}}</view>
+  </view>
+
+  <view class="section-card" wx:for="{{aboutInfo.sections}}" wx:key="title">
+    <view class="section-title">{{item.title}}</view>
+    <view class="section-content">{{item.content}}</view>
+  </view>
+</view>

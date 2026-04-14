@@ -1,0 +1,130 @@
+<view class="detail-page" style="padding-top: {{statusBarHeight}}px;" wx:if="{{detail}}">
+  <view class="detail-nav">
+    <view class="back-btn" bindtap="goBack"></view>
+    <view class="detail-title">{{detail.title}}</view>
+    <view class="detail-actions">
+      <view class="action-chip" bindtap="toggleStoreFavorite">{{favorite ? '已收藏' : '收藏'}}</view>
+      <view class="action-chip more-chip">
+        <view></view>
+        <view></view>
+        <view></view>
+      </view>
+      <view class="action-chip mini-program-chip"></view>
+    </view>
+  </view>
+
+  <scroll-view class="detail-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+    <swiper class="hero-swiper" indicator-dots circular autoplay>
+      <swiper-item wx:for="{{detail.banners}}" wx:key="value">
+        <view wx:if="{{item.mode === 'class'}}" class="hero-slide cover-{{item.value}}"></view>
+        <image wx:else class="hero-slide hero-image" src="{{item.value}}" mode="aspectFill"></image>
+      </swiper-item>
+    </swiper>
+
+    <view class="store-info card">
+      <view class="detail-school">{{selectedSchool}}</view>
+      <view class="info-head">
+        <view wx:if="{{detail.coverMode === 'class'}}" class="info-cover cover-{{detail.cover}}"></view>
+        <image wx:else class="info-cover hero-image" src="{{detail.cover || (detail.banners[0] && detail.banners[0].value)}}" mode="aspectFill"></image>
+        <view class="info-meta">
+          <view class="store-name">{{detail.storeName}}</view>
+          <view class="store-notice">{{detail.notice}}</view>
+          <view class="store-phone">联系电话：{{detail.phone}}</view>
+        </view>
+      </view>
+
+      <view class="address-row">
+        <view class="address-label">店铺地址：</view>
+        <view class="address-text">{{detail.address}}</view>
+        <view class="copy-text">复制</view>
+      </view>
+    </view>
+
+    <view class="goods-panel card">
+      <view class="goods-tabs">
+        <view class="goods-tab {{activeTab === 'goods' ? 'active' : ''}}" data-key="goods" bindtap="switchTab">
+          {{detail.stats.sold}}
+        </view>
+        <view class="goods-tab {{activeTab === 'intro' ? 'active' : ''}}" data-key="intro" bindtap="switchTab">
+          店铺说明
+        </view>
+      </view>
+
+      <view wx:if="{{activeTab === 'goods'}}" class="goods-list">
+        <view class="goods-tip">点击商品卡片可切换当前下单商品</view>
+        <view class="goods-card {{selectedProductId == item.id ? 'active' : ''}}" wx:for="{{detail.products}}" wx:key="id" data-id="{{item.id}}" bindtap="selectProduct">
+          <view wx:if="{{item.coverMode === 'class'}}" class="goods-cover cover-{{item.cover}}"></view>
+          <image wx:else class="goods-cover hero-image" src="{{item.cover}}" mode="aspectFill"></image>
+          <view class="goods-body">
+            <view class="goods-title-row">
+              <view class="goods-name">{{item.name}}</view>
+              <text wx:if="{{selectedProductId == item.id}}" class="goods-selected">当前下单</text>
+            </view>
+            <view class="goods-desc">{{item.desc}}</view>
+            <view class="goods-meta-row">
+              <text wx:if="{{item.recommended}}" class="goods-tag highlight">推荐商品</text>
+              <text class="goods-tag">库存 {{item.stock || 0}}</text>
+              <text wx:if="{{item.dailyLimit > 0}}" class="goods-tag">每日限购 {{item.dailyLimit}}</text>
+            </view>
+            <view class="goods-price">{{item.price}}</view>
+          </view>
+        </view>
+      </view>
+
+      <view wx:else class="intro-block">
+        <view class="intro-title">{{detail.storeName}}</view>
+        <view class="intro-text">{{detail.notice}}</view>
+        <view class="intro-text">{{detail.address}}</view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="checkout-bar">
+    <view class="cart-icon"></view>
+    <view class="checkout-meta">
+      <view class="checkout-amount">当前金额：{{currentAmountText}}</view>
+      <view class="checkout-count">已选商品：{{currentProduct ? currentProduct.name : '请先选择商品'}}</view>
+    </view>
+    <view class="quantity-box">
+      <view class="quantity-btn {{quantity <= 1 ? 'disabled' : ''}}" bindtap="decreaseQuantity">-</view>
+      <view class="quantity-value">{{quantity}}</view>
+      <view class="quantity-btn {{quantity >= maxQuantity ? 'disabled' : ''}}" bindtap="increaseQuantity">+</view>
+    </view>
+    <view class="checkout-btn" bindtap="openConfirmModal">{{submittingOrder ? '提交中' : '立即下单'}}</view>
+  </view>
+
+  <view wx:if="{{confirmVisible}}" class="confirm-mask" bindtap="closeConfirmModal"></view>
+  <view wx:if="{{confirmVisible}}" class="confirm-modal">
+    <view class="confirm-title">确认订单</view>
+
+    <view class="confirm-section">
+      <view class="confirm-label">商品信息</view>
+      <view class="confirm-value">{{currentProduct ? currentProduct.name : '暂无商品'}}</view>
+      <view class="confirm-subvalue">数量 {{quantity}}，合计 {{currentAmountText}}</view>
+    </view>
+
+    <view class="confirm-section">
+      <view class="confirm-row">
+        <view class="confirm-label">收货地址</view>
+        <view class="confirm-link" bindtap="goManageAddress">管理地址</view>
+      </view>
+      <view class="confirm-value">{{addressSummary}}</view>
+    </view>
+
+    <view class="confirm-section">
+      <view class="confirm-label">店铺信息</view>
+      <view class="confirm-value">{{detail.storeName}}</view>
+      <view class="confirm-subvalue">{{detail.address}}</view>
+    </view>
+
+    <view class="confirm-actions">
+      <view class="confirm-btn ghost" bindtap="closeConfirmModal">取消</view>
+      <view class="confirm-btn" bindtap="confirmCheckout">{{submittingOrder ? '提交中' : '确认下单'}}</view>
+    </view>
+  </view>
+</view>
+
+<view wx:else class="detail-empty">
+  <view class="detail-empty-title">店铺加载失败</view>
+  <view class="detail-empty-desc">请返回重试，或稍后再进入该店铺。</view>
+</view>
