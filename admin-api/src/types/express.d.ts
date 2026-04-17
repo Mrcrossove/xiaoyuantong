@@ -12,5 +12,13 @@ declare namespace Express {
       userId: number;
       deviceId: string;
     };
+    merchantAuth?: {
+      accountId: number;
+      miniUserId: number;
+      storeId: number;
+      phone: string;
+      permissions?: string[];
+      menuPaths?: string[];
+    };
   }
 }

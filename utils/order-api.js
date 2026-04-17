@@ -58,6 +58,14 @@ function finishOrder(id) {
   });
 }
 
+function applyOrderRefund(id, payload) {
+  return authRequest({
+    url: `/mini/order/${id}/refund`,
+    method: "POST",
+    data: payload
+  });
+}
+
 module.exports = {
   fetchOrderList,
   fetchOrderDetail,
@@ -66,5 +74,6 @@ module.exports = {
   confirmOrderPay,
   payOrder,
   cancelOrder,
-  finishOrder
+  finishOrder,
+  applyOrderRefund
 };

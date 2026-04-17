@@ -2,7 +2,7 @@ import { prisma } from "../lib/prisma";
 import { formatDateTime } from "../utils/time";
 import { ApiError } from "../utils/api-error";
 import { ERROR_CODES } from "../constants/error-codes";
-import type { MiniMessageReadAllPayload } from "../controllers/schemas";
+import type { MiniMessageReadAllPayload } from "../controllers/mini-commerce-schemas";
 
 interface CreateMiniMessageInput {
   school: string;

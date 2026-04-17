@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
+import { confirmMiniOrderPay, createMiniOrderPayParams } from "../services/mini-pay.service";
 import { ok } from "../utils/response";
 import { idParamSchema } from "./schemas";
-import { confirmMiniOrderPay, createMiniOrderPayParams } from "../services/mini-pay.service";
 
 export async function createMiniOrderPayAction(req: Request, res: Response) {
   const { id } = idParamSchema.parse(req.params);

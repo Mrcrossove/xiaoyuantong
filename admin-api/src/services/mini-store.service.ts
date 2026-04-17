@@ -1,7 +1,14 @@
 import { Prisma } from "@prisma/client";
-import { prisma } from "../lib/prisma";
 import { parsePageParams } from "../utils/pagination";
+import { prisma } from "../lib/prisma";
 import { getAdminSchoolScope } from "./admin-scope.service";
+import {
+  buildProductDisplayPrice,
+  getDefaultSku,
+  MERCHANT_PRODUCT_STATUS,
+  parseMoneyNumber,
+  toMerchantProducts
+} from "../utils/merchant-product";
 
 interface BannerItem {
   id: number;
@@ -20,13 +27,9 @@ const SCHOOLS = {
   gzu: "贵州大学"
 };
 
-const STATUS = {
+const STORE_STATUS = {
   open: "营业中"
-};
-
-const PRODUCT_STATUS = {
-  onSale: "已上架"
-};
+} as const;
 
 function toArray(value: Prisma.JsonValue | null | undefined) {
   return Array.isArray(value) ? value : [];
@@ -47,10 +50,10 @@ function buildSchoolWhere(scope: Awaited<ReturnType<typeof getAdminSchoolScope>>
 }
 
 function mapStoreListItem(item: any) {
-  const products = toArray(item.products);
-  const recommendedProduct = products.find(
-    (entry: any) => !!entry?.recommended && String(entry.status || PRODUCT_STATUS.onSale) === PRODUCT_STATUS.onSale
-  ) as any;
+  const products = toMerchantProducts(item.products);
+  const availableProducts = products.filter((entry) => String(entry.status || MERCHANT_PRODUCT_STATUS.onSale) === MERCHANT_PRODUCT_STATUS.onSale);
+  const recommendedProduct = availableProducts.find((entry) => Boolean(entry.recommended)) || availableProducts[0] || null;
+  const defaultSku = recommendedProduct ? getDefaultSku(recommendedProduct) : null;
 
   return {
     id: item.id,
@@ -61,16 +64,15 @@ function mapStoreListItem(item: any) {
     monthlySales: item.monthlySales,
     distance: item.distance,
     delivery: item.delivery,
-    price: item.priceText,
+    price: recommendedProduct ? buildProductDisplayPrice(recommendedProduct) : item.priceText,
+    priceValue: defaultSku ? parseMoneyNumber(defaultSku.price) : parseMoneyNumber(item.priceText),
     tags: toArray(item.tags).map((entry) => String(entry)),
     badge: item.badge,
     cover: item.cover,
     subtitle: item.subtitle,
-    hasRecommendedProduct: products.some(
-      (entry: any) => !!entry?.recommended && String(entry.status || PRODUCT_STATUS.onSale) === PRODUCT_STATUS.onSale
-    ),
+    hasRecommendedProduct: Boolean(recommendedProduct?.recommended),
     recommendedProductName: recommendedProduct ? String(recommendedProduct.name || "") : "",
-    recommendedProductPrice: recommendedProduct ? String(recommendedProduct.price || "") : "",
+    recommendedProductPrice: recommendedProduct ? buildProductDisplayPrice(recommendedProduct) : "",
     groupKey: item.groupKey,
     groupLabel: item.groupLabel,
     sectionKey: item.sectionKey,
@@ -80,18 +82,25 @@ function mapStoreListItem(item: any) {
 
 function mapStoreDetail(item: any) {
   const cover = item.cover || "";
-  const products = toArray(item.products)
-    .filter((entry: any) => (entry?.status ? String(entry.status) === PRODUCT_STATUS.onSale : true))
-    .map((entry: any) => ({
-      id: entry.id,
-      name: entry.name,
-      desc: entry.desc,
-      price: entry.price,
-      cover: entry.cover,
-      stock: Number(entry.stock || 0),
-      dailyLimit: Number(entry.dailyLimit || 0),
-      recommended: !!entry.recommended
-    }));
+  const products = toMerchantProducts(item.products)
+    .filter((entry) => String(entry.status || MERCHANT_PRODUCT_STATUS.onSale) === MERCHANT_PRODUCT_STATUS.onSale)
+    .map((entry) => {
+      const defaultSku = getDefaultSku(entry);
+      return {
+        id: entry.id,
+        name: entry.name,
+        desc: entry.desc,
+        price: buildProductDisplayPrice(entry),
+        priceValue: defaultSku ? parseMoneyNumber(defaultSku.price) : 0,
+        cover: entry.cover,
+        stock: Number(entry.stock || 0),
+        dailyLimit: Number(entry.dailyLimit || 0),
+        recommended: Boolean(entry.recommended),
+        specMode: entry.specMode || "single",
+        defaultSkuId: entry.defaultSkuId || "",
+        skus: (entry.skus || []).filter((sku) => String(sku.status || MERCHANT_PRODUCT_STATUS.onSale) === MERCHANT_PRODUCT_STATUS.onSale)
+      };
+    });
 
   return {
     title: item.title,
@@ -111,8 +120,8 @@ function mapStoreDetail(item: any) {
 }
 
 function mapAdminStoreItem(item: any) {
-  const products = toArray(item.products);
-  const recommendedCount = products.filter((entry: any) => !!entry?.recommended).length;
+  const products = toMerchantProducts(item.products);
+  const recommendedCount = products.filter((entry) => Boolean(entry.recommended)).length;
 
   return {
     id: item.id,
@@ -136,7 +145,7 @@ function buildBannerList(school: string) {
     id: 1,
     tag: "平台推荐",
     title: `${school}创业店铺推荐`,
-    desc: "精选学生商家、宿舍超市、校内商家和校外商家，优先展示当前高校的创业店铺。",
+    desc: "优先展示学生商家、宿舍超市、校内商家和校外商家中的优质店铺。",
     cta: "查看更多"
   };
 
@@ -151,15 +160,15 @@ function buildBannerList(school: string) {
     [SCHOOLS.pku]: {
       id: 1,
       tag: "燕园精选",
-      title: "北京大学创业店铺热榜",
-      desc: "优先展示学习资料、轻食咖啡和校内文创等热门创业店铺。",
+      title: "北京大学创业店铺精选",
+      desc: "优先展示学习资料、轻食咖啡和校园文创等热门创业店铺。",
       cta: "查看燕园推荐"
     },
     [SCHOOLS.tsinghua]: {
       id: 1,
       tag: "清华推荐",
       title: "清华大学创业店铺优选",
-      desc: "围绕宿舍补给、校内餐饮和跑腿代取的热门店铺推荐。",
+      desc: "围绕宿舍补给、校内餐饮和跑腿代取，优先展示高频店铺。",
       cta: "查看清华热卖"
     },
     [SCHOOLS.fudan]: {
@@ -191,7 +200,7 @@ export async function queryMiniStores(rawQuery: Record<string, unknown>) {
     school: school || undefined,
     groupKey: groupKey || undefined,
     sectionKey: sectionKey || undefined,
-    status: STATUS.open,
+    status: STORE_STATUS.open,
     OR: keyword
       ? [
           { name: { contains: keyword, mode: "insensitive" as const } },

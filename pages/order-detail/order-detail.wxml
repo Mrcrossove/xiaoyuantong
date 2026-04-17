@@ -7,10 +7,43 @@
   </view>
 
   <view wx:if="{{detail}}" class="detail-content">
-    <view wx:if="{{paySuccessNotice}}" class="result-banner">
+    <view wx:if="{{createdNotice}}" class="result-banner notice-banner">
+      <view class="result-banner-badge">待支付</view>
+      <view class="result-banner-title">{{labels.createdBannerTitle}}</view>
+      <view class="result-banner-desc">{{labels.createdBannerDesc}}</view>
+    </view>
+
+    <view wx:if="{{paySuccessNotice}}" class="result-banner success-banner">
       <view class="result-banner-badge">支付完成</view>
       <view class="result-banner-title">{{labels.paidBannerTitle}}</view>
       <view class="result-banner-desc">{{labels.paidBannerDesc}}</view>
+    </view>
+
+    <view class="section-card status-card">
+      <view class="section-title">{{labels.status}}</view>
+      <view class="status-main-row">
+        <view class="status-main-text status-{{detail.statusTone}}">{{detail.statusText}}</view>
+        <view wx:if="{{detail.afterSaleStatusText}}" class="after-sale-pill tone-{{detail.afterSaleStatusTone}}">
+          {{detail.afterSaleStatusText}}
+        </view>
+      </view>
+      <view class="status-desc">{{detail.statusDescription}}</view>
+    </view>
+
+    <view class="section-card">
+      <view class="section-title">{{labels.timelineInfo}}</view>
+      <view class="timeline-list">
+        <view wx:for="{{detail.timeline}}" wx:key="index" class="timeline-item">
+          <view class="timeline-dot"></view>
+          <view class="timeline-body">
+            <view class="timeline-title-row">
+              <view class="timeline-title">{{item.title}}</view>
+              <view wx:if="{{item.time}}" class="timeline-time">{{item.time}}</view>
+            </view>
+            <view class="timeline-desc">{{item.desc}}</view>
+          </view>
+        </view>
+      </view>
     </view>
 
     <view class="section-card">
@@ -21,7 +54,7 @@
       </view>
       <view class="info-row">
         <text>{{labels.orderTime}}</text>
-        <text>{{detail.time}}</text>
+        <text>{{detail.createdAt}}</text>
       </view>
       <view class="info-row">
         <text>{{labels.status}}</text>
@@ -29,11 +62,23 @@
       </view>
       <view class="info-row">
         <text>{{labels.payStatus}}</text>
-        <text class="status-text status-{{detail.statusTone}}">{{detail.payStatus}}</text>
+        <text>{{detail.payStatusText}}</text>
+      </view>
+      <view class="info-row" wx:if="{{detail.paymentMode || detail.paymentChannel}}">
+        <text>{{labels.payMode}}</text>
+        <text>{{detail.paymentMode || detail.paymentChannel}}</text>
+      </view>
+      <view class="info-row">
+        <text>{{labels.settlementStatus}}</text>
+        <text>{{detail.settlementStatusText}}</text>
       </view>
       <view class="info-row">
         <text>{{labels.product}}</text>
         <text>{{detail.productName}}</text>
+      </view>
+      <view class="info-row" wx:if="{{detail.skuName}}">
+        <text>{{labels.sku}}</text>
+        <text>{{detail.skuName}}</text>
       </view>
       <view class="info-row">
         <text>{{labels.quantity}}</text>
@@ -59,9 +104,42 @@
 
     <view class="section-card">
       <view class="section-title">{{labels.amountInfo}}</view>
+      <view class="info-row">
+        <text>{{labels.unitPrice}}</text>
+        <text>{{detail.unitPriceText}}</text>
+      </view>
       <view class="info-row total-row">
         <text>{{labels.amount}}</text>
-        <text class="amount-text">¥{{detail.amount}}</text>
+        <text class="amount-text">{{detail.amountText}}</text>
+      </view>
+    </view>
+
+    <view wx:if="{{detail.latestRefund}}" class="section-card">
+      <view class="section-title">{{labels.refundInfo}}</view>
+      <view class="refund-card">
+        <view class="refund-head">
+          <view class="refund-no">{{detail.latestRefund.refundNo}}</view>
+          <view class="after-sale-pill tone-{{detail.latestRefund.statusTone}}">{{detail.latestRefund.statusText}}</view>
+        </view>
+        <view class="refund-row">
+          <text>退款金额</text>
+          <text>{{detail.latestRefund.amountText}}</text>
+        </view>
+        <view class="refund-row">
+          <text>退款原因</text>
+          <text>{{detail.latestRefund.reason}}</text>
+        </view>
+        <view class="refund-row">
+          <text>申请时间</text>
+          <text>{{detail.latestRefund.applyTime}}</text>
+        </view>
+        <view wx:if="{{detail.latestRefund.reviewedAt}}" class="refund-row">
+          <text>处理时间</text>
+          <text>{{detail.latestRefund.reviewedAt}}</text>
+        </view>
+        <view wx:if="{{detail.latestRefund.reviewNote}}" class="refund-note">
+          {{detail.latestRefund.reviewNote}}
+        </view>
       </view>
     </view>
   </view>
@@ -70,9 +148,48 @@
     <view class="empty-title">订单不存在或已失效</view>
   </view>
 
-  <view wx:if="{{detail && (detail.canPay || detail.canCancel || detail.canFinish)}}" class="action-bar">
+  <view wx:if="{{detail && (detail.canRefund || detail.canPay || detail.canCancel || detail.canFinish)}}" class="action-bar">
     <view class="action-btn ghost" wx:if="{{detail.canCancel}}" bindtap="handleCancel">{{labels.cancel}}</view>
+    <view class="action-btn ghost" wx:if="{{detail.canRefund}}" bindtap="openRefundPopup">{{detail.refundButtonText || labels.refund}}</view>
     <view class="action-btn primary" wx:if="{{detail.canPay}}" bindtap="handlePay">{{processing ? '处理中' : labels.pay}}</view>
     <view class="action-btn primary" wx:if="{{detail.canFinish}}" bindtap="handleFinish">{{processing ? '处理中' : labels.finish}}</view>
+  </view>
+
+  <view wx:if="{{refundPopupVisible}}" class="refund-mask" bindtap="closeRefundPopup"></view>
+  <view wx:if="{{refundPopupVisible}}" class="refund-popup">
+    <view class="refund-popup-title">申请退款</view>
+    <view class="refund-popup-desc">退款会由商家审核，请如实填写原因。</view>
+
+    <view class="refund-amount-box">
+      <view class="refund-amount-label">退款金额</view>
+      <view class="refund-amount-value">{{detail.amountText}}</view>
+    </view>
+
+    <view class="refund-section-title">退款原因</view>
+    <view class="refund-reason-list">
+      <view
+        wx:for="{{refundReasonOptions}}"
+        wx:key="*this"
+        class="refund-reason-chip {{selectedRefundReason === item ? 'active' : ''}}"
+        data-value="{{item}}"
+        bindtap="selectRefundReason"
+      >
+        {{item}}
+      </view>
+    </view>
+
+    <textarea
+      wx:if="{{selectedRefundReason === '其他原因'}}"
+      class="refund-textarea"
+      maxlength="80"
+      placeholder="请输入退款原因"
+      value="{{refundReasonText}}"
+      bindinput="handleRefundInput"
+    />
+
+    <view class="refund-actions">
+      <view class="action-btn ghost" bindtap="closeRefundPopup">取消</view>
+      <view class="action-btn primary" bindtap="submitRefund">{{refundSubmitting ? '提交中' : '提交申请'}}</view>
+    </view>
   </view>
 </view>

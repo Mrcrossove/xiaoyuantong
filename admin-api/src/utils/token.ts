@@ -2,13 +2,14 @@ import crypto from "crypto";
 import { ApiError } from "./api-error";
 import { ERROR_CODES } from "../constants/error-codes";
 
-type TokenType = "admin" | "mini";
+type TokenType = "admin" | "mini" | "merchant";
 
 export interface TokenPayload {
   typ: TokenType;
   uid: number;
   roleCode?: string;
   deviceId?: string;
+  storeId?: number;
   exp: number;
 }
 

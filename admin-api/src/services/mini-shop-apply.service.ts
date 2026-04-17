@@ -126,6 +126,37 @@ async function createStoreForApprovedApply(apply: any) {
   });
 }
 
+async function createMerchantAccountForApprovedApply(apply: any, storeId: number) {
+  const existing = await prisma.merchantAccount.findFirst({
+    where: {
+      OR: [{ miniUserId: apply.userId }, { phone: apply.contactPhone }, { storeId }]
+    }
+  });
+
+  if (existing) {
+    return prisma.merchantAccount.update({
+      where: { id: existing.id },
+      data: {
+        miniUserId: apply.userId,
+        storeId,
+        phone: apply.contactPhone,
+        name: apply.contactName,
+        status: existing.activatedAt ? "启用" : "待激活"
+      }
+    });
+  }
+
+  return prisma.merchantAccount.create({
+    data: {
+      miniUserId: apply.userId,
+      storeId,
+      phone: apply.contactPhone,
+      name: apply.contactName,
+      status: "待激活"
+    }
+  });
+}
+
 export async function getCurrentMiniShopApply(userId: number) {
   const row = await prisma.miniShopApply.findFirst({
     where: { userId },
@@ -224,7 +255,8 @@ export async function reviewMiniShopApply(id: number, payload: MiniShopApplyRevi
   });
 
   if (payload.status === STATUS.approved) {
-    await createStoreForApprovedApply(row);
+    const store = await createStoreForApprovedApply(row);
+    await createMerchantAccountForApprovedApply(row, store.id);
   }
 
   return mapApply(row);

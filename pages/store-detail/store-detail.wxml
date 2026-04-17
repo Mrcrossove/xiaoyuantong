@@ -36,7 +36,7 @@
       <view class="address-row">
         <view class="address-label">店铺地址：</view>
         <view class="address-text">{{detail.address}}</view>
-        <view class="copy-text">复制</view>
+        <view class="copy-text">查看</view>
       </view>
     </view>
 
@@ -51,7 +51,7 @@
       </view>
 
       <view wx:if="{{activeTab === 'goods'}}" class="goods-list">
-        <view class="goods-tip">点击商品卡片可切换当前下单商品</view>
+        <view class="goods-tip">点击商品卡片可切换当前下单商品。</view>
         <view class="goods-card {{selectedProductId == item.id ? 'active' : ''}}" wx:for="{{detail.products}}" wx:key="id" data-id="{{item.id}}" bindtap="selectProduct">
           <view wx:if="{{item.coverMode === 'class'}}" class="goods-cover cover-{{item.cover}}"></view>
           <image wx:else class="goods-cover hero-image" src="{{item.cover}}" mode="aspectFill"></image>
@@ -67,6 +67,22 @@
               <text wx:if="{{item.dailyLimit > 0}}" class="goods-tag">每日限购 {{item.dailyLimit}}</text>
             </view>
             <view class="goods-price">{{item.price}}</view>
+
+            <view wx:if="{{selectedProductId == item.id && item.skus && item.skus.length}}" class="sku-list">
+              <view class="sku-title">选择规格</view>
+              <view class="sku-row">
+                <view
+                  class="sku-chip {{selectedSkuId == sku.id ? 'active' : ''}}"
+                  wx:for="{{item.skus}}"
+                  wx:key="id"
+                  data-id="{{sku.id}}"
+                  catchtap="selectSku"
+                >
+                  <text class="sku-chip-name">{{sku.name}}</text>
+                  <text class="sku-chip-price">{{sku.price}}</text>
+                </view>
+              </view>
+            </view>
           </view>
         </view>
       </view>
@@ -83,7 +99,9 @@
     <view class="cart-icon"></view>
     <view class="checkout-meta">
       <view class="checkout-amount">当前金额：{{currentAmountText}}</view>
-      <view class="checkout-count">已选商品：{{currentProduct ? currentProduct.name : '请先选择商品'}}</view>
+      <view class="checkout-count">
+        已选商品：{{currentProduct ? currentProduct.name : '请选择商品'}}{{currentSku ? ' / ' + currentSku.name : ''}}
+      </view>
     </view>
     <view class="quantity-box">
       <view class="quantity-btn {{quantity <= 1 ? 'disabled' : ''}}" bindtap="decreaseQuantity">-</view>
@@ -100,7 +118,9 @@
     <view class="confirm-section">
       <view class="confirm-label">商品信息</view>
       <view class="confirm-value">{{currentProduct ? currentProduct.name : '暂无商品'}}</view>
-      <view class="confirm-subvalue">数量 {{quantity}}，合计 {{currentAmountText}}</view>
+      <view class="confirm-subvalue">
+        规格 {{currentSku ? currentSku.name : '默认规格'}}，数量 {{quantity}}，合计 {{currentAmountText}}
+      </view>
     </view>
 
     <view class="confirm-section">

@@ -6,6 +6,7 @@ const LABELS = {
   empty: "\u6682\u65e0\u8ba2\u5355\uff0c\u53ef\u4ee5\u53bb\u521b\u4e1a\u5e97\u94fa\u4e0b\u5355",
   amount: "\u5408\u8ba1",
   quantity: "\u6570\u91cf",
+  afterSale: "\u552e\u540e",
   pay: "\u53bb\u652f\u4ed8",
   cancel: "\u53d6\u6d88\u8ba2\u5355",
   finish: "\u786e\u8ba4\u5b8c\u6210"

@@ -16,7 +16,7 @@ import {
   miniMerchantMoveSchema,
   miniMerchantProductSchema,
   miniMerchantStoreUpdateSchema
-} from "../controllers/schemas";
+} from "../controllers/mini-commerce-schemas";
 import { asyncHandler } from "../middlewares/async-handler";
 import { requireMiniAuth } from "../middlewares/auth";
 import { validateBody } from "../middlewares/validate";

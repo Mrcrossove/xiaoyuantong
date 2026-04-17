@@ -77,6 +77,7 @@ model MiniUser {
   messages      MiniMessage[]     @relation("MiniMessageReceiver")
   messageReads  MiniMessageRead[]
   ownedStores   MiniStore[]       @relation("MiniStoreOwner")
+  merchantAccount MerchantAccount?
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 }
@@ -192,9 +193,41 @@ model MiniStore {
   productCount Int
   banners      Json
   products     Json
+  wechatSubMchId String?
   status       String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  merchantAccount MerchantAccount?
+}
+
+model MerchantAccount {
+  id            Int      @id @default(autoincrement())
+  miniUserId    Int      @unique
+  miniUser      MiniUser @relation(fields: [miniUserId], references: [id])
+  storeId       Int      @unique
+  store         MiniStore @relation(fields: [storeId], references: [id])
+  phone         String   @unique
+  name          String
+  password      String?
+  status        String
+  activatedAt   DateTime?
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model MerchantLoginCode {
+  id         Int      @id @default(autoincrement())
+  phone      String
+  code       String
+  scene      String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([phone, scene, createdAt])
+  @@index([phone, expiresAt])
 }
 
 model MiniMessage {
@@ -279,6 +312,8 @@ model MiniOrder {
   storeDetailId   String
   storeName       String
   productId       String
+  skuId           String?
+  skuName         String?
   productName     String
   productDesc     String?
   productCover    String?
@@ -287,6 +322,10 @@ model MiniOrder {
   amount          Float
   status          String
   payStatus       String
+  paymentChannel  String?
+  paymentMode     String?
+  transactionId   String?
+  paymentMeta     Json?
   receiverName    String
   receiverPhone   String
   receiverAddress String
@@ -295,6 +334,11 @@ model MiniOrder {
   paidAt          DateTime?
   canceledAt      DateTime?
   finishedAt      DateTime?
+  settlementStatus        String   @default("未结算")
+  settlementAmount        Float    @default(0)
+  platformCommissionAmount Float   @default(0)
+  merchantIncomeAmount    Float    @default(0)
+  settledAt              DateTime?
   refunds         MiniRefundRecord[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -337,6 +381,9 @@ model MiniRefundRecord {
   amount     Float
   reason     String
   status     String
+  refundRequestNo String?
+  refundChannel   String?
+  refundMeta      Json?
   reviewNote String?
   reviewerId Int?
   reviewer   AdminUser? @relation("RefundReviewer", fields: [reviewerId], references: [id])

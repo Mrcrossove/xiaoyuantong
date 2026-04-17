@@ -22,3 +22,11 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-3-apis.ps1
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\check-3-apis.ps1 -BaseUrl "http://127.0.0.1:3001"
 ```
+
+## 3. 腾讯云 Nginx 配置模板
+
+商家后台和管理后台合并部署的 Nginx 示例见：
+
+```text
+scripts/nginx/xiaoyuantong-tencent.conf
+```

@@ -1,14 +1,21 @@
-const { fetchStoreDetail } = require("../../utils/stores-api");
 const { fetchAddressList } = require("../../utils/address-api");
-const { getSelectedSchool } = require("../../utils/school-state");
-const { ensureMiniSession } = require("../../utils/mini-auth");
 const { fetchFavoriteStatus, toggleFavorite } = require("../../utils/favorites-api");
+const { ensureMiniSession } = require("../../utils/mini-auth");
 const { createOrder } = require("../../utils/order-api");
+const { getSelectedSchool } = require("../../utils/school-state");
 const { normalizeStoreDetail } = require("../../utils/store-cover");
+const { fetchStoreDetail } = require("../../utils/stores-api");
+
+const CURRENCY_SYMBOL = "¥";
 
 function pickDefaultProduct(detail) {
   const products = (detail && detail.products) || [];
   return products.find((item) => item && item.recommended) || products[0] || null;
+}
+
+function pickDefaultSku(product) {
+  const skus = (product && product.skus) || [];
+  return skus.find((item) => item.isDefault) || skus[0] || null;
 }
 
 function parsePriceNumber(priceText) {
@@ -18,20 +25,18 @@ function parsePriceNumber(priceText) {
 
 function formatAmount(price, quantity) {
   if (!price || !quantity) {
-    return "￥0";
+    return `${CURRENCY_SYMBOL}0.00`;
   }
-  const amount = Number((price * quantity).toFixed(2));
-  const text = Number.isInteger(amount) ? String(amount) : amount.toFixed(2);
-  return `￥${text}`;
+  return `${CURRENCY_SYMBOL}${Number((price * quantity).toFixed(2)).toFixed(2)}`;
 }
 
-function getMaxQuantity(product) {
-  if (!product) {
+function getMaxQuantity(sku) {
+  if (!sku) {
     return 1;
   }
 
-  const stock = Number(product.stock || 0);
-  const dailyLimit = Number(product.dailyLimit || 0);
+  const stock = Number(sku.stock || 0);
+  const dailyLimit = Number(sku.dailyLimit || 0);
   let max = dailyLimit > 0 ? dailyLimit : 99;
 
   if (stock > 0) {
@@ -41,15 +46,19 @@ function getMaxQuantity(product) {
   return Math.max(1, max);
 }
 
-function buildSelectionState(product, nextQuantity) {
+function buildSelectionState(product, skuId, nextQuantity) {
   const currentProduct = product || null;
-  const maxQuantity = getMaxQuantity(currentProduct);
+  const skuList = (currentProduct && currentProduct.skus) || [];
+  const currentSku = skuList.find((item) => String(item.id) === String(skuId || "")) || pickDefaultSku(currentProduct);
+  const maxQuantity = getMaxQuantity(currentSku);
   const quantity = Math.min(Math.max(1, Number(nextQuantity || 1)), maxQuantity);
-  const currentAmountText = currentProduct ? formatAmount(parsePriceNumber(currentProduct.price), quantity) : "￥0";
+  const currentAmountText = currentSku ? formatAmount(parsePriceNumber(currentSku.price), quantity) : `${CURRENCY_SYMBOL}0.00`;
 
   return {
     currentProduct,
+    currentSku,
     selectedProductId: currentProduct ? String(currentProduct.id) : "",
+    selectedSkuId: currentSku ? String(currentSku.id) : "",
     quantity,
     maxQuantity,
     currentAmountText
@@ -59,10 +68,11 @@ function buildSelectionState(product, nextQuantity) {
 function buildDetailState(detail) {
   const normalizedDetail = normalizeStoreDetail(detail);
   const currentProduct = pickDefaultProduct(normalizedDetail);
+  const currentSku = pickDefaultSku(currentProduct);
 
   return {
     detail: normalizedDetail,
-    ...buildSelectionState(currentProduct, 1)
+    ...buildSelectionState(currentProduct, currentSku && currentSku.id, 1)
   };
 }
 
@@ -80,7 +90,7 @@ function buildAddressSummary(address) {
   const phone = address.phone || "";
   const detail = address.detail || address.address || "";
   const tag = address.tag ? ` ${address.tag}` : "";
-  return `${name} ${phone}${tag} ${detail}`;
+  return `${name} ${phone}${tag} ${detail}`.trim();
 }
 
 Page({
@@ -92,8 +102,10 @@ Page({
     favorite: false,
     submittingOrder: false,
     selectedProductId: "",
+    selectedSkuId: "",
     currentProduct: null,
-    currentAmountText: "￥0",
+    currentSku: null,
+    currentAmountText: `${CURRENCY_SYMBOL}0.00`,
     quantity: 1,
     maxQuantity: 1,
     addressList: [],
@@ -104,13 +116,14 @@ Page({
 
   async onLoad(options) {
     const systemInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
+    this.storeId = String(options.id || "");
 
     this.setData({
       statusBarHeight: systemInfo.statusBarHeight || 20
     });
 
-    await this.loadStoreDetail(options.id);
-    await Promise.all([this.loadFavoriteStatus(options.id), this.loadDefaultAddress()]);
+    await this.loadStoreDetail(this.storeId);
+    await Promise.all([this.loadFavoriteStatus(this.storeId), this.loadDefaultAddress()]);
   },
 
   async onShow() {
@@ -192,7 +205,16 @@ Page({
       return;
     }
 
-    this.setData(buildSelectionState(currentProduct, 1));
+    const currentSku = pickDefaultSku(currentProduct);
+    this.setData(buildSelectionState(currentProduct, currentSku && currentSku.id, 1));
+  },
+
+  selectSku(event) {
+    const { id } = event.currentTarget.dataset;
+    if (!this.data.currentProduct || String(id || "") === String(this.data.selectedSkuId || "")) {
+      return;
+    }
+    this.setData(buildSelectionState(this.data.currentProduct, id, 1));
   },
 
   decreaseQuantity() {
@@ -200,23 +222,21 @@ Page({
     if (nextQuantity === this.data.quantity) {
       return;
     }
-    this.setData(buildSelectionState(this.data.currentProduct, nextQuantity));
+    this.setData(buildSelectionState(this.data.currentProduct, this.data.selectedSkuId, nextQuantity));
   },
 
   increaseQuantity() {
     const nextQuantity = Math.min(Number(this.data.maxQuantity || 1), Number(this.data.quantity || 1) + 1);
     if (nextQuantity === this.data.quantity) {
       const message =
-        Number((this.data.currentProduct && this.data.currentProduct.dailyLimit) || 0) > 0
-          ? "已达到每日限购"
-          : "已达到可下单上限";
+        Number((this.data.currentSku && this.data.currentSku.dailyLimit) || 0) > 0 ? "已达到每日限购" : "已达到可下单上限";
       wx.showToast({
         title: message,
         icon: "none"
       });
       return;
     }
-    this.setData(buildSelectionState(this.data.currentProduct, nextQuantity));
+    this.setData(buildSelectionState(this.data.currentProduct, this.data.selectedSkuId, nextQuantity));
   },
 
   async toggleStoreFavorite() {
@@ -228,7 +248,7 @@ Page({
       await ensureMiniSession();
       const result = await toggleFavorite({
         targetType: "store",
-        targetId: String(this.options.id || ""),
+        targetId: this.storeId,
         school: this.data.selectedSchool || getSelectedSchool()
       });
 
@@ -249,7 +269,7 @@ Page({
   },
 
   openConfirmModal() {
-    if (!this.data.currentProduct) {
+    if (!this.data.currentProduct || !this.data.currentSku) {
       return;
     }
 
@@ -292,7 +312,13 @@ Page({
   },
 
   async confirmCheckout() {
-    if (this.data.submittingOrder || !this.data.detail || !this.data.currentProduct || !this.data.selectedAddress) {
+    if (
+      this.data.submittingOrder ||
+      !this.data.detail ||
+      !this.data.currentProduct ||
+      !this.data.currentSku ||
+      !this.data.selectedAddress
+    ) {
       return;
     }
 
@@ -301,8 +327,9 @@ Page({
       await ensureMiniSession();
       const order = await createOrder({
         school: this.data.selectedSchool || getSelectedSchool(),
-        storeDetailId: String(this.options.id || ""),
+        storeDetailId: this.storeId,
         productId: String(this.data.currentProduct.id || ""),
+        skuId: String(this.data.currentSku.id || ""),
         quantity: Number(this.data.quantity || 1),
         addressId: Number(this.data.selectedAddress.id)
       });
@@ -313,16 +340,17 @@ Page({
 
       wx.showModal({
         title: "下单成功",
-        content: "订单已创建，接下来可直接查看订单详情并完成支付。",
+        content: "订单已创建，请在订单详情页完成支付。",
+        confirmText: "查看订单",
         showCancel: false,
         success: () => {
           wx.navigateTo({
-            url: `/pages/order-detail/order-detail?id=${order.id}`
+            url: `/pages/order-detail/order-detail?id=${order.id}&created=1`
           });
         }
       });
     } catch (error) {
-      const message = error.message || "下单失败";
+      const message = (error && error.message) || "下单失败";
       if (message.indexOf("请先添加收货地址") !== -1) {
         wx.showModal({
           title: "需要地址",

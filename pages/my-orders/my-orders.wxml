@@ -30,6 +30,7 @@
         <text>{{labels.quantity}} x {{item.quantity}}</text>
         <text>{{labels.amount}} \u00a5{{item.amount}}</text>
       </view>
+      <view wx:if="{{item.afterSaleStatusText}}" class="order-time">{{labels.afterSale}}：{{item.afterSaleStatusText}}</view>
       <view class="order-time">{{item.time}}</view>
       <view class="order-actions" wx:if="{{item.canPay || item.canCancel || item.canFinish}}">
         <view class="order-action ghost" wx:if="{{item.canCancel}}" data-id="{{item.id}}" catchtap="handleCancel">{{labels.cancel}}</view>

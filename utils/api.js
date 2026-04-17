@@ -1,4 +1,4 @@
-const BASE_URL = "http://127.0.0.1:3001";
+const BASE_URL = "http://118.24.104.69:3001";
 
 function request(options) {
   return new Promise((resolve, reject) => {

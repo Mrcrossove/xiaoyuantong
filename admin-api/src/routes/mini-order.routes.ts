@@ -2,13 +2,14 @@ import { Router } from "express";
 import {
   cancelMiniOrderAction,
   createMiniOrderAction,
+  createMiniRefundAction,
   finishMiniOrderAction,
   getMiniOrderDetailAction,
   listAdminOrderAction,
   listMiniOrderAction,
   payMiniOrderAction
 } from "../controllers/mini-order.controller";
-import { miniOrderCreateSchema } from "../controllers/schemas";
+import { miniOrderCreateSchema, miniRefundApplySchema } from "../controllers/mini-commerce-schemas";
 import { asyncHandler } from "../middlewares/async-handler";
 import { requireAdminAuth, requireAdminMenuAccess, requireAdminPermission, requireMiniAuth } from "../middlewares/auth";
 import { validateBody } from "../middlewares/validate";
@@ -28,5 +29,6 @@ router.post("/", requireMiniAuth, validateBody(miniOrderCreateSchema), asyncHand
 router.post("/:id/pay", requireMiniAuth, asyncHandler(payMiniOrderAction));
 router.post("/:id/cancel", requireMiniAuth, asyncHandler(cancelMiniOrderAction));
 router.post("/:id/finish", requireMiniAuth, asyncHandler(finishMiniOrderAction));
+router.post("/:id/refund", requireMiniAuth, validateBody(miniRefundApplySchema), asyncHandler(createMiniRefundAction));
 
 export default router;

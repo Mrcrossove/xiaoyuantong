@@ -1,58 +1,67 @@
 import { Prisma } from "@prisma/client";
-import { prisma } from "../lib/prisma";
-import type { MiniMerchantProductPayload, MiniMerchantStoreUpdatePayload } from "../controllers/schemas";
-import { ApiError } from "../utils/api-error";
+import type { MiniMerchantProductPayload, MiniMerchantStoreUpdatePayload } from "../controllers/mini-commerce-schemas";
 import { ERROR_CODES } from "../constants/error-codes";
+import { prisma } from "../lib/prisma";
+import { ApiError } from "../utils/api-error";
+import {
+  buildProductDisplayPrice,
+  MERCHANT_PRODUCT_STATUS,
+  normalizeMerchantProductPayload,
+  parseMoneyNumber,
+  toMerchantProducts
+} from "../utils/merchant-product";
 import { assertRiskPassed } from "./risk-control.service";
 
-type MerchantProductItem = {
-  id: string;
-  name: string;
-  desc: string;
-  price: string;
-  cover?: string;
-  stock?: number;
-  dailyLimit?: number;
-  recommended?: boolean;
-  status?: string;
-};
+type MerchantOrderTone = "new" | "pending" | "finished";
 
-type MerchantOrderItem = {
-  id: number;
-  orderNo: string;
-  productName: string;
-  quantity: number;
-  amount: number;
-  receiverName: string;
-  receiverPhone: string;
-  receiverAddress: string;
-  status: string;
-  payStatus: string;
-  createdAt: Date;
-  paidAt?: Date | null;
-  finishedAt?: Date | null;
-};
+const ORDER_STATUS = {
+  pending: "待支付",
+  processing: "进行中",
+  accepted: "待处理",
+  finished: "已完成"
+} as const;
 
 function toArray(value: Prisma.JsonValue | null | undefined) {
   return Array.isArray(value) ? value : [];
 }
 
-function mapProduct(item: MerchantProductItem) {
+function formatTime(value: Date | null | undefined) {
+  if (!value) return "";
+  return value.toISOString().slice(0, 16).replace("T", " ");
+}
+
+function countOnSaleProducts(products: Array<{ status?: string }>) {
+  return products.filter((item) => String(item.status || MERCHANT_PRODUCT_STATUS.onSale) === MERCHANT_PRODUCT_STATUS.onSale).length;
+}
+
+function mapProduct(item: any) {
   return {
     id: item.id,
     name: item.name,
     desc: item.desc,
-    price: item.price,
     cover: item.cover || "poster",
+    recommended: Boolean(item.recommended),
+    status: item.status || MERCHANT_PRODUCT_STATUS.onSale,
+    specMode: item.specMode || "single",
+    price: buildProductDisplayPrice(item),
+    priceValue: parseMoneyNumber(item.price),
     stock: Number(item.stock || 0),
     dailyLimit: Number(item.dailyLimit || 0),
-    recommended: !!item.recommended,
-    status: item.status || "\u5df2\u4e0a\u67b6"
+    defaultSkuId: item.defaultSkuId || "",
+    skus: (item.skus || []).map((sku: any) => ({
+      id: String(sku.id),
+      name: sku.name,
+      price: sku.price,
+      stock: Number(sku.stock || 0),
+      dailyLimit: Number(sku.dailyLimit || 0),
+      status: sku.status || MERCHANT_PRODUCT_STATUS.onSale,
+      isDefault: Boolean(sku.isDefault)
+    }))
   };
 }
 
 function mapStore(store: any) {
-  const products = (toArray(store.products) as MerchantProductItem[]).map(mapProduct);
+  const products = toMerchantProducts(store.products).map(mapProduct);
   return {
     id: store.id,
     detailId: store.detailId,
@@ -73,19 +82,15 @@ function mapStore(store: any) {
   };
 }
 
-function formatTime(value: Date | null | undefined) {
-  if (!value) return "";
-  return value.toISOString().slice(0, 16).replace("T", " ");
-}
-
-function mapMerchantOrder(item: MerchantOrderItem, tone: "new" | "pending" | "finished") {
+function mapMerchantOrder(item: any, tone: MerchantOrderTone) {
   return {
     id: item.id,
     orderNo: item.orderNo,
     displayNo: `订单编号 ${item.orderNo}`,
     productName: item.productName,
+    skuName: item.skuName || "",
     quantity: item.quantity,
-    amount: Number(item.amount).toFixed(2),
+    amount: Number(item.amount || 0).toFixed(2),
     receiverName: item.receiverName,
     receiverPhone: item.receiverPhone,
     receiverAddress: item.receiverAddress,
@@ -95,6 +100,26 @@ function mapMerchantOrder(item: MerchantOrderItem, tone: "new" | "pending" | "fi
     paidAt: formatTime(item.paidAt),
     finishedAt: formatTime(item.finishedAt),
     tone
+  };
+}
+
+async function saveStoreProducts(storeId: number, products: any[]) {
+  return prisma.miniStore.update({
+    where: { id: storeId },
+    data: {
+      products,
+      productCount: countOnSaleProducts(products)
+    }
+  });
+}
+
+async function loadStoreProducts(storeId: number) {
+  const store = await prisma.miniStore.findUniqueOrThrow({
+    where: { id: storeId }
+  });
+  return {
+    store,
+    products: toMerchantProducts(store.products)
   };
 }
 
@@ -113,16 +138,16 @@ async function findOwnedStore(userId: number) {
   const approvedApply = await prisma.miniShopApply.findFirst({
     where: {
       userId,
-      status: "\u5df2\u901a\u8fc7"
+      status: "已通过"
     },
     orderBy: { id: "desc" }
   });
 
   if (!approvedApply) {
-    throw new ApiError("\u4f60\u8fd8\u6ca1\u6709\u5df2\u901a\u8fc7\u7684\u5e97\u94fa", ERROR_CODES.BAD_REQUEST, 400);
+    throw new ApiError("你还没有已通过的店铺", ERROR_CODES.BAD_REQUEST, 400);
   }
 
-  throw new ApiError("\u5e97\u94fa\u8fd8\u672a\u521d\u59cb\u5316\uff0c\u8bf7\u8054\u7cfb\u7ba1\u7406\u5458", ERROR_CODES.BAD_REQUEST, 400);
+  throw new ApiError("店铺还未初始化，请联系管理员", ERROR_CODES.BAD_REQUEST, 400);
 }
 
 export async function getCurrentMerchantStore(userId: number) {
@@ -147,7 +172,7 @@ export async function updateCurrentMerchantStore(userId: number, payload: MiniMe
       phone: payload.phone,
       address: payload.address,
       cover: payload.cover || store.cover,
-      banners: (payload.banners && payload.banners.length ? payload.banners : toArray(store.banners)).slice(0, 5)
+      banners: (payload.banners?.length ? payload.banners : toArray(store.banners)).slice(0, 5)
     }
   });
   return mapStore(row);
@@ -157,37 +182,24 @@ export async function createMerchantProduct(userId: number, payload: MiniMerchan
   await assertRiskPassed({
     userId,
     scene: "merchant_product",
-    texts: [payload.name, payload.desc, payload.price]
+    texts: [
+      payload.name,
+      payload.desc,
+      payload.price,
+      ...(payload.skus || []).flatMap((sku) => [sku.name, sku.price])
+    ]
   });
 
   const store = await findOwnedStore(userId);
-  const currentProducts = toArray(store.products) as MerchantProductItem[];
+  const { products } = await loadStoreProducts(store.id);
   const nextId = `p${Date.now()}`;
-  const nextProducts = currentProducts.concat([
-    {
-      id: nextId,
-      name: payload.name,
-      desc: payload.desc,
-      price: payload.price.startsWith("\u00a5") ? payload.price : `\u00a5${payload.price}`,
-      cover: payload.cover || "poster",
-      stock: payload.stock || 0,
-      dailyLimit: payload.dailyLimit || 0,
-      recommended: !!payload.recommended,
-      status: payload.status || "\u5df2\u4e0a\u67b6"
-    }
-  ]);
-
-  const row = await prisma.miniStore.update({
-    where: { id: store.id },
-    data: {
-      products: nextProducts,
-      productCount: nextProducts.filter((item) => (item.status || "\u5df2\u4e0a\u67b6") === "\u5df2\u4e0a\u67b6").length
-    }
-  });
+  const nextProduct = normalizeMerchantProductPayload(nextId, payload);
+  const nextProducts = products.concat(nextProduct);
+  const row = await saveStoreProducts(store.id, nextProducts);
 
   return {
     store: mapStore(row),
-    product: mapProduct(nextProducts[nextProducts.length - 1])
+    product: mapProduct(nextProduct)
   };
 }
 
@@ -195,181 +207,140 @@ export async function updateMerchantProduct(userId: number, productId: string, p
   await assertRiskPassed({
     userId,
     scene: "merchant_product",
-    texts: [payload.name, payload.desc, payload.price]
+    texts: [
+      payload.name,
+      payload.desc,
+      payload.price,
+      ...(payload.skus || []).flatMap((sku) => [sku.name, sku.price])
+    ]
   });
 
   const store = await findOwnedStore(userId);
-  const currentProducts = toArray(store.products) as MerchantProductItem[];
-  const index = currentProducts.findIndex((item) => String(item.id) === String(productId));
+  const { products } = await loadStoreProducts(store.id);
+  const index = products.findIndex((item) => String(item.id) === String(productId));
 
   if (index === -1) {
-    throw new ApiError("\u5546\u54c1\u4e0d\u5b58\u5728", ERROR_CODES.NOT_FOUND, 404);
+    throw new ApiError("商品不存在", ERROR_CODES.NOT_FOUND, 404);
   }
 
-  currentProducts[index] = {
-    ...currentProducts[index],
-    name: payload.name,
-    desc: payload.desc,
-    price: payload.price.startsWith("\u00a5") ? payload.price : `\u00a5${payload.price}`,
-    cover: payload.cover || currentProducts[index].cover || "poster",
-    stock: payload.stock ?? currentProducts[index].stock ?? 0,
-    dailyLimit: payload.dailyLimit ?? currentProducts[index].dailyLimit ?? 0,
-    recommended: payload.recommended ?? currentProducts[index].recommended ?? false,
-    status: payload.status || currentProducts[index].status || "\u5df2\u4e0a\u67b6"
-  };
-
-  const row = await prisma.miniStore.update({
-    where: { id: store.id },
-    data: {
-      products: currentProducts,
-      productCount: currentProducts.filter((item) => (item.status || "\u5df2\u4e0a\u67b6") === "\u5df2\u4e0a\u67b6").length
-    }
-  });
+  const nextProduct = normalizeMerchantProductPayload(String(productId), payload);
+  const nextProducts = products.slice();
+  nextProducts[index] = nextProduct;
+  const row = await saveStoreProducts(store.id, nextProducts);
 
   return {
     store: mapStore(row),
-    product: mapProduct(currentProducts[index])
+    product: mapProduct(nextProduct)
   };
 }
 
 export async function toggleMerchantProductStatus(userId: number, productId: string) {
   const store = await findOwnedStore(userId);
-  const currentProducts = toArray(store.products) as MerchantProductItem[];
-  const index = currentProducts.findIndex((item) => String(item.id) === String(productId));
+  const { products } = await loadStoreProducts(store.id);
+  const index = products.findIndex((item) => String(item.id) === String(productId));
 
   if (index === -1) {
-    throw new ApiError("\u5546\u54c1\u4e0d\u5b58\u5728", ERROR_CODES.NOT_FOUND, 404);
+    throw new ApiError("商品不存在", ERROR_CODES.NOT_FOUND, 404);
   }
 
-  const nextStatus = (currentProducts[index].status || "\u5df2\u4e0a\u67b6") === "\u5df2\u4e0a\u67b6" ? "\u5df2\u4e0b\u67b6" : "\u5df2\u4e0a\u67b6";
-  currentProducts[index] = {
-    ...currentProducts[index],
-    status: nextStatus
+  const target = products[index];
+  const nextStatus =
+    target.status === MERCHANT_PRODUCT_STATUS.onSale ? MERCHANT_PRODUCT_STATUS.offSale : MERCHANT_PRODUCT_STATUS.onSale;
+  const nextProducts = products.slice();
+  nextProducts[index] = {
+    ...target,
+    status: nextStatus,
+    skus: (target.skus || []).map((sku) => ({
+      ...sku,
+      status: nextStatus === MERCHANT_PRODUCT_STATUS.offSale ? MERCHANT_PRODUCT_STATUS.offSale : sku.status
+    }))
   };
 
-  const row = await prisma.miniStore.update({
-    where: { id: store.id },
-    data: {
-      products: currentProducts,
-      productCount: currentProducts.filter((item) => (item.status || "\u5df2\u4e0a\u67b6") === "\u5df2\u4e0a\u67b6").length
-    }
-  });
-
+  const row = await saveStoreProducts(store.id, nextProducts);
   return {
     store: mapStore(row),
-    product: mapProduct(currentProducts[index])
+    product: mapProduct(nextProducts[index])
   };
 }
 
 export async function deleteMerchantProduct(userId: number, productId: string) {
   const store = await findOwnedStore(userId);
-  const currentProducts = toArray(store.products) as MerchantProductItem[];
-  const nextProducts = currentProducts.filter((item) => String(item.id) !== String(productId));
+  const { products } = await loadStoreProducts(store.id);
+  const nextProducts = products.filter((item) => String(item.id) !== String(productId));
 
-  if (nextProducts.length === currentProducts.length) {
-    throw new ApiError("\u5546\u54c1\u4e0d\u5b58\u5728", ERROR_CODES.NOT_FOUND, 404);
+  if (nextProducts.length === products.length) {
+    throw new ApiError("商品不存在", ERROR_CODES.NOT_FOUND, 404);
   }
 
-  const row = await prisma.miniStore.update({
-    where: { id: store.id },
-    data: {
-      products: nextProducts,
-      productCount: nextProducts.filter((item) => (item.status || "\u5df2\u4e0a\u67b6") === "\u5df2\u4e0a\u67b6").length
-    }
-  });
-
+  const row = await saveStoreProducts(store.id, nextProducts);
   return mapStore(row);
 }
 
 export async function moveMerchantProduct(userId: number, productId: string, direction: "up" | "down") {
   const store = await findOwnedStore(userId);
-  const currentProducts = toArray(store.products) as MerchantProductItem[];
-  const index = currentProducts.findIndex((item) => String(item.id) === String(productId));
+  const { products } = await loadStoreProducts(store.id);
+  const index = products.findIndex((item) => String(item.id) === String(productId));
 
   if (index === -1) {
-    throw new ApiError("\u5546\u54c1\u4e0d\u5b58\u5728", ERROR_CODES.NOT_FOUND, 404);
+    throw new ApiError("商品不存在", ERROR_CODES.NOT_FOUND, 404);
   }
 
   const targetIndex = direction === "up" ? index - 1 : index + 1;
-  if (targetIndex < 0 || targetIndex >= currentProducts.length) {
+  if (targetIndex < 0 || targetIndex >= products.length) {
     return mapStore(store);
   }
 
-  const nextProducts = currentProducts.slice();
+  const nextProducts = products.slice();
   const temp = nextProducts[index];
   nextProducts[index] = nextProducts[targetIndex];
   nextProducts[targetIndex] = temp;
 
-  const row = await prisma.miniStore.update({
-    where: { id: store.id },
-    data: {
-      products: nextProducts
-    }
-  });
-
+  const row = await saveStoreProducts(store.id, nextProducts);
   return mapStore(row);
 }
 
 export async function batchDownMerchantProducts(userId: number, productIds: string[]) {
-  const store = await findOwnedStore(userId);
-  const currentProducts = toArray(store.products) as MerchantProductItem[];
   const idSet = new Set(productIds.map((item) => String(item)));
-
-  const nextProducts = currentProducts.map((item) =>
+  const store = await findOwnedStore(userId);
+  const { products } = await loadStoreProducts(store.id);
+  const nextProducts = products.map((item) =>
     idSet.has(String(item.id))
       ? {
           ...item,
-          status: "\u5df2\u4e0b\u67b6"
+          status: MERCHANT_PRODUCT_STATUS.offSale,
+          skus: (item.skus || []).map((sku) => ({
+            ...sku,
+            status: MERCHANT_PRODUCT_STATUS.offSale
+          }))
         }
       : item
   );
 
-  const row = await prisma.miniStore.update({
-    where: { id: store.id },
-    data: {
-      products: nextProducts,
-      productCount: nextProducts.filter((item) => (item.status || "\u5df2\u4e0a\u67b6") === "\u5df2\u4e0a\u67b6").length
-    }
-  });
-
+  const row = await saveStoreProducts(store.id, nextProducts);
   return mapStore(row);
 }
 
 export async function batchDeleteMerchantProducts(userId: number, productIds: string[]) {
-  const store = await findOwnedStore(userId);
   const idSet = new Set(productIds.map((item) => String(item)));
-  const currentProducts = toArray(store.products) as MerchantProductItem[];
-  const nextProducts = currentProducts.filter((item) => !idSet.has(String(item.id)));
-
-  const row = await prisma.miniStore.update({
-    where: { id: store.id },
-    data: {
-      products: nextProducts,
-      productCount: nextProducts.filter((item) => (item.status || "\u5df2\u4e0a\u67b6") === "\u5df2\u4e0a\u67b6").length
-    }
-  });
-
+  const store = await findOwnedStore(userId);
+  const { products } = await loadStoreProducts(store.id);
+  const nextProducts = products.filter((item) => !idSet.has(String(item.id)));
+  const row = await saveStoreProducts(store.id, nextProducts);
   return mapStore(row);
 }
 
 export async function getCurrentMerchantOrderBoard(userId: number) {
   const store = await findOwnedStore(userId);
-  const orders = (await prisma.miniOrder.findMany({
+  const orders = await prisma.miniOrder.findMany({
     where: {
       storeDetailId: store.detailId
     },
     orderBy: [{ paidAt: "desc" }, { createdAt: "desc" }]
-  })) as unknown as MerchantOrderItem[];
-
-  const now = Date.now();
-  const processingOrders = orders.filter((item) => item.status === "进行中");
-  const newOrders = processingOrders.filter((item) => {
-    const paidAt = item.paidAt ? new Date(item.paidAt).getTime() : 0;
-    return paidAt && now - paidAt <= 2 * 60 * 60 * 1000;
   });
-  const newOrderIdSet = new Set(newOrders.map((item) => item.id));
-  const pendingOrders = processingOrders.filter((item) => !newOrderIdSet.has(item.id));
-  const finishedOrders = orders.filter((item) => item.status === "已完成");
+
+  const newOrders = orders.filter((item: any) => item.status === ORDER_STATUS.processing);
+  const pendingOrders = orders.filter((item: any) => item.status === ORDER_STATUS.accepted);
+  const finishedOrders = orders.filter((item: any) => item.status === ORDER_STATUS.finished);
 
   return {
     summary: {
@@ -377,8 +348,8 @@ export async function getCurrentMerchantOrderBoard(userId: number) {
       pendingOrderCount: pendingOrders.length,
       finishedOrderCount: finishedOrders.length
     },
-    newOrders: newOrders.map((item) => mapMerchantOrder(item, "new")),
-    pendingOrders: pendingOrders.map((item) => mapMerchantOrder(item, "pending")),
-    finishedOrders: finishedOrders.map((item) => mapMerchantOrder(item, "finished"))
+    newOrders: newOrders.map((item: any) => mapMerchantOrder(item, "new")),
+    pendingOrders: pendingOrders.map((item: any) => mapMerchantOrder(item, "pending")),
+    finishedOrders: finishedOrders.map((item: any) => mapMerchantOrder(item, "finished"))
   };
 }

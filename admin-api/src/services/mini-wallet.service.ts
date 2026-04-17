@@ -33,7 +33,7 @@ function maskAccountNo(value: string) {
   return `${text.slice(0, 3)}****${text.slice(-4)}`;
 }
 
-async function ensureWalletAccount(userId: number) {
+export async function ensureWalletAccount(userId: number) {
   const user = await prisma.miniUser.findUnique({
     where: { id: userId }
   });

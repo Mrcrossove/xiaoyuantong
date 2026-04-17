@@ -1,10 +1,11 @@
 import { Prisma } from "@prisma/client";
 import type { NextFunction, Request, Response } from "express";
+import { getDefaultMerchantMenuPaths, getDefaultMerchantPermissionCodes } from "../constants/merchant-auth";
 import { ERROR_CODES } from "../constants/error-codes";
 import { prisma } from "../lib/prisma";
 import { ApiError } from "../utils/api-error";
-import { verifyToken } from "../utils/token";
 import { normalizeAdminPermissions } from "../utils/admin-permission";
+import { verifyToken } from "../utils/token";
 
 function getBearerToken(req: Request) {
   const authorization = req.headers.authorization || "";
@@ -27,6 +28,13 @@ function ensureAdminAuth(req: Request) {
     throw new ApiError("请先登录后台账号", ERROR_CODES.UNAUTHORIZED, 401);
   }
   return req.adminAuth;
+}
+
+function ensureMerchantAuth(req: Request) {
+  if (!req.merchantAuth?.accountId) {
+    throw new ApiError("请先登录商家后台", ERROR_CODES.UNAUTHORIZED, 401);
+  }
+  return req.merchantAuth;
 }
 
 async function loadAdminPermissionContext(userId: number) {
@@ -219,4 +227,87 @@ export function requireMiniAuth(req: Request, _res: Response, next: NextFunction
     deviceId: payload.deviceId
   };
   next();
+}
+
+export function requireMerchantAuth(req: Request, _res: Response, next: NextFunction) {
+  const payload = verifyToken(getBearerToken(req));
+  if (payload.typ !== "merchant" || !payload.storeId) {
+    throw new ApiError("请先登录商家后台", ERROR_CODES.UNAUTHORIZED, 401);
+  }
+
+  prisma.merchantAccount
+    .findUnique({
+      where: { id: payload.uid },
+      select: {
+        id: true,
+        miniUserId: true,
+        storeId: true,
+        phone: true,
+        status: true
+      }
+    })
+    .then((account: { id: number; miniUserId: number; storeId: number; phone: string; status: string } | null) => {
+      if (!account) {
+        throw new ApiError("商家登录状态已失效，请重新登录", ERROR_CODES.UNAUTHORIZED, 401);
+      }
+
+      if (account.status === "停用") {
+        throw new ApiError("商家账号已停用", ERROR_CODES.FORBIDDEN, 403);
+      }
+
+      req.merchantAuth = {
+        accountId: account.id,
+        miniUserId: account.miniUserId,
+        storeId: account.storeId,
+        phone: account.phone,
+        permissions: getDefaultMerchantPermissionCodes(),
+        menuPaths: getDefaultMerchantMenuPaths()
+      };
+      next();
+    })
+    .catch(next);
+}
+
+export function requireMerchantPermission(...codes: string[]) {
+  const requiredCodes = uniqueStrings(codes);
+
+  return (req: Request, _res: Response, next: NextFunction) => {
+    try {
+      const auth = ensureMerchantAuth(req);
+      const granted = uniqueStrings(auth.permissions || getDefaultMerchantPermissionCodes());
+
+      if (!requiredCodes.length || granted.includes("*") || hasAnyPermission(granted, requiredCodes)) {
+        next();
+        return;
+      }
+
+      next(new ApiError(`缺少接口权限：${requiredCodes.join("、")}`, ERROR_CODES.FORBIDDEN, 403));
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+export function requireMerchantMenuAccess(...paths: string[]) {
+  const requiredPaths = uniqueStrings(paths);
+
+  return (req: Request, _res: Response, next: NextFunction) => {
+    try {
+      const auth = ensureMerchantAuth(req);
+      const granted = uniqueStrings(auth.menuPaths || getDefaultMerchantMenuPaths());
+
+      if (!requiredPaths.length || granted.includes("*") || hasAnyPermission(granted, requiredPaths)) {
+        next();
+        return;
+      }
+
+      next(new ApiError(`缺少页面访问权限：${requiredPaths.join("、")}`, ERROR_CODES.FORBIDDEN, 403));
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+export function getMerchantAuth(req: Request) {
+  return ensureMerchantAuth(req);
 }

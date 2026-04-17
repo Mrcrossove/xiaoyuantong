@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { env } from "../config/env";
-import type { MiniUploadImagePayload } from "../controllers/schemas";
+import type { MiniUploadImagePayload } from "../controllers/mini-commerce-schemas";
 import { ApiError } from "../utils/api-error";
 import { ERROR_CODES } from "../constants/error-codes";
 

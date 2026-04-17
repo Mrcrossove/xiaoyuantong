@@ -506,6 +506,48 @@
   font-weight: 700;
 }
 
+.sku-list {
+  margin-top: 16rpx;
+}
+
+.sku-title {
+  color: #6e7a90;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.sku-row {
+  margin-top: 12rpx;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.sku-chip {
+  min-width: 140rpx;
+  padding: 12rpx 16rpx;
+  border-radius: 16rpx;
+  background: #eef3ff;
+  color: #5d78b0;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.sku-chip.active {
+  background: linear-gradient(135deg, #4f87ff, #2f6df0);
+  color: #ffffff;
+}
+
+.sku-chip-name {
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.sku-chip-price {
+  font-size: 20rpx;
+}
+
 .intro-block {
   margin-top: 18rpx;
 }

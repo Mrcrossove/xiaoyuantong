@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -40,6 +40,8 @@ async function main() {
   await prisma.adminHelpArticle.deleteMany();
   await prisma.adminSearchWord.deleteMany();
   await prisma.adminMessageTemplate.deleteMany();
+  await prisma.merchantLoginCode.deleteMany();
+  await prisma.merchantAccount.deleteMany();
   await prisma.miniRefundRecord.deleteMany();
   await prisma.miniPostReport.deleteMany();
   await prisma.miniMessageRead.deleteMany();
@@ -380,11 +382,83 @@ async function main() {
         notice: "\u6821\u5185\u9910\u996e\u5b98\u65b9\u8ba4\u8bc1\uff0c\u53ef\u7528\u6821\u56ed\u5361\u7ed3\u7b97\uff0c\u4ece\u65e9\u9910\u5230\u665a\u9910\u5747\u4f9b\u5e94\u3002",
         phone: "010-88997766",
         address: "\u5317\u4eac\u5e02\u6d77\u6dc0\u533a\u6e05\u534e\u5927\u5b66\u68a7\u6850\u98df\u5802 1 \u5c42",
-        soldText: "81\u4ef6",
+        soldText: "186\u4efd",
         amountText: "22.00",
-        productCount: 1,
+        productCount: 3,
         banners: ["canteen", "takeout", "canteen"],
-        products: [{ id: "p1", name: "\u62db\u724c\u5957\u9910\u996d", desc: "\u70ed\u83dc / \u7c73\u996d / \u4f8b\u6c64", price: "\u00a522", cover: "poster" }],
+        products: [
+          {
+            id: "p1",
+            name: "\u62db\u724c\u5957\u9910\u996d",
+            desc: "\u70ed\u83dc / \u7c73\u996d / \u4f8b\u6c64",
+            cover: "poster",
+            recommended: true,
+            specMode: "multi",
+            defaultSkuId: "p1_sku_standard",
+            skus: [
+              {
+                id: "p1_sku_standard",
+                name: "\u6807\u51c6\u4efd",
+                price: "\u00a522",
+                stock: 120,
+                dailyLimit: 4,
+                status: "\u5df2\u4e0a\u67b6",
+                isDefault: true
+              },
+              {
+                id: "p1_sku_large",
+                name: "\u52a0\u91cf\u4efd",
+                price: "\u00a528",
+                stock: 60,
+                dailyLimit: 2,
+                status: "\u5df2\u4e0a\u67b6",
+                isDefault: false
+              }
+            ]
+          },
+          {
+            id: "p2",
+            name: "\u65e9\u9910\u80fd\u91cf\u5305",
+            desc: "\u9e21\u86cb / \u9762\u5305 / \u8c46\u6d46",
+            cover: "fruit",
+            recommended: false,
+            specMode: "single",
+            price: "\u00a512",
+            stock: 80,
+            dailyLimit: 3,
+            status: "\u5df2\u4e0a\u67b6"
+          },
+          {
+            id: "p3",
+            name: "\u665a\u9910\u53cc\u4eba\u5957\u9910",
+            desc: "\u4e24\u8377\u9910 / \u7092\u83dc / \u6c64\u54c1",
+            cover: "takeout",
+            recommended: false,
+            specMode: "multi",
+            defaultSkuId: "p3_sku_combo_a",
+            skus: [
+              {
+                id: "p3_sku_combo_a",
+                name: "\u7ecf\u5178\u5957\u9910",
+                price: "\u00a548",
+                stock: 40,
+                dailyLimit: 2,
+                status: "\u5df2\u4e0a\u67b6",
+                isDefault: true
+              },
+              {
+                id: "p3_sku_combo_b",
+                name: "\u5347\u7ea7\u5957\u9910",
+                price: "\u00a558",
+                stock: 25,
+                dailyLimit: 1,
+                status: "\u5df2\u4e0a\u67b6",
+                isDefault: false
+              }
+            ]
+          }
+        ],
+        wechatSubMchId: "1900000110",
         status: TEXT.open
       },
       {
@@ -445,6 +519,25 @@ async function main() {
       }
     ]
   });
+
+  const ownedStore = await prisma.miniStore.findFirst({
+    where: {
+      ownerUserId: miniUser.id
+    },
+    orderBy: { id: "asc" }
+  });
+
+  if (ownedStore) {
+    await prisma.merchantAccount.create({
+      data: {
+        miniUserId: miniUser.id,
+        storeId: ownedStore.id,
+        phone: "13800010001",
+        name: "林知夏",
+        status: "待激活"
+      }
+    });
+  }
 
   await prisma.miniMessage.createMany({
     data: [
@@ -699,6 +792,8 @@ async function main() {
         storeDetailId: "campus-food-1",
         storeName: "\u68a7\u6850\u98df\u5802",
         productId: "p1",
+        skuId: "p1_sku_standard",
+        skuName: "\u6807\u51c6\u4efd",
         productName: "\u62db\u724c\u5957\u9910\u996d",
         productDesc: "\u70ed\u83dc / \u7c73\u996d / \u4f8b\u6c64",
         productCover: "poster",
@@ -707,11 +802,21 @@ async function main() {
         amount: 22,
         status: "\u8fdb\u884c\u4e2d",
         payStatus: "\u5df2\u652f\u4ed8",
+        paymentChannel: "\u5fae\u4fe1\u652f\u4ed8",
+        paymentMode: "\u5c0f\u7a0b\u5e8f\u652f\u4ed8",
+        transactionId: "420000202604120001",
+        paymentMeta: {
+          mode: "wechat",
+          prepayId: "wx_prepay_202604120001",
+          spMchId: "1900000109",
+          subMchId: "1900000110"
+        },
         receiverName: "\u6797\u77e5\u590f",
         receiverPhone: "13800010001",
         receiverAddress: "\u6e05\u534e\u5927\u5b66 \u4e1c\u533a\u5bbf\u820d 8 \u53f7\u697c 302",
         addressTag: "\u9ed8\u8ba4\u5730\u5740",
-        paidAt: new Date("2026-04-12T11:20:00+08:00")
+        paidAt: new Date("2026-04-12T11:20:00+08:00"),
+        settlementStatus: "\u5f85\u7ed3\u7b97"
       },
       {
         orderNo: "202604120002",
@@ -720,18 +825,21 @@ async function main() {
         storeDetailId: "campus-food-1",
         storeName: "\u68a7\u6850\u98df\u5802",
         productId: "p1",
+        skuId: "p1_sku_large",
+        skuName: "\u52a0\u91cf\u4efd",
         productName: "\u62db\u724c\u5957\u9910\u996d",
         productDesc: "\u70ed\u83dc / \u7c73\u996d / \u4f8b\u6c64",
         productCover: "poster",
-        unitPrice: 22,
+        unitPrice: 28,
         quantity: 1,
-        amount: 22,
+        amount: 28,
         status: "\u5f85\u652f\u4ed8",
         payStatus: "\u5f85\u652f\u4ed8",
         receiverName: "\u6797\u77e5\u590f",
         receiverPhone: "13800010001",
         receiverAddress: "\u6e05\u534e\u5927\u5b66 \u56fe\u4e66\u9986\u5357\u95e8\u81ea\u63d0\u70b9",
-        addressTag: "\u81ea\u63d0\u5730\u5740"
+        addressTag: "\u81ea\u63d0\u5730\u5740",
+        settlementStatus: "\u672a\u7ed3\u7b97"
       },
       {
         orderNo: "202604120003",
@@ -740,6 +848,8 @@ async function main() {
         storeDetailId: "campus-food-1",
         storeName: "\u68a7\u6850\u98df\u5802",
         productId: "p1",
+        skuId: "p1_sku_standard",
+        skuName: "\u6807\u51c6\u4efd",
         productName: "\u62db\u724c\u5957\u9910\u996d",
         productDesc: "\u70ed\u83dc / \u7c73\u996d / \u4f8b\u6c64",
         productCover: "poster",
@@ -748,12 +858,62 @@ async function main() {
         amount: 44,
         status: "\u5df2\u5b8c\u6210",
         payStatus: "\u5df2\u652f\u4ed8",
+        paymentChannel: "\u5fae\u4fe1\u652f\u4ed8",
+        paymentMode: "\u6a21\u62df\u652f\u4ed8",
+        transactionId: "mock_tx_202604120003",
+        paymentMeta: {
+          mode: "mock",
+          mockTradeNo: "mock_trade_202604120003"
+        },
         receiverName: "\u6797\u77e5\u590f",
         receiverPhone: "13800010001",
         receiverAddress: "\u6e05\u534e\u5927\u5b66 \u4e1c\u533a\u5bbf\u820d 8 \u53f7\u697c 302",
         addressTag: "\u9ed8\u8ba4\u5730\u5740",
         paidAt: new Date("2026-04-11T18:30:00+08:00"),
-        finishedAt: new Date("2026-04-11T19:00:00+08:00")
+        finishedAt: new Date("2026-04-11T19:00:00+08:00"),
+        settlementStatus: "\u5df2\u7ed3\u7b97",
+        settlementAmount: 44,
+        platformCommissionAmount: 2.2,
+        merchantIncomeAmount: 41.8,
+        settledAt: new Date("2026-04-11T19:20:00+08:00")
+      },
+      {
+        orderNo: "202604120004",
+        userId: miniUser.id,
+        school: SCHOOLS.tsinghua,
+        storeDetailId: "campus-food-1",
+        storeName: "\u68a7\u6850\u98df\u5802",
+        productId: "p3",
+        skuId: "p3_sku_combo_a",
+        skuName: "\u7ecf\u5178\u5957\u9910",
+        productName: "\u665a\u9910\u53cc\u4eba\u5957\u9910",
+        productDesc: "\u4e24\u8377\u9910 / \u7092\u83dc / \u6c64\u54c1",
+        productCover: "takeout",
+        unitPrice: 48,
+        quantity: 1,
+        amount: 48,
+        status: "\u5df2\u5b8c\u6210",
+        payStatus: "\u5df2\u9000\u6b3e",
+        paymentChannel: "\u5fae\u4fe1\u652f\u4ed8",
+        paymentMode: "\u5c0f\u7a0b\u5e8f\u652f\u4ed8",
+        transactionId: "420000202604120004",
+        paymentMeta: {
+          mode: "wechat",
+          prepayId: "wx_prepay_202604120004",
+          spMchId: "1900000109",
+          subMchId: "1900000110"
+        },
+        receiverName: "\u6797\u77e5\u590f",
+        receiverPhone: "13800010001",
+        receiverAddress: "\u6e05\u534e\u5927\u5b66 \u4e1c\u533a\u5bbf\u820d 8 \u53f7\u697c 302",
+        addressTag: "\u9ed8\u8ba4\u5730\u5740",
+        paidAt: new Date("2026-04-10T18:30:00+08:00"),
+        finishedAt: new Date("2026-04-10T19:00:00+08:00"),
+        settlementStatus: "\u5df2\u9000\u6b3e",
+        settlementAmount: 48,
+        platformCommissionAmount: 2.4,
+        merchantIncomeAmount: 45.6,
+        settledAt: new Date("2026-04-10T19:20:00+08:00")
       }
     ]
   });
@@ -793,6 +953,43 @@ async function main() {
         reviewedAt: new Date("2026-04-12T20:00:00+08:00")
       }
     ]
+  });
+
+  await prisma.miniRefundRecord.update({
+    where: {
+      refundNo: "TK202604130001"
+    },
+    data: {
+      orderId: seededOrders[0]?.id || 1,
+      amount: 22,
+      reason: "商家缺货未发货",
+      status: "待审核",
+      reviewNote: null,
+      refundRequestNo: null,
+      refundChannel: null,
+      refundMeta: Prisma.JsonNull,
+      reviewedAt: null
+    }
+  });
+
+  await prisma.miniRefundRecord.update({
+    where: {
+      refundNo: "TK202604120014"
+    },
+    data: {
+      orderId: seededOrders[3]?.id || 4,
+      amount: 48,
+      reason: "用户下单后申请退款",
+      status: "已通过",
+      refundRequestNo: "RF202604120014",
+      refundChannel: "微信退款",
+      refundMeta: {
+        outRefundNo: "RF202604120014",
+        refundId: "5030250340202604120014"
+      },
+      reviewNote: "已同意退款，等待原路返回。",
+      reviewedAt: new Date("2026-04-12T20:00:00+08:00")
+    }
   });
 
   await prisma.miniWalletAccount.create({
