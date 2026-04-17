@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:subpath": "vite --base=/admin/",
     "dev:realapi": "vite --mode realapi",
     "build": "vite build",
+    "build:subpath": "vite build --base=/admin/",
     "preview": "vite preview"
   },
   "dependencies": {
