@@ -10,8 +10,8 @@ const authStore = useAuthStore();
 
 const loading = ref(false);
 const form = reactive({
-  account: "admin",
-  password: "JP@admin"
+  account: "",
+  password: ""
 });
 
 async function handleLogin() {
@@ -34,7 +34,6 @@ async function handleLogin() {
     <div class="login-card">
       <div class="brand">校园通管理后台</div>
       <div class="sub">统一管理高校、用户、认证、店铺、订单和运营配置。</div>
-      <el-alert class="tips" title="演示账号：admin / JP@admin" type="info" :closable="false" />
 
       <el-form label-position="top" @submit.prevent>
         <el-form-item label="账号">
@@ -75,10 +74,6 @@ async function handleLogin() {
   margin: 10px 0 20px;
   color: #667085;
   line-height: 1.7;
-}
-
-.tips {
-  margin-bottom: 16px;
 }
 
 .submit {

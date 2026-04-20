@@ -1,4 +1,6 @@
-const BASE_URL = "http://118.24.104.69:3001";
+const { getApiBaseUrl } = require("./runtime-config");
+
+const BASE_URL = getApiBaseUrl();
 
 function request(options) {
   return new Promise((resolve, reject) => {

@@ -42,6 +42,7 @@ import { createWechatRefund } from "./wechat-pay.service";
 import { createMiniWithdraw, queryMiniWalletSummary } from "./mini-wallet.service";
 import { buildProductDisplayPrice, parseMoneyNumber, toMerchantProducts } from "../utils/merchant-product";
 import { env } from "../config/env";
+import { hashPassword, verifyPassword } from "../utils/password";
 
 const REFUND_STATUS = {
   pending: "待审核",
@@ -857,14 +858,14 @@ export async function updateMerchantPassword(accountId: number, payload: Merchan
     throw new ApiError("该账号尚未设置密码，请先完成激活", ERROR_CODES.BAD_REQUEST, 400);
   }
 
-  if (account.password !== payload.oldPassword) {
+  if (!verifyPassword(payload.oldPassword, account.password)) {
     throw new ApiError("原密码错误", ERROR_CODES.BAD_REQUEST, 400);
   }
 
   await prisma.merchantAccount.update({
     where: { id: accountId },
     data: {
-      password: payload.newPassword
+      password: hashPassword(payload.newPassword)
     }
   });
 

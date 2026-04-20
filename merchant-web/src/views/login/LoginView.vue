@@ -13,7 +13,6 @@ const authStore = useMerchantAuthStore();
 const activeTab = ref<"code" | "password">("code");
 const loading = ref(false);
 const sending = ref(false);
-const sentCode = ref("");
 
 const codeForm = reactive({
   phone: "",
@@ -39,8 +38,7 @@ async function handleSendCode() {
 
   sending.value = true;
   try {
-    const result = await sendCodeApi({ phone: codeForm.phone, scene: "login" });
-    sentCode.value = result.devCode || "";
+    await sendCodeApi({ phone: codeForm.phone, scene: "login" });
     ElMessage.success("验证码已发送");
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : "验证码发送失败");
@@ -88,7 +86,7 @@ async function handlePasswordLogin() {
         <h1>商家后台登录</h1>
         <p>平台审核通过后，系统会自动为商家创建账号。首次请使用手机号验证码登录并完成激活。</p>
         <ul class="tips">
-          <li>账号手机号 = 入驻申请联系人手机号</li>
+          <li>账号手机号等于入驻申请联系人手机号</li>
           <li>首次登录后必须设置密码</li>
           <li>后续支持手机号验证码或密码登录</li>
         </ul>
@@ -106,9 +104,6 @@ async function handlePasswordLogin() {
                   <el-button :loading="sending" @click="handleSendCode">发送验证码</el-button>
                 </div>
               </el-form-item>
-              <el-alert v-if="sentCode" type="info" :closable="false" show-icon>
-                开发环境验证码：{{ sentCode }}
-              </el-alert>
               <el-button class="submit-btn" type="primary" :loading="loading" @click="handleCodeLogin">
                 登录并进入后台
               </el-button>

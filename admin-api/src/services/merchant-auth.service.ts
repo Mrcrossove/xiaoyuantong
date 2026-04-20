@@ -11,6 +11,7 @@ import { ApiError } from "../utils/api-error";
 import { ERROR_CODES } from "../constants/error-codes";
 import { sendVerificationCode } from "./sms.service";
 import { issueToken } from "../utils/token";
+import { hashPassword, isPasswordHashed, verifyPassword } from "../utils/password";
 
 function generateCode() {
   return `${Math.floor(100000 + Math.random() * 900000)}`;
@@ -152,8 +153,7 @@ export async function merchantSendLoginCode(payload: MerchantSendCodePayload) {
     phone: payload.phone,
     expiresAt: expiresAt.toISOString(),
     isActivated: Boolean(account.activatedAt),
-    provider: smsResult.provider,
-    devCode: smsResult.devCode || ""
+    provider: smsResult.provider
   };
 }
 
@@ -175,11 +175,21 @@ export async function merchantPasswordLogin(payload: MerchantPasswordLoginPayloa
     throw new ApiError("该账号尚未激活，请先使用验证码登录并设置密码", ERROR_CODES.BAD_REQUEST, 400);
   }
 
-  if (account.password !== payload.password) {
+  if (!verifyPassword(payload.password, account.password)) {
     throw new ApiError("手机号或密码错误", ERROR_CODES.BAD_REQUEST, 400);
   }
 
   await touchLogin(account.id);
+
+  if (!isPasswordHashed(account.password)) {
+    await prisma.merchantAccount.update({
+      where: { id: account.id },
+      data: {
+        password: hashPassword(payload.password)
+      }
+    });
+  }
+
   return {
     token: issueToken({ typ: "merchant", uid: account.id, storeId: account.store.id }),
     ...buildMerchantSession(account)
@@ -191,7 +201,7 @@ export async function merchantActivate(accountId: number, payload: MerchantActiv
   const row = await prisma.merchantAccount.update({
     where: { id: accountId },
     data: {
-      password: payload.password,
+      password: hashPassword(payload.password),
       status: "启用",
       activatedAt: account.activatedAt || new Date()
     },

@@ -25,11 +25,23 @@ import {
 } from "../controllers/schemas";
 import { asyncHandler } from "../middlewares/async-handler";
 import { requireAdminAuth, requireAdminMenuAccess, requireAdminPermission } from "../middlewares/auth";
+import { createRateLimit } from "../middlewares/rate-limit";
 import { validateBody } from "../middlewares/validate";
+import { env } from "../config/env";
 
 const router = Router();
 
-router.post("/admin/login", validateBody(adminLoginSchema), asyncHandler(adminLoginAction));
+router.post(
+  "/admin/login",
+  createRateLimit({
+    namespace: "admin-login",
+    windowMs: env.adminLoginWindowMs,
+    max: env.adminLoginMaxAttempts,
+    message: "管理员登录尝试过于频繁，请稍后再试"
+  }),
+  validateBody(adminLoginSchema),
+  asyncHandler(adminLoginAction)
+);
 router.get("/admin/session", requireAdminAuth, asyncHandler(getAdminSessionAction));
 router.get("/meta", requireAdminAuth, requireAdminMenuAccess("/auth/admin", "/auth/role", "/auth/menu"), asyncHandler(getAuthManageMetaAction));
 router.get("/admin-user/list", requireAdminAuth, requireAdminMenuAccess("/auth/admin"), asyncHandler(listAdminUserManageAction));
@@ -103,6 +115,16 @@ router.put(
   asyncHandler(updateRolePermissionAction)
 );
 router.get("/menu/current", requireAdminAuth, requireAdminMenuAccess("/auth/menu"), asyncHandler(getCurrentMenuPermissionAction));
-router.post("/mini/login", validateBody(miniLoginSchema), asyncHandler(miniLoginAction));
+router.post(
+  "/mini/login",
+  createRateLimit({
+    namespace: "mini-login",
+    windowMs: 60 * 1000,
+    max: 30,
+    message: "小程序登录请求过于频繁，请稍后再试"
+  }),
+  validateBody(miniLoginSchema),
+  asyncHandler(miniLoginAction)
+);
 
 export default router;

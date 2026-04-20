@@ -113,17 +113,12 @@ async function sendTencentSms(params: SendVerificationCodeParams) {
 
 export async function sendVerificationCode(params: SendVerificationCodeParams) {
   if (env.smsProvider === "tencent") {
-    const result = await sendTencentSms(params);
-    return {
-      ...result,
-      devCode: ""
-    };
+    return sendTencentSms(params);
   }
 
   return {
     provider: "mock",
     requestId: "",
-    serialNo: "",
-    devCode: params.code
+    serialNo: ""
   };
 }

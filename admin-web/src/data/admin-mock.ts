@@ -208,7 +208,7 @@ export const adminPermissionProfiles = [
   {
     id: 1,
     account: "admin",
-    password: "JP@admin",
+    password: "ChangeMe_Admin_123",
     name: "张敏",
     roleCode: "super_admin",
     roleName: "超级管理员",
@@ -220,7 +220,7 @@ export const adminPermissionProfiles = [
   {
     id: 2,
     account: "audit",
-    password: "Audit@123",
+    password: "ChangeMe_Audit_123",
     name: "王凯",
     roleCode: "audit_admin",
     roleName: "审核管理员",
@@ -257,7 +257,7 @@ export const adminPermissionProfiles = [
   {
     id: 3,
     account: "operate",
-    password: "Operate@123",
+    password: "ChangeMe_Operate_123",
     name: "李想",
     roleCode: "operation_admin",
     roleName: "运营专员",
@@ -294,7 +294,7 @@ export const adminPermissionProfiles = [
   {
     id: 4,
     account: "service",
-    password: "Service@123",
+    password: "ChangeMe_Service_123",
     name: "陈晨",
     roleCode: "service_admin",
     roleName: "客服主管",

@@ -13,6 +13,7 @@ import { ApiError } from "../utils/api-error";
 import { formatDateTime } from "../utils/time";
 import { getAdminSchoolScope } from "./admin-scope.service";
 import { normalizeAdminPermissions } from "../utils/admin-permission";
+import { hashPassword } from "../utils/password";
 
 function toStringArray(value: Prisma.JsonValue | null | undefined) {
   return Array.isArray(value) ? value.map((item) => String(item)) : [];
@@ -363,14 +364,14 @@ export async function createAdminUser(adminUserId: number, payload: AdminManager
 
   const schools = role.scopeType === "all" ? [] : ensureSchoolsAssignable(context, payload.schools);
 
-  const row = await prisma.adminUser.create({
-    data: {
-      account,
-      password: payload.password.trim(),
-      name: payload.name.trim(),
-      status: payload.status,
-      schools,
-      roleId: payload.roleId
+    const row = await prisma.adminUser.create({
+      data: {
+        account,
+        password: hashPassword(payload.password),
+        name: payload.name.trim(),
+        status: payload.status,
+        schools,
+        roleId: payload.roleId
     },
     include: {
       role: true
@@ -400,15 +401,15 @@ export async function updateAdminUser(adminUserId: number, id: number, payload: 
   const schools = role.scopeType === "all" ? [] : ensureSchoolsAssignable(context, payload.schools);
   const nextPassword = payload.password?.trim();
 
-  const row = await prisma.adminUser.update({
-    where: { id },
-    data: {
-      account,
-      name: payload.name.trim(),
-      roleId: payload.roleId,
-      schools,
-      password: nextPassword || undefined
-    },
+    const row = await prisma.adminUser.update({
+      where: { id },
+      data: {
+        account,
+        name: payload.name.trim(),
+        roleId: payload.roleId,
+        schools,
+        password: nextPassword ? hashPassword(nextPassword) : undefined
+      },
     include: {
       role: true
     }

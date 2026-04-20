@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { ApiError } from "./api-error";
 import { ERROR_CODES } from "../constants/error-codes";
+import { env } from "../config/env";
 
 type TokenType = "admin" | "mini" | "merchant";
 
@@ -14,7 +15,7 @@ export interface TokenPayload {
 }
 
 function getSecret() {
-  return process.env.APP_SECRET || "campus-admin-secret";
+  return env.appSecret;
 }
 
 function toBase64Url(value: string) {

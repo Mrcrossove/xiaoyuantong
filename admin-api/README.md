@@ -6,7 +6,7 @@
 
 - 内容管理接口：`/school/content`、`/user/publish`、`/product/spec`
 - 后台登录接口：`/auth/admin/login`
-- 小程序匿名登录接口：`/auth/mini/login`
+- 小程序登录接口：`/auth/mini/login`
 - 小程序帖子接口：
   - `GET /mini/post/list`
   - `GET /mini/post/detail/:id`
@@ -24,11 +24,11 @@ npm install
 
 ## 2. 配置环境变量
 
-复制 `.env.example` 为 `.env`，然后按你的数据库配置修改：
+复制 `.env.example` 为 `.env`，然后按你的实际环境修改配置：
 
 ```bash
 PORT=3001
-APP_SECRET="campus-admin-secret"
+APP_SECRET="replace-with-production-secret"
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/campus_admin?schema=public"
 ```
 
@@ -68,13 +68,15 @@ npm run start
 }
 ```
 
-## 6. 默认演示账号
+## 6. 初始账号说明
 
-- 超级管理员：`admin / JP@admin`
-- 审核管理员：`audit / JP@audit`
-- 运营专员：`operate / JP@operate`
+- 初始化管理员账号由 `prisma/seed.ts` 创建
+- 种子密码仅用于本地初始化与联调
+- 上线前必须立即替换所有初始化密码
+- 生产环境不得保留任何默认账号口令
 
 ## 7. 注意事项
 
-- 当前小程序认证页已接入真实接口，但在后端未启动时会回退到本地演示数据。
-- 你后续把 PostgreSQL 部署到云服务器后，只需要更新 `.env` 的 `DATABASE_URL`，不需要再改页面代码。
+- 小程序登录、支付、短信、风控默认配置仍需按生产参数补齐
+- `PUBLIC_BASE_URL` 在生产环境必须使用正式 `https` 域名
+- `APP_SECRET` 在生产环境必须替换为高强度随机密钥

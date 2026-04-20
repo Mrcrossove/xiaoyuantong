@@ -4,10 +4,17 @@ import path from "path";
 dotenv.config();
 
 export const env = {
+  nodeEnv: process.env.NODE_ENV || "development",
+  isProduction: (process.env.NODE_ENV || "development") === "production",
   port: Number(process.env.PORT || 3001),
   databaseUrl: process.env.DATABASE_URL || "",
   publicBaseUrl: process.env.PUBLIC_BASE_URL || `http://127.0.0.1:${Number(process.env.PORT || 3001)}`,
+  corsOrigins: (process.env.CORS_ORIGINS || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean),
   uploadsDir: process.env.UPLOADS_DIR || path.resolve(process.cwd(), "uploads"),
+  appSecret: process.env.APP_SECRET || "campus-admin-secret",
 
   wechatAppId: process.env.WECHAT_APP_ID || "",
   wechatAppSecret: process.env.WECHAT_APP_SECRET || "",
@@ -37,6 +44,14 @@ export const env = {
   smsTencentSignName: process.env.SMS_TENCENT_SIGN_NAME || "",
   smsTencentTemplateId: process.env.SMS_TENCENT_TEMPLATE_ID || "",
   smsTencentRegion: process.env.SMS_TENCENT_REGION || "ap-guangzhou",
+  allowDevCodeExposure: process.env.ALLOW_DEV_CODE_EXPOSURE === "true",
+  adminLoginWindowMs: Number(process.env.ADMIN_LOGIN_WINDOW_MS || 10 * 60 * 1000),
+  adminLoginMaxAttempts: Number(process.env.ADMIN_LOGIN_MAX_ATTEMPTS || 10),
+  merchantLoginWindowMs: Number(process.env.MERCHANT_LOGIN_WINDOW_MS || 10 * 60 * 1000),
+  merchantLoginMaxAttempts: Number(process.env.MERCHANT_LOGIN_MAX_ATTEMPTS || 10),
+  merchantSendCodeWindowMs: Number(process.env.MERCHANT_SEND_CODE_WINDOW_MS || 10 * 60 * 1000),
+  merchantSendCodeMaxAttempts: Number(process.env.MERCHANT_SEND_CODE_MAX_ATTEMPTS || 5),
+  merchantSendCodeCooldownMs: Number(process.env.MERCHANT_SEND_CODE_COOLDOWN_MS || 60 * 1000),
 
   riskUseMock: process.env.RISK_USE_MOCK !== "false",
   riskKeywords: (process.env.RISK_KEYWORDS || "微信,wx,QQ,qq群,兼职刷单,返利,代考,裸聊,赌博,私彩")

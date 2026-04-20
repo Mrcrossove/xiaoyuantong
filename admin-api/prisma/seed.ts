@@ -1,4 +1,5 @@
 import { Prisma, PrismaClient } from "@prisma/client";
+import { hashPassword } from "../src/utils/password";
 
 const prisma = new PrismaClient();
 
@@ -160,7 +161,7 @@ async function main() {
   const superAdmin = await prisma.adminUser.create({
     data: {
       account: "admin",
-      password: "JP@admin",
+      password: hashPassword("ChangeMe_Admin_123"),
       name: "\u5f20\u654f",
       status: TEXT.enabled,
       schools: [],
@@ -172,7 +173,7 @@ async function main() {
     data: [
       {
         account: "audit",
-        password: "JP@audit",
+        password: hashPassword("ChangeMe_Audit_123"),
         name: "\u738b\u51ef",
         status: TEXT.enabled,
         schools: [],
@@ -180,7 +181,7 @@ async function main() {
       },
       {
         account: "operate",
-        password: "JP@operate",
+        password: hashPassword("ChangeMe_Operate_123"),
         name: "\u674e\u60f3",
         status: TEXT.enabled,
         schools: [SCHOOLS.tsinghua],
@@ -188,7 +189,7 @@ async function main() {
       },
       {
         account: "service",
-        password: "JP@service",
+        password: hashPassword("ChangeMe_Service_123"),
         name: "\u9648\u6668",
         status: TEXT.enabled,
         schools: [SCHOOLS.pku],

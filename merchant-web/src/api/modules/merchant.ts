@@ -8,7 +8,7 @@ export interface MerchantSessionResponse {
 }
 
 export function sendCodeApi(payload: { phone: string; scene?: "login" }) {
-  return request<{ phone: string; expiresAt: string; isActivated: boolean; provider: string; devCode?: string }>({
+  return request<{ phone: string; expiresAt: string; isActivated: boolean; provider: string }>({
     url: "/merchant/auth/send-code",
     method: "POST",
     body: JSON.stringify(payload)

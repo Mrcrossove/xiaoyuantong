@@ -10,7 +10,7 @@ Page({
     submitting: false,
     verification: {
       verified: false,
-      statusText: "未认证"
+      statusText: "鏈璇?"
     },
     form: {
       name: "",
@@ -89,7 +89,7 @@ Page({
 
     if (!trimmedName) {
       wx.showToast({
-        title: "请输入姓名",
+        title: "璇疯緭鍏ュ鍚?",
         icon: "none"
       });
       return;
@@ -97,7 +97,7 @@ Page({
 
     if (!/^1\d{10}$/.test(trimmedPhone)) {
       wx.showToast({
-        title: "请输入正确的手机号",
+        title: "璇疯緭鍏ユ纭殑鎵嬫満鍙?",
         icon: "none"
       });
       return;
@@ -105,7 +105,7 @@ Page({
 
     if (!trimmedSchool) {
       wx.showToast({
-        title: "请输入学校",
+        title: "璇疯緭鍏ュ鏍?",
         icon: "none"
       });
       return;
@@ -139,26 +139,13 @@ Page({
       });
 
       wx.showToast({
-        title: "认证成功",
+        title: "璁よ瘉鎴愬姛",
         icon: "success"
       });
     } catch (error) {
-      const fallback = setVerificationInfo({
-        name: trimmedName,
-        phone: trimmedPhone,
-        school: trimmedSchool,
-        verified: true,
-        statusText: "已认证",
-        reviewNote: "当前为本地演示数据，待后端联通后自动切换为真实认证记录。"
-      });
-
-      this.setData({
-        verification: fallback
-      });
-
       wx.showToast({
-        title: "已保存演示认证",
-        icon: "success"
+        title: error && error.message ? error.message : "璁よ瘉鎻愪氦澶辫触",
+        icon: "none"
       });
     } finally {
       this.setData({ submitting: false });

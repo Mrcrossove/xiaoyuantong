@@ -5,6 +5,7 @@ import { ERROR_CODES } from "../constants/error-codes";
 import { issueToken } from "../utils/token";
 import type { AdminLoginPayload } from "../controllers/schemas";
 import { normalizeAdminPermissions } from "../utils/admin-permission";
+import { hashPassword, isPasswordHashed, verifyPassword } from "../utils/password";
 
 function toStringArray(value: Prisma.JsonValue | null | undefined) {
   return Array.isArray(value) ? value.map((item) => String(item)) : [];
@@ -27,7 +28,7 @@ function buildAdminSession(user: {
   };
 }) {
   if (user.status !== "启用" || user.role.status !== "启用") {
-    throw new ApiError("当前账号已停用", ERROR_CODES.FORBIDDEN, 403);
+    throw new ApiError("当前账号或角色已停用", ERROR_CODES.FORBIDDEN, 403);
   }
 
   return {
@@ -55,13 +56,16 @@ export async function adminLogin(payload: AdminLoginPayload) {
     include: { role: true }
   });
 
-  if (!user || user.password !== password) {
+  if (!user || !verifyPassword(password, user.password)) {
     throw new ApiError("账号或密码错误", ERROR_CODES.BAD_REQUEST, 400);
   }
 
   await prisma.adminUser.update({
     where: { id: user.id },
-    data: { lastLoginAt: new Date() }
+    data: {
+      lastLoginAt: new Date(),
+      password: isPasswordHashed(user.password) ? user.password : hashPassword(password)
+    }
   });
 
   return {
