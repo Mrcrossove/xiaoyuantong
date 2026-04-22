@@ -858,6 +858,112 @@ export interface AdminStoreQuery extends PageQuery {
   category?: string;
 }
 
+export interface AdminStoreDashboardProductItem {
+  id: string;
+  name: string;
+  desc: string;
+  cover: string;
+  category: string;
+  price: number;
+  priceText: string;
+  stock: number;
+  sales: number;
+  revenue: number;
+  status: string;
+  recommended: boolean;
+  skuCount: number;
+}
+
+export interface AdminStoreDashboardOrderItem {
+  id: number;
+  orderNo: string;
+  buyer: string;
+  receiverName: string;
+  receiverPhone: string;
+  productName: string;
+  skuName: string;
+  quantity: number;
+  amount: number;
+  payStatus: string;
+  orderStatus: string;
+  settlementStatus: string;
+  createdAt: string;
+}
+
+export interface AdminStoreDashboardChartItem {
+  key: string;
+  label: string;
+  value: number;
+  percent: number;
+}
+
+export interface AdminStoreDashboardTopProductItem {
+  id: string;
+  name: string;
+  sales: number;
+  revenue: number;
+}
+
+export interface AdminStoreDashboardTrendItem {
+  date: string;
+  orders: number;
+  revenue: number;
+}
+
+export interface AdminStoreDashboardResult {
+  store: {
+    id: number;
+    detailId: string;
+    storeName: string;
+    school: string;
+    category: string;
+    section: string;
+    status: string;
+    rating: number;
+    monthlySales: string;
+    delivery: string;
+    distance: string;
+    subtitle: string;
+    notice: string;
+    phone: string;
+    address: string;
+    cover: string;
+    createdAt: string;
+    owner: string;
+    ownerPhone: string;
+    merchantPhone: string;
+    merchantStatus: string;
+    merchantActivatedAt: string;
+    merchantLastLoginAt: string;
+  };
+  summary: {
+    totalOrders: number;
+    paidOrders: number;
+    processingOrders: number;
+    finishedOrders: number;
+    refundedOrders: number;
+    refundingOrders: number;
+    totalRevenue: number;
+    paidRevenue: number;
+    settledRevenue: number;
+    pendingSettlementRevenue: number;
+    avgOrderValue: number;
+    productCount: number;
+    onSaleProducts: number;
+    recommendedProducts: number;
+    lowStockProducts: number;
+  };
+  charts: {
+    orderStatus: AdminStoreDashboardChartItem[];
+    payStatus: AdminStoreDashboardChartItem[];
+    settlement: AdminStoreDashboardChartItem[];
+    topProducts: AdminStoreDashboardTopProductItem[];
+    recentTrend: AdminStoreDashboardTrendItem[];
+  };
+  products: AdminStoreDashboardProductItem[];
+  orders: AdminStoreDashboardOrderItem[];
+}
+
 export interface AdminOrderItem {
   id: number;
   orderNo: string;

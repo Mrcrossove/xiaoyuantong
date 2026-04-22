@@ -4,9 +4,7 @@
       <view class="back-arrow"></view>
     </view>
     <view class="publish-title">{{pageTitle}}</view>
-    <view class="publish-action {{publishing ? 'loading' : 'active'}}" bindtap="submitPublish">
-      {{publishing ? "发布中" : "发布"}}
-    </view>
+    <view class="nav-space"></view>
   </view>
 
   <scroll-view scroll-y class="publish-scroll">
@@ -109,4 +107,10 @@
       </view>
     </view>
   </scroll-view>
+
+  <view class="publish-bottom-bar">
+    <view class="publish-bottom-btn {{publishing ? 'loading' : 'active'}}" bindtap="submitPublish">
+      {{publishing ? "发布中..." : "发布"}}
+    </view>
+  </view>
 </view>

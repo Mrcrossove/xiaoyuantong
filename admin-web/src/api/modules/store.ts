@@ -1,4 +1,5 @@
 import type {
+  AdminStoreDashboardResult,
   AdminStoreItem,
   AdminStoreQuery,
   PageResult,
@@ -29,5 +30,12 @@ export function getAdminStoreListApi(query: AdminStoreQuery) {
     url: "/mini/store/admin/list",
     method: "GET",
     params: query
+  });
+}
+
+export function getAdminStoreDashboardApi(id: number) {
+  return request<AdminStoreDashboardResult>({
+    url: `/mini/store/admin/detail/${id}`,
+    method: "GET"
   });
 }

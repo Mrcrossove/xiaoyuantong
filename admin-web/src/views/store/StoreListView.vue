@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 import type { AdminStoreItem } from "../../api/contracts";
 import { getAdminStoreListApi } from "../../api/modules/store";
 
+const router = useRouter();
 const loading = ref(false);
 const list = ref<AdminStoreItem[]>([]);
 const total = ref(0);
@@ -16,8 +18,8 @@ const query = reactive({
 
 const schoolOptions = computed(() => [...new Set(list.value.map((item) => item.school).filter(Boolean))]);
 const categoryOptions = computed(() => [...new Set(list.value.map((item) => item.category).filter(Boolean))]);
-const openCount = computed(() => list.value.filter((item) => item.status === "营业中").length);
-const recommendCount = computed(() => list.value.filter((item) => item.recommend === "推荐中").length);
+const openCount = computed(() => list.value.filter((item) => item.status.includes("营业")).length);
+const recommendCount = computed(() => list.value.filter((item) => item.recommend.includes("推荐")).length);
 
 async function loadData() {
   loading.value = true;
@@ -48,6 +50,10 @@ function handlePageChange(page: number) {
   loadData();
 }
 
+function openStoreDetail(row: AdminStoreItem) {
+  router.push(`/store/detail/${row.id}`);
+}
+
 onMounted(loadData);
 </script>
 
@@ -68,7 +74,7 @@ onMounted(loadData);
     <el-card shadow="never">
       <template #header>店铺筛选</template>
       <div class="toolbar">
-        <el-input v-model="query.keyword" placeholder="搜索店铺或店主" clearable class="input" @keyup.enter="handleSearch" />
+        <el-input v-model="query.keyword" placeholder="搜索店铺名称或店主" clearable class="input" @keyup.enter="handleSearch" />
         <el-select v-model="query.school" placeholder="全部高校" clearable class="select">
           <el-option v-for="item in schoolOptions" :key="item" :label="item" :value="item" />
         </el-select>
@@ -83,20 +89,24 @@ onMounted(loadData);
     <el-card shadow="never">
       <template #header>店铺列表</template>
       <el-table :data="list" stripe v-loading="loading">
-        <el-table-column prop="storeName" label="店铺名称" min-width="220" />
+        <el-table-column label="店铺名称" min-width="220">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="openStoreDetail(row)">{{ row.storeName }}</el-button>
+          </template>
+        </el-table-column>
         <el-table-column prop="owner" label="店主" width="120" />
         <el-table-column prop="ownerPhone" label="联系电话" width="140" />
         <el-table-column prop="school" label="高校" min-width="160" />
-        <el-table-column prop="category" label="分类" width="120" />
+        <el-table-column prop="category" label="一级分类" width="120" />
         <el-table-column prop="section" label="二级分类" width="120" />
         <el-table-column label="营业状态" width="120">
           <template #default="{ row }">
-            <el-tag :type="row.status === '营业中' ? 'success' : 'info'">{{ row.status }}</el-tag>
+            <el-tag :type="row.status.includes('营业') ? 'success' : 'info'">{{ row.status }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="推荐状态" width="120">
           <template #default="{ row }">
-            <el-tag :type="row.recommend === '推荐中' ? 'warning' : 'info'">{{ row.recommend }}</el-tag>
+            <el-tag :type="row.recommend.includes('推荐') ? 'warning' : 'info'">{{ row.recommend }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="goodsCount" label="商品数" width="100" />
@@ -123,32 +133,40 @@ onMounted(loadData);
   display: grid;
   gap: 16px;
 }
+
 .metric-label {
   color: #667085;
   font-size: 14px;
 }
+
 .metric-value {
   margin-top: 12px;
   font-size: 30px;
   font-weight: 700;
 }
+
 .metric-value.success {
   color: #16a34a;
 }
+
 .metric-value.warning {
   color: #d97706;
 }
+
 .toolbar {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
 }
+
 .input {
   width: 280px;
 }
+
 .select {
   width: 180px;
 }
+
 .pagination {
   margin-top: 16px;
   display: flex;

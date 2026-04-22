@@ -1,6 +1,7 @@
 .publish-page {
   min-height: 100vh;
   background: #f5f7fb;
+  padding-bottom: 156rpx;
 }
 
 .back-touch {
@@ -22,44 +23,61 @@
 .publish-nav {
   height: 88rpx;
   padding: 0 24rpx;
-  display: flex;
+  display: grid;
+  grid-template-columns: 72rpx 1fr 72rpx;
   align-items: center;
-  justify-content: space-between;
   background: #ffffff;
   border-bottom: 2rpx solid #eef1f6;
 }
 
 .publish-title {
+  text-align: center;
   color: #2f68e3;
   font-size: 32rpx;
   font-weight: 700;
 }
 
-.publish-action {
-  width: 84rpx;
-  height: 52rpx;
+.nav-space {
+  width: 72rpx;
+  height: 72rpx;
+}
+
+.publish-bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 18rpx 24rpx 28rpx;
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 2rpx solid #edf1f5;
+  z-index: 20;
+}
+
+.publish-bottom-btn {
+  height: 92rpx;
   border-radius: 999rpx;
   background: #eff3fa;
   color: #a3abbb;
-  font-size: 24rpx;
+  font-size: 30rpx;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.publish-action.active {
+.publish-bottom-btn.active {
   background: linear-gradient(120deg, #2f68e3, #36a86e);
   color: #ffffff;
 }
 
-.publish-action.loading {
+.publish-bottom-btn.loading {
   background: #dce6f8;
   color: #5c77b4;
 }
 
 .publish-scroll {
   height: calc(100vh - 88rpx - env(safe-area-inset-top));
-  padding: 18rpx 16rpx 40rpx;
+  padding: 18rpx 16rpx 180rpx;
   box-sizing: border-box;
 }
 

@@ -27,6 +27,7 @@ const router = createRouter({
         { path: "post/report", component: () => import("../views/post/PostReportView.vue"), meta: { title: "举报管理", menuPath: "/post/report" } },
         { path: "store/apply", component: () => import("../views/store/StoreApplyView.vue"), meta: { title: "入驻申请", menuPath: "/store/apply" } },
         { path: "store/list", component: () => import("../views/store/StoreListView.vue"), meta: { title: "店铺列表", menuPath: "/store/list" } },
+        { path: "store/detail/:id", component: () => import("../views/store/StoreDetailView.vue"), meta: { title: "店铺经营看板", menuPath: "/store/list" } },
         { path: "store/category", component: () => import("../views/store/StoreCategoryView.vue"), meta: { title: "店铺分类", menuPath: "/store/category" } },
         { path: "product/list", component: () => import("../views/product/ProductListView.vue"), meta: { title: "商品列表", menuPath: "/product/list" } },
         { path: "product/spec", component: () => import("../views/product/ProductSpecView.vue"), meta: { title: "商品规格管理", menuPath: "/product/spec" } },

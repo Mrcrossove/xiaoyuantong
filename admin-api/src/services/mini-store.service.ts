@@ -9,6 +9,12 @@ import {
   parseMoneyNumber,
   toMerchantProducts
 } from "../utils/merchant-product";
+import {
+  MINI_ORDER_STATUS,
+  MINI_PAY_STATUS,
+  MINI_REFUND_STATUS,
+  MINI_SETTLEMENT_STATUS
+} from "./mini-order.service";
 
 interface BannerItem {
   id: number;
@@ -269,5 +275,257 @@ export async function queryAdminStoreList(adminUserId: number, rawQuery: Record<
     page,
     pageSize,
     total
+  };
+}
+
+function formatDateTime(value: Date | null | undefined) {
+  if (!value) return "";
+  return value.toISOString().slice(0, 19).replace("T", " ");
+}
+
+function roundMoney(value: number) {
+  return Number(Number(value || 0).toFixed(2));
+}
+
+function normalizeAdminOrderStatus(status: string) {
+  return status === MINI_ORDER_STATUS.accepted ? MINI_ORDER_STATUS.processing : status;
+}
+
+function calcPercent(value: number, total: number) {
+  if (!total) return 0;
+  return Math.round((value / total) * 100);
+}
+
+export async function getAdminStoreDashboard(adminUserId: number, storeId: number) {
+  const scope = await getAdminSchoolScope(adminUserId);
+
+  const store = await prisma.miniStore.findFirstOrThrow({
+    where: {
+      id: storeId,
+      school: buildSchoolWhere(scope, "")
+    },
+    include: {
+      ownerUser: {
+        select: {
+          nickname: true,
+          phone: true
+        }
+      }
+    }
+  });
+
+  const [orders, merchantAccount] = await prisma.$transaction([
+    prisma.miniOrder.findMany({
+      where: { storeDetailId: store.detailId },
+      include: {
+        user: {
+          select: {
+            nickname: true
+          }
+        },
+        refunds: {
+          select: {
+            id: true,
+            status: true
+          },
+          orderBy: {
+            applyTime: "desc"
+          }
+        }
+      },
+      orderBy: {
+        createdAt: "desc"
+      }
+    }),
+    prisma.merchantAccount.findUnique({
+      where: { storeId: store.id },
+      select: {
+        phone: true,
+        status: true,
+        activatedAt: true,
+        lastLoginAt: true
+      }
+    })
+  ]);
+
+  const products = toMerchantProducts(store.products);
+  const ordersByProductId = new Map<string, number>();
+  const revenueByProductId = new Map<string, number>();
+
+  for (const order of orders) {
+    const productId = String(order.productId || "");
+    if (!productId) continue;
+    ordersByProductId.set(productId, (ordersByProductId.get(productId) || 0) + Number(order.quantity || 1));
+    revenueByProductId.set(productId, roundMoney((revenueByProductId.get(productId) || 0) + Number(order.amount || 0)));
+  }
+
+  const productList = products.map((product: any) => {
+    const defaultSku = getDefaultSku(product);
+    const status = String(product.status || MERCHANT_PRODUCT_STATUS.onSale);
+    const sales = ordersByProductId.get(String(product.id || "")) || 0;
+    const revenue = revenueByProductId.get(String(product.id || "")) || 0;
+
+    return {
+      id: String(product.id || ""),
+      name: String(product.name || ""),
+      desc: String(product.desc || ""),
+      cover: String(product.cover || ""),
+      category: store.sectionLabel,
+      price: defaultSku ? parseMoneyNumber(defaultSku.price) : parseMoneyNumber(product.price),
+      priceText: buildProductDisplayPrice(product),
+      stock: Number(product.stock || 0),
+      sales,
+      revenue,
+      status,
+      recommended: Boolean(product.recommended),
+      skuCount: Array.isArray(product.skus) ? product.skus.length : 0
+    };
+  });
+
+  const totalOrders = orders.length;
+  const paidOrders = orders.filter((item: any) => item.payStatus === MINI_PAY_STATUS.paid).length;
+  const finishedOrders = orders.filter((item: any) => item.status === MINI_ORDER_STATUS.finished).length;
+  const processingOrders = orders.filter((item: any) =>
+    item.status === MINI_ORDER_STATUS.processing || item.status === MINI_ORDER_STATUS.accepted
+  ).length;
+  const refundedOrders = orders.filter((item: any) => item.payStatus === MINI_PAY_STATUS.refunded).length;
+  const refundingOrders = orders.filter((item: any) =>
+    item.refunds.some((refund: any) => refund.status === MINI_REFUND_STATUS.pending)
+  ).length;
+  const totalRevenue = roundMoney(orders.reduce((sum: number, item: any) => sum + Number(item.amount || 0), 0));
+  const paidRevenue = roundMoney(
+    orders
+      .filter((item: any) => item.payStatus === MINI_PAY_STATUS.paid)
+      .reduce((sum: number, item: any) => sum + Number(item.amount || 0), 0)
+  );
+  const settledRevenue = roundMoney(
+    orders
+      .filter((item: any) => item.settlementStatus === MINI_SETTLEMENT_STATUS.settled)
+      .reduce((sum: number, item: any) => sum + Number(item.settlementAmount || item.merchantIncomeAmount || item.amount || 0), 0)
+  );
+  const pendingSettlementRevenue = roundMoney(
+    orders
+      .filter(
+        (item: any) =>
+          item.settlementStatus === MINI_SETTLEMENT_STATUS.pending || item.settlementStatus === MINI_SETTLEMENT_STATUS.waiting
+      )
+      .reduce((sum: number, item: any) => sum + Number(item.merchantIncomeAmount || item.amount || 0), 0)
+  );
+  const onSaleProducts = productList.filter((item) => item.status === MERCHANT_PRODUCT_STATUS.onSale).length;
+  const recommendedProducts = productList.filter((item) => item.recommended).length;
+  const lowStockProducts = productList.filter((item) => item.stock > 0 && item.stock <= 5).length;
+
+  const orderStatusChart = [
+    { key: "pending", label: MINI_ORDER_STATUS.pending, value: orders.filter((item: any) => item.status === MINI_ORDER_STATUS.pending).length },
+    { key: "processing", label: MINI_ORDER_STATUS.processing, value: processingOrders },
+    { key: "finished", label: MINI_ORDER_STATUS.finished, value: finishedOrders },
+    { key: "canceled", label: MINI_ORDER_STATUS.canceled, value: orders.filter((item: any) => item.status === MINI_ORDER_STATUS.canceled).length }
+  ].map((item) => ({ ...item, percent: calcPercent(item.value, totalOrders) }));
+
+  const payStatusChart = [
+    { key: "pending", label: MINI_PAY_STATUS.pending, value: orders.filter((item: any) => item.payStatus === MINI_PAY_STATUS.pending).length },
+    { key: "paid", label: MINI_PAY_STATUS.paid, value: paidOrders },
+    { key: "refunded", label: MINI_PAY_STATUS.refunded, value: refundedOrders }
+  ].map((item) => ({ ...item, percent: calcPercent(item.value, totalOrders) }));
+
+  const settlementChart = [
+    { key: "pending", label: MINI_SETTLEMENT_STATUS.pending, value: orders.filter((item: any) => item.settlementStatus === MINI_SETTLEMENT_STATUS.pending).length },
+    { key: "waiting", label: MINI_SETTLEMENT_STATUS.waiting, value: orders.filter((item: any) => item.settlementStatus === MINI_SETTLEMENT_STATUS.waiting).length },
+    { key: "settled", label: MINI_SETTLEMENT_STATUS.settled, value: orders.filter((item: any) => item.settlementStatus === MINI_SETTLEMENT_STATUS.settled).length },
+    { key: "closed", label: MINI_SETTLEMENT_STATUS.closed, value: orders.filter((item: any) => item.settlementStatus === MINI_SETTLEMENT_STATUS.closed).length }
+  ].map((item) => ({ ...item, percent: calcPercent(item.value, totalOrders) }));
+
+  const topProducts = [...productList]
+    .sort((a, b) => (b.sales === a.sales ? b.revenue - a.revenue : b.sales - a.sales))
+    .slice(0, 5)
+    .map((item) => ({
+      id: item.id,
+      name: item.name,
+      sales: item.sales,
+      revenue: item.revenue
+    }));
+
+  const trendMap = new Map<string, { date: string; orders: number; revenue: number }>();
+  for (let index = 6; index >= 0; index -= 1) {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() - index);
+    const key = date.toISOString().slice(0, 10);
+    trendMap.set(key, { date: key, orders: 0, revenue: 0 });
+  }
+  for (const order of orders) {
+    const key = order.createdAt.toISOString().slice(0, 10);
+    const current = trendMap.get(key);
+    if (!current) continue;
+    current.orders += 1;
+    current.revenue = roundMoney(current.revenue + Number(order.amount || 0));
+  }
+
+  return {
+    store: {
+      id: store.id,
+      detailId: store.detailId,
+      storeName: store.name,
+      school: store.school,
+      category: store.groupLabel,
+      section: store.sectionLabel,
+      status: store.status,
+      rating: store.rating,
+      monthlySales: store.monthlySales,
+      delivery: store.delivery,
+      distance: store.distance,
+      subtitle: store.subtitle,
+      notice: store.notice,
+      phone: store.phone,
+      address: store.address,
+      cover: store.cover,
+      createdAt: formatDateTime(store.createdAt),
+      owner: store.ownerUser?.nickname || "-",
+      ownerPhone: store.ownerUser?.phone || "",
+      merchantPhone: merchantAccount?.phone || "",
+      merchantStatus: merchantAccount?.status || "",
+      merchantActivatedAt: formatDateTime(merchantAccount?.activatedAt),
+      merchantLastLoginAt: formatDateTime(merchantAccount?.lastLoginAt)
+    },
+    summary: {
+      totalOrders,
+      paidOrders,
+      processingOrders,
+      finishedOrders,
+      refundedOrders,
+      refundingOrders,
+      totalRevenue,
+      paidRevenue,
+      settledRevenue,
+      pendingSettlementRevenue,
+      avgOrderValue: totalOrders ? roundMoney(totalRevenue / totalOrders) : 0,
+      productCount: productList.length,
+      onSaleProducts,
+      recommendedProducts,
+      lowStockProducts
+    },
+    charts: {
+      orderStatus: orderStatusChart,
+      payStatus: payStatusChart,
+      settlement: settlementChart,
+      topProducts,
+      recentTrend: Array.from(trendMap.values())
+    },
+    products: productList,
+    orders: orders.slice(0, 20).map((item: any) => ({
+      id: item.id,
+      orderNo: item.orderNo,
+      buyer: item.user?.nickname || item.receiverName || "-",
+      receiverName: item.receiverName,
+      receiverPhone: item.receiverPhone,
+      productName: item.productName,
+      skuName: item.skuName || "",
+      quantity: item.quantity,
+      amount: roundMoney(Number(item.amount || 0)),
+      payStatus: item.payStatus,
+      orderStatus: normalizeAdminOrderStatus(item.status),
+      settlementStatus: item.settlementStatus,
+      createdAt: formatDateTime(item.createdAt)
+    }))
   };
 }
