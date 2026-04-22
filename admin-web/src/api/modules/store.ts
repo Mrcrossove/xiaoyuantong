@@ -1,6 +1,7 @@
 import type {
   AdminStoreDashboardResult,
   AdminStoreOrderDetailResult,
+  AdminStoreOrderQuery,
   AdminStoreItem,
   AdminStoreProductPayload,
   AdminStoreQuery,
@@ -43,6 +44,14 @@ export function getAdminStoreDashboardApi(id: number) {
   });
 }
 
+export function getAdminStoreDashboardWithQueryApi(id: number, params: Record<string, string | number | undefined>) {
+  return request<AdminStoreDashboardResult>({
+    url: `/mini/store/admin/detail/${id}`,
+    method: "GET",
+    params
+  });
+}
+
 export function createAdminStoreProductApi(storeId: number, payload: AdminStoreProductPayload) {
   return request({
     url: `/mini/store/admin/detail/${storeId}/product`,
@@ -77,6 +86,14 @@ export function getAdminStoreOrderDetailApi(storeId: number, orderId: number) {
   return request<AdminStoreOrderDetailResult>({
     url: `/mini/store/admin/detail/${storeId}/order/${orderId}`,
     method: "GET"
+  });
+}
+
+export function getAdminStoreOrdersApi(storeId: number, query: AdminStoreOrderQuery) {
+  return request<PageResult<AdminStoreDashboardResult["orders"][number]>>({
+    url: `/mini/store/admin/detail/${storeId}/orders`,
+    method: "GET",
+    params: query
   });
 }
 

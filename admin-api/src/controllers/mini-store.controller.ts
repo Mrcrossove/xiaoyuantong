@@ -8,6 +8,7 @@ import {
   getAdminStoreOrderDetail,
   getAdminStoreDashboard,
   getMiniStoreDetail,
+  queryAdminStoreOrders,
   queryAdminStoreList,
   queryMiniStores,
   reviewAdminStoreOrderRefund,
@@ -31,7 +32,12 @@ export async function listAdminStoreAction(req: Request, res: Response) {
 }
 
 export async function getAdminStoreDashboardAction(req: Request, res: Response) {
-  const data = await getAdminStoreDashboard(req.adminAuth!.userId, Number(req.params.id));
+  const data = await getAdminStoreDashboard(req.adminAuth!.userId, Number(req.params.id), req.query as Record<string, unknown>);
+  return ok(res, data, req.traceId);
+}
+
+export async function listAdminStoreOrdersAction(req: Request, res: Response) {
+  const data = await queryAdminStoreOrders(req.adminAuth!.userId, Number(req.params.id), req.query as Record<string, unknown>);
   return ok(res, data, req.traceId);
 }
 

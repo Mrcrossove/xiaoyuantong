@@ -304,6 +304,24 @@ function calcPercent(value: number, total: number) {
   return Math.round((value / total) * 100);
 }
 
+function parseDateRange(rawQuery: Record<string, unknown>) {
+  const dateFrom = String(rawQuery.dateFrom || "").trim();
+  const dateTo = String(rawQuery.dateTo || "").trim();
+  const createdAt: { gte?: Date; lte?: Date } = {};
+
+  if (dateFrom) {
+    const start = new Date(`${dateFrom}T00:00:00.000Z`);
+    if (!Number.isNaN(start.getTime())) createdAt.gte = start;
+  }
+
+  if (dateTo) {
+    const end = new Date(`${dateTo}T23:59:59.999Z`);
+    if (!Number.isNaN(end.getTime())) createdAt.lte = end;
+  }
+
+  return Object.keys(createdAt).length ? createdAt : undefined;
+}
+
 function countOnSaleProducts(products: Array<{ status?: string }>) {
   return products.filter((item) => String(item.status || MERCHANT_PRODUCT_STATUS.onSale) === MERCHANT_PRODUCT_STATUS.onSale).length;
 }
@@ -437,15 +455,18 @@ function mapAdminOrderDetail(order: any) {
   };
 }
 
-export async function getAdminStoreDashboard(adminUserId: number, storeId: number) {
+export async function getAdminStoreDashboard(adminUserId: number, storeId: number, rawQuery: Record<string, unknown> = {}) {
   const store = await findAdminStoreWithScope(adminUserId, storeId);
   if (!store) {
     throw new ApiError("店铺不存在或无权访问", ERROR_CODES.NOT_FOUND, 404);
   }
 
+  const createdAt = parseDateRange(rawQuery);
+  const trendDays = Math.min(90, Math.max(7, Number(rawQuery.trendDays || 7) || 7));
+
   const [orders, merchantAccount] = await prisma.$transaction([
     prisma.miniOrder.findMany({
-      where: { storeDetailId: store.detailId },
+      where: { storeDetailId: store.detailId, createdAt },
       include: {
         user: {
           select: {
@@ -589,7 +610,7 @@ export async function getAdminStoreDashboard(adminUserId: number, storeId: numbe
     }));
 
   const trendMap = new Map<string, { date: string; orders: number; revenue: number }>();
-  for (let index = 6; index >= 0; index -= 1) {
+  for (let index = trendDays - 1; index >= 0; index -= 1) {
     const date = new Date();
     date.setHours(0, 0, 0, 0);
     date.setDate(date.getDate() - index);
@@ -793,6 +814,71 @@ export async function deleteAdminStoreProduct(adminUserId: number, storeId: numb
   return {
     storeId: store.id,
     deletedProductId: String(productId)
+  };
+}
+
+export async function queryAdminStoreOrders(adminUserId: number, storeId: number, rawQuery: Record<string, unknown>) {
+  const { page, pageSize, skip } = parsePageParams(rawQuery);
+  const store = await findAdminStoreWithScope(adminUserId, storeId);
+  if (!store) {
+    throw new ApiError("店铺不存在或无权访问", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  const keyword = String(rawQuery.keyword || "").trim();
+  const payStatus = String(rawQuery.payStatus || "").trim();
+  const orderStatus = String(rawQuery.orderStatus || "").trim();
+  const createdAt = parseDateRange(rawQuery);
+
+  const where = {
+    storeDetailId: store.detailId,
+    createdAt,
+    payStatus: payStatus || undefined,
+    status: orderStatus || undefined,
+    OR: keyword
+      ? [
+          { orderNo: { contains: keyword, mode: "insensitive" as const } },
+          { receiverName: { contains: keyword, mode: "insensitive" as const } },
+          { productName: { contains: keyword, mode: "insensitive" as const } }
+        ]
+      : undefined
+  };
+
+  const [total, list] = await prisma.$transaction([
+    prisma.miniOrder.count({ where }),
+    prisma.miniOrder.findMany({
+      where,
+      include: {
+        user: {
+          select: {
+            nickname: true
+          }
+        }
+      },
+      orderBy: { id: "desc" },
+      skip,
+      take: pageSize
+    })
+  ]);
+
+  return {
+    list: list.map((item: any) => ({
+      id: item.id,
+      orderNo: item.orderNo,
+      buyer: item.user?.nickname || item.receiverName || "-",
+      receiverName: item.receiverName,
+      receiverPhone: item.receiverPhone,
+      productName: item.productName,
+      skuName: item.skuName || "",
+      quantity: item.quantity,
+      amount: roundMoney(Number(item.amount || 0)),
+      payStatus: item.payStatus,
+      orderStatus: normalizeAdminOrderStatus(item.status),
+      settlementStatus: item.settlementStatus,
+      createdAt: formatDateTime(item.createdAt)
+    })),
+    page,
+    pageSize,
+    total
   };
 }
 

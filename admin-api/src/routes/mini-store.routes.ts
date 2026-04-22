@@ -7,6 +7,7 @@ import {
   getAdminStoreDashboardAction,
   getAdminStoreOrderDetailAction,
   getMiniStoreDetailAction,
+  listAdminStoreOrdersAction,
   listAdminStoreAction,
   listMiniStoreAction,
   reviewAdminStoreOrderRefundAction,
@@ -25,6 +26,7 @@ router.get("/list", asyncHandler(listMiniStoreAction));
 router.get("/detail/:detailId", asyncHandler(getMiniStoreDetailAction));
 router.get("/admin/list", requireAdminAuth, requireAdminMenuAccess("/store/list"), asyncHandler(listAdminStoreAction));
 router.get("/admin/detail/:id", requireAdminAuth, requireAdminMenuAccess("/store/list"), asyncHandler(getAdminStoreDashboardAction));
+router.get("/admin/detail/:id/orders", requireAdminAuth, requireAdminMenuAccess("/store/list"), asyncHandler(listAdminStoreOrdersAction));
 router.post(
   "/admin/detail/:id/product",
   requireAdminAuth,

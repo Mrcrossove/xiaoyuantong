@@ -966,6 +966,13 @@ export interface AdminStoreOrderDetailResult {
   };
 }
 
+export interface AdminStoreOrderQuery extends PageQuery {
+  payStatus?: string;
+  orderStatus?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
 export interface AdminStoreDashboardChartItem {
   key: string;
   label: string;
