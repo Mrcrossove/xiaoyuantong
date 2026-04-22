@@ -10,7 +10,7 @@ Page({
     submitting: false,
     verification: {
       verified: false,
-      statusText: "鏈璇?"
+      statusText: "未认证"
     },
     form: {
       name: "",
@@ -89,7 +89,7 @@ Page({
 
     if (!trimmedName) {
       wx.showToast({
-        title: "璇疯緭鍏ュ鍚?",
+        title: "请填写姓名",
         icon: "none"
       });
       return;
@@ -97,7 +97,7 @@ Page({
 
     if (!/^1\d{10}$/.test(trimmedPhone)) {
       wx.showToast({
-        title: "璇疯緭鍏ユ纭殑鎵嬫満鍙?",
+        title: "请输入正确的手机号",
         icon: "none"
       });
       return;
@@ -105,7 +105,7 @@ Page({
 
     if (!trimmedSchool) {
       wx.showToast({
-        title: "璇疯緭鍏ュ鏍?",
+        title: "请填写学校",
         icon: "none"
       });
       return;
@@ -139,12 +139,12 @@ Page({
       });
 
       wx.showToast({
-        title: "璁よ瘉鎴愬姛",
+        title: "提交成功",
         icon: "success"
       });
     } catch (error) {
       wx.showToast({
-        title: error && error.message ? error.message : "璁よ瘉鎻愪氦澶辫触",
+        title: error && error.message ? error.message : "提交失败，请稍后重试",
         icon: "none"
       });
     } finally {

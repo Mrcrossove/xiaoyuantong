@@ -4,8 +4,9 @@ import type { MiniLoginPayload } from "../controllers/schemas";
 import { fetchWechatSession } from "./wechat-auth.service";
 import { ApiError } from "../utils/api-error";
 import { ERROR_CODES } from "../constants/error-codes";
+import { env } from "../config/env";
 
-const VERIFY_STATUS_VERIFIED = "宸茶璇?";
+const VERIFY_STATUS_VERIFIED = "已认证";
 
 function buildVerifyInfo(user: {
   verifyStatus: string;
@@ -28,21 +29,28 @@ function buildDeviceId(payload: MiniLoginPayload) {
 }
 
 export async function miniLogin(payload: MiniLoginPayload) {
-  const nickname = payload.nickname?.trim() || "鏍″洯鐢ㄦ埛";
+  const deviceId = buildDeviceId(payload);
+  const nickname = payload.nickname?.trim() || "校园用户";
   const school = payload.school?.trim() || undefined;
   const avatarUrl = payload.avatarUrl?.trim() || undefined;
 
   if (!payload.code?.trim()) {
-    throw new ApiError("缂哄皯寰俊鐧诲綍 code", ERROR_CODES.BAD_REQUEST, 400);
+    throw new ApiError("缺少微信登录 code", ERROR_CODES.BAD_REQUEST, 400);
   }
 
-  const wechatSession = await fetchWechatSession(payload.code.trim());
+  const wechatSession = env.wechatUseMock
+    ? {
+        openid: `mock_openid_${deviceId}`,
+        unionid: `mock_unionid_${deviceId}`
+      }
+    : await fetchWechatSession(payload.code.trim());
+
   const user = await prisma.miniUser.upsert({
     where: { openid: wechatSession.openid },
     create: {
       openid: wechatSession.openid,
       unionId: wechatSession.unionid,
-      deviceId: buildDeviceId(payload),
+      deviceId,
       nickname,
       avatarUrl,
       school
@@ -52,7 +60,7 @@ export async function miniLogin(payload: MiniLoginPayload) {
       nickname,
       avatarUrl,
       school: school || undefined,
-      deviceId: buildDeviceId(payload)
+      deviceId
     }
   });
 

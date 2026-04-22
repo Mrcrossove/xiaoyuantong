@@ -17,7 +17,10 @@ function request(options) {
           return;
         }
 
-        reject(new Error(payload.message || `请求失败：${res.statusCode}`));
+        const error = new Error(payload.message || `请求失败：${res.statusCode}`);
+        error.statusCode = res.statusCode;
+        error.code = payload.code;
+        reject(error);
       },
       fail(error) {
         reject(error);

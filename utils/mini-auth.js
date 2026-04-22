@@ -13,6 +13,13 @@ function getToken() {
   }
 }
 
+function clearSession() {
+  try {
+    wx.removeStorageSync(TOKEN_KEY);
+    wx.removeStorageSync(PROFILE_KEY);
+  } catch (error) {}
+}
+
 function setSession(payload) {
   try {
     wx.setStorageSync(TOKEN_KEY, payload.token || "");
@@ -94,19 +101,37 @@ function buildAuthHeader(token) {
 
 async function authRequest(options) {
   const session = await ensureMiniSession();
-  return request({
-    ...options,
-    header: {
-      ...(options.header || {}),
-      ...buildAuthHeader(session.token)
+
+  try {
+    return await request({
+      ...options,
+      header: {
+        ...(options.header || {}),
+        ...buildAuthHeader(session.token)
+      }
+    });
+  } catch (error) {
+    if (error && error.statusCode === 401) {
+      clearSession();
+      const nextSession = await ensureMiniSession();
+      return request({
+        ...options,
+        header: {
+          ...(options.header || {}),
+          ...buildAuthHeader(nextSession.token)
+        }
+      });
     }
-  });
+
+    throw error;
+  }
 }
 
 module.exports = {
   getToken,
   getProfile,
   ensureMiniSession,
+  clearSession,
   buildAuthHeader,
   authRequest
 };
