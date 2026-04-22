@@ -917,6 +917,55 @@ export interface AdminStoreDashboardOrderItem {
   createdAt: string;
 }
 
+export interface AdminStoreOrderRefundItem {
+  id: number;
+  refundNo: string;
+  amount: number;
+  reason: string;
+  status: string;
+  reviewNote: string;
+  reviewerName: string;
+  applyTime: string;
+  reviewedAt: string;
+}
+
+export interface AdminStoreOrderDetailResult {
+  id: number;
+  orderNo: string;
+  school: string;
+  buyer: string;
+  storeName: string;
+  productName: string;
+  productDesc: string;
+  productCover: string;
+  skuName: string;
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+  payStatus: string;
+  orderStatus: string;
+  rawOrderStatus: string;
+  settlementStatus: string;
+  receiverName: string;
+  receiverPhone: string;
+  receiverAddress: string;
+  addressTag: string;
+  remark: string;
+  paymentChannel: string;
+  paymentMode: string;
+  createdAt: string;
+  paidAt: string;
+  finishedAt: string;
+  canceledAt: string;
+  refunds: AdminStoreOrderRefundItem[];
+  latestRefund: AdminStoreOrderRefundItem | null;
+  actions: {
+    canFinish: boolean;
+    canCancel: boolean;
+    canReviewRefund: boolean;
+  };
+}
+
 export interface AdminStoreDashboardChartItem {
   key: string;
   label: string;

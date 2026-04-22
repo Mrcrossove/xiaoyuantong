@@ -1,12 +1,16 @@
 import type { Request, Response } from "express";
 import { ok } from "../utils/response";
 import {
+  cancelAdminStoreOrder,
   createAdminStoreProduct,
   deleteAdminStoreProduct,
+  finishAdminStoreOrder,
+  getAdminStoreOrderDetail,
   getAdminStoreDashboard,
   getMiniStoreDetail,
   queryAdminStoreList,
   queryMiniStores,
+  reviewAdminStoreOrderRefund,
   toggleAdminStoreProductStatus,
   updateAdminStoreProduct
 } from "../services/mini-store.service";
@@ -48,5 +52,31 @@ export async function toggleAdminStoreProductStatusAction(req: Request, res: Res
 
 export async function deleteAdminStoreProductAction(req: Request, res: Response) {
   const data = await deleteAdminStoreProduct(req.adminAuth!.userId, Number(req.params.id), String(req.params.productId || ""));
+  return ok(res, data, req.traceId);
+}
+
+export async function getAdminStoreOrderDetailAction(req: Request, res: Response) {
+  const data = await getAdminStoreOrderDetail(req.adminAuth!.userId, Number(req.params.id), Number(req.params.orderId));
+  return ok(res, data, req.traceId);
+}
+
+export async function finishAdminStoreOrderAction(req: Request, res: Response) {
+  const data = await finishAdminStoreOrder(req.adminAuth!.userId, Number(req.params.id), Number(req.params.orderId));
+  return ok(res, data, req.traceId);
+}
+
+export async function cancelAdminStoreOrderAction(req: Request, res: Response) {
+  const data = await cancelAdminStoreOrder(req.adminAuth!.userId, Number(req.params.id), Number(req.params.orderId));
+  return ok(res, data, req.traceId);
+}
+
+export async function reviewAdminStoreOrderRefundAction(req: Request, res: Response) {
+  const data = await reviewAdminStoreOrderRefund(
+    req.adminAuth!.userId,
+    Number(req.params.id),
+    Number(req.params.orderId),
+    Number(req.params.refundId),
+    req.body
+  );
   return ok(res, data, req.traceId);
 }

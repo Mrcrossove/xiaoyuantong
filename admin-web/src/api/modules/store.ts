@@ -1,9 +1,11 @@
 import type {
   AdminStoreDashboardResult,
+  AdminStoreOrderDetailResult,
   AdminStoreItem,
   AdminStoreProductPayload,
   AdminStoreQuery,
   PageResult,
+  RefundReviewPayload,
   StoreApplyItem,
   StoreApplyQuery,
   StoreReviewPayload
@@ -68,5 +70,39 @@ export function deleteAdminStoreProductApi(storeId: number, productId: string) {
   return request({
     url: `/mini/store/admin/detail/${storeId}/product/${productId}`,
     method: "DELETE"
+  });
+}
+
+export function getAdminStoreOrderDetailApi(storeId: number, orderId: number) {
+  return request<AdminStoreOrderDetailResult>({
+    url: `/mini/store/admin/detail/${storeId}/order/${orderId}`,
+    method: "GET"
+  });
+}
+
+export function finishAdminStoreOrderApi(storeId: number, orderId: number) {
+  return request<AdminStoreOrderDetailResult>({
+    url: `/mini/store/admin/detail/${storeId}/order/${orderId}/finish`,
+    method: "POST"
+  });
+}
+
+export function cancelAdminStoreOrderApi(storeId: number, orderId: number) {
+  return request<AdminStoreOrderDetailResult>({
+    url: `/mini/store/admin/detail/${storeId}/order/${orderId}/cancel`,
+    method: "POST"
+  });
+}
+
+export function reviewAdminStoreOrderRefundApi(
+  storeId: number,
+  orderId: number,
+  refundId: number,
+  payload: RefundReviewPayload
+) {
+  return request<AdminStoreOrderDetailResult>({
+    url: `/mini/store/admin/detail/${storeId}/order/${orderId}/refund/${refundId}/review`,
+    method: "POST",
+    body: JSON.stringify(payload)
   });
 }

@@ -3,15 +3,22 @@ import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import type {
+  AdminStoreDashboardOrderItem,
   AdminStoreDashboardProductItem,
   AdminStoreDashboardResult,
+  AdminStoreOrderDetailResult,
   AdminStoreProductPayload,
-  AdminStoreProductSkuPayload
+  AdminStoreProductSkuPayload,
+  RefundReviewPayload
 } from "../../api/contracts";
 import {
+  cancelAdminStoreOrderApi,
   createAdminStoreProductApi,
   deleteAdminStoreProductApi,
+  finishAdminStoreOrderApi,
   getAdminStoreDashboardApi,
+  getAdminStoreOrderDetailApi,
+  reviewAdminStoreOrderRefundApi,
   toggleAdminStoreProductStatusApi,
   updateAdminStoreProductApi
 } from "../../api/modules/store";
@@ -23,8 +30,13 @@ const router = useRouter();
 const loading = ref(false);
 const actionLoading = ref(false);
 const data = ref<AdminStoreDashboardResult | null>(null);
+
 const productDialogVisible = ref(false);
 const editingProductId = ref("");
+
+const orderDialogVisible = ref(false);
+const orderDetailLoading = ref(false);
+const orderDetail = ref<AdminStoreOrderDetailResult | null>(null);
 
 const productForm = reactive<AdminStoreProductPayload>({
   name: "",
@@ -82,6 +94,35 @@ function formatCurrency(value: number) {
   return `￥${Number(value || 0).toFixed(2)}`;
 }
 
+function showApiError(error: unknown, fallback: string) {
+  if (error instanceof ApiRequestError) {
+    ElMessage.error(error.traceId ? `${error.message}（追踪号: ${error.traceId}）` : error.message);
+    return;
+  }
+  if (error instanceof Error) {
+    ElMessage.error(error.message);
+    return;
+  }
+  ElMessage.error(fallback);
+}
+
+async function loadData() {
+  const id = Number(route.params.id);
+  if (!id) {
+    ElMessage.error("店铺参数不正确");
+    return;
+  }
+
+  loading.value = true;
+  try {
+    data.value = await getAdminStoreDashboardApi(id);
+  } catch (error) {
+    showApiError(error, "店铺经营数据加载失败");
+  } finally {
+    loading.value = false;
+  }
+}
+
 function createEmptySku(): AdminStoreProductSkuPayload {
   return {
     name: "",
@@ -117,9 +158,7 @@ function ensureSingleDefaultSku() {
     productForm.skus.push({ ...createEmptySku(), isDefault: true });
     return;
   }
-
-  const hasDefault = productForm.skus.some((sku) => sku.isDefault);
-  if (!hasDefault) {
+  if (!productForm.skus.some((sku) => sku.isDefault)) {
     productForm.skus[0].isDefault = true;
   }
 }
@@ -240,35 +279,6 @@ function buildProductPayload(): AdminStoreProductPayload | null {
   };
 }
 
-function showApiError(error: unknown, fallback: string) {
-  if (error instanceof ApiRequestError) {
-    ElMessage.error(error.traceId ? `${error.message}（追踪号: ${error.traceId}）` : error.message);
-    return;
-  }
-  if (error instanceof Error) {
-    ElMessage.error(error.message);
-    return;
-  }
-  ElMessage.error(fallback);
-}
-
-async function loadData() {
-  const id = Number(route.params.id);
-  if (!id) {
-    ElMessage.error("店铺参数不正确");
-    return;
-  }
-
-  loading.value = true;
-  try {
-    data.value = await getAdminStoreDashboardApi(id);
-  } catch (error) {
-    showApiError(error, "店铺经营数据加载失败");
-  } finally {
-    loading.value = false;
-  }
-}
-
 async function submitProduct() {
   const storeId = Number(route.params.id);
   const payload = buildProductPayload();
@@ -321,6 +331,99 @@ async function deleteProduct(product: AdminStoreDashboardProductItem) {
   } catch (error) {
     if (error === "cancel") return;
     showApiError(error, "商品删除失败");
+  } finally {
+    actionLoading.value = false;
+  }
+}
+
+async function openOrderDetail(row: AdminStoreDashboardOrderItem) {
+  const storeId = Number(route.params.id);
+  orderDialogVisible.value = true;
+  orderDetailLoading.value = true;
+  try {
+    orderDetail.value = await getAdminStoreOrderDetailApi(storeId, row.id);
+  } catch (error) {
+    showApiError(error, "订单详情加载失败");
+    orderDialogVisible.value = false;
+  } finally {
+    orderDetailLoading.value = false;
+  }
+}
+
+async function refreshOrderDetail() {
+  if (!orderDetail.value) return;
+  const storeId = Number(route.params.id);
+  orderDetailLoading.value = true;
+  try {
+    orderDetail.value = await getAdminStoreOrderDetailApi(storeId, orderDetail.value.id);
+    await loadData();
+  } catch (error) {
+    showApiError(error, "订单详情刷新失败");
+  } finally {
+    orderDetailLoading.value = false;
+  }
+}
+
+async function finishOrder() {
+  if (!orderDetail.value) return;
+  const storeId = Number(route.params.id);
+  actionLoading.value = true;
+  try {
+    orderDetail.value = await finishAdminStoreOrderApi(storeId, orderDetail.value.id);
+    ElMessage.success("订单已完成");
+    await loadData();
+  } catch (error) {
+    showApiError(error, "订单完成失败");
+  } finally {
+    actionLoading.value = false;
+  }
+}
+
+async function cancelOrder() {
+  if (!orderDetail.value) return;
+  const storeId = Number(route.params.id);
+  try {
+    await ElMessageBox.confirm(`确认取消订单“${orderDetail.value.orderNo}”吗？`, "取消订单", {
+      type: "warning",
+      confirmButtonText: "确认取消",
+      cancelButtonText: "返回"
+    });
+    actionLoading.value = true;
+    orderDetail.value = await cancelAdminStoreOrderApi(storeId, orderDetail.value.id);
+    ElMessage.success("订单已取消");
+    await loadData();
+  } catch (error) {
+    if (error === "cancel") return;
+    showApiError(error, "订单取消失败");
+  } finally {
+    actionLoading.value = false;
+  }
+}
+
+async function reviewRefund(refundId: number, status: "已通过" | "已驳回") {
+  if (!orderDetail.value) return;
+  const storeId = Number(route.params.id);
+
+  try {
+    const { value } = await ElMessageBox.prompt("请输入审核备注，可为空", status === "已通过" ? "通过退款" : "驳回退款", {
+      inputValue: "",
+      inputPlaceholder: "审核备注",
+      confirmButtonText: "确认",
+      cancelButtonText: "取消"
+    });
+
+    const payload: RefundReviewPayload = {
+      status,
+      reviewNote: value || ""
+    };
+
+    actionLoading.value = true;
+    orderDetail.value = await reviewAdminStoreOrderRefundApi(storeId, orderDetail.value.id, refundId, payload);
+    ElMessage.success("退款审核已完成");
+    await loadData();
+  } catch (error) {
+    if (error === "cancel") return;
+    showApiError(error, "退款审核失败");
   } finally {
     actionLoading.value = false;
   }
@@ -495,7 +598,7 @@ onMounted(loadData);
         <template #header>
           <div class="card-header">
             <span>最近订单</span>
-            <span class="header-extra">展示最新 20 条订单，更多请进入订单管理</span>
+            <span class="header-extra">可直接查看详情、完成订单、取消未支付订单、处理退款</span>
           </div>
         </template>
         <el-table :data="data.orders" stripe>
@@ -510,16 +613,16 @@ onMounted(loadData);
           <el-table-column prop="orderStatus" label="订单状态" width="120" />
           <el-table-column prop="settlementStatus" label="结算状态" width="120" />
           <el-table-column prop="createdAt" label="创建时间" width="180" />
+          <el-table-column label="操作" min-width="120" fixed="right">
+            <template #default="{ row }">
+              <el-button link type="primary" @click="openOrderDetail(row)">查看详情</el-button>
+            </template>
+          </el-table-column>
         </el-table>
       </el-card>
     </template>
 
-    <el-dialog
-      v-model="productDialogVisible"
-      :title="isEditMode ? '编辑商品' : '新增商品'"
-      width="900px"
-      destroy-on-close
-    >
+    <el-dialog v-model="productDialogVisible" :title="isEditMode ? '编辑商品' : '新增商品'" width="900px" destroy-on-close>
       <el-form label-width="100px">
         <div class="dialog-grid">
           <el-form-item label="商品名称">
@@ -617,6 +720,79 @@ onMounted(loadData);
         </div>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="orderDialogVisible" title="订单详情" width="980px" destroy-on-close>
+      <div v-loading="orderDetailLoading">
+        <template v-if="orderDetail">
+          <div class="order-head">
+            <div>
+              <div class="order-no">{{ orderDetail.orderNo }}</div>
+              <div class="order-meta">
+                {{ orderDetail.orderStatus }} ｜ {{ orderDetail.payStatus }} ｜ {{ orderDetail.settlementStatus }}
+              </div>
+            </div>
+            <div class="header-actions">
+              <el-button :disabled="!orderDetail.actions.canCancel" @click="cancelOrder">取消订单</el-button>
+              <el-button type="primary" :disabled="!orderDetail.actions.canFinish" @click="finishOrder">完成订单</el-button>
+            </div>
+          </div>
+
+          <el-descriptions :column="3" border class="order-section">
+            <el-descriptions-item label="下单用户">{{ orderDetail.buyer }}</el-descriptions-item>
+            <el-descriptions-item label="商品">{{ orderDetail.productName }}</el-descriptions-item>
+            <el-descriptions-item label="规格">{{ orderDetail.skuName || "-" }}</el-descriptions-item>
+            <el-descriptions-item label="数量">{{ orderDetail.quantity }}</el-descriptions-item>
+            <el-descriptions-item label="单价">{{ formatCurrency(orderDetail.unitPrice) }}</el-descriptions-item>
+            <el-descriptions-item label="金额">{{ formatCurrency(orderDetail.amount) }}</el-descriptions-item>
+            <el-descriptions-item label="支付渠道">{{ orderDetail.paymentChannel || "-" }}</el-descriptions-item>
+            <el-descriptions-item label="支付方式">{{ orderDetail.paymentMode || "-" }}</el-descriptions-item>
+            <el-descriptions-item label="创建时间">{{ orderDetail.createdAt || "-" }}</el-descriptions-item>
+            <el-descriptions-item label="支付时间">{{ orderDetail.paidAt || "-" }}</el-descriptions-item>
+            <el-descriptions-item label="完成时间">{{ orderDetail.finishedAt || "-" }}</el-descriptions-item>
+            <el-descriptions-item label="取消时间">{{ orderDetail.canceledAt || "-" }}</el-descriptions-item>
+            <el-descriptions-item label="收货人">{{ orderDetail.receiverName }}</el-descriptions-item>
+            <el-descriptions-item label="联系电话">{{ orderDetail.receiverPhone }}</el-descriptions-item>
+            <el-descriptions-item label="地址标签">{{ orderDetail.addressTag || "-" }}</el-descriptions-item>
+            <el-descriptions-item label="收货地址" :span="3">{{ orderDetail.receiverAddress }}</el-descriptions-item>
+            <el-descriptions-item label="备注" :span="3">{{ orderDetail.remark || "无" }}</el-descriptions-item>
+          </el-descriptions>
+
+          <el-card shadow="never" class="order-section">
+            <template #header>
+              <div class="card-header">
+                <span>退款记录</span>
+                <el-button link type="primary" @click="refreshOrderDetail">刷新</el-button>
+              </div>
+            </template>
+            <el-table :data="orderDetail.refunds" stripe>
+              <el-table-column prop="refundNo" label="退款单号" min-width="160" />
+              <el-table-column label="退款金额" width="120">
+                <template #default="{ row }">{{ formatCurrency(row.amount) }}</template>
+              </el-table-column>
+              <el-table-column prop="reason" label="退款原因" min-width="180" show-overflow-tooltip />
+              <el-table-column prop="status" label="状态" width="120" />
+              <el-table-column prop="reviewerName" label="审核人" width="120" />
+              <el-table-column prop="reviewNote" label="审核备注" min-width="180" show-overflow-tooltip />
+              <el-table-column prop="applyTime" label="申请时间" width="180" />
+              <el-table-column prop="reviewedAt" label="审核时间" width="180" />
+              <el-table-column label="操作" width="160" fixed="right">
+                <template #default="{ row }">
+                  <div class="table-actions">
+                    <el-button link type="success" :disabled="row.status !== '待审核'" @click="reviewRefund(row.id, '已通过')">
+                      通过
+                    </el-button>
+                    <el-button link type="danger" :disabled="row.status !== '待审核'" @click="reviewRefund(row.id, '已驳回')">
+                      驳回
+                    </el-button>
+                  </div>
+                </template>
+              </el-table-column>
+            </el-table>
+            <el-empty v-if="!orderDetail.refunds.length" description="当前订单暂无退款记录" :image-size="80" />
+          </el-card>
+        </template>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -645,8 +821,12 @@ onMounted(loadData);
   font-size: 14px;
 }
 
-.page-actions {
+.page-actions,
+.header-actions,
+.table-actions,
+.dialog-footer {
   display: flex;
+  align-items: center;
   gap: 12px;
 }
 
@@ -669,20 +849,27 @@ onMounted(loadData);
   gap: 16px;
 }
 
-.store-main__top {
+.store-main__top,
+.card-header,
+.sku-head,
+.order-head {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.store-name {
+.store-name,
+.order-no {
   font-size: 28px;
   font-weight: 700;
   color: #101828;
 }
 
 .store-meta,
-.store-desc {
+.store-desc,
+.header-extra,
+.order-meta {
   color: #667085;
 }
 
@@ -773,28 +960,10 @@ onMounted(loadData);
   align-items: center;
 }
 
-.ranking-name {
+.ranking-name,
+.sku-title {
   color: #101828;
   font-weight: 600;
-}
-
-.card-header,
-.header-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.header-extra {
-  color: #667085;
-  font-size: 12px;
-}
-
-.table-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .dialog-grid {
@@ -811,23 +980,8 @@ onMounted(loadData);
   width: 100%;
 }
 
-.sku-head {
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.sku-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #101828;
-}
-
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
+.order-section {
+  margin-top: 16px;
 }
 
 @media (max-width: 1280px) {
@@ -848,7 +1002,8 @@ onMounted(loadData);
   }
 
   .page-actions,
-  .header-actions {
+  .header-actions,
+  .order-head {
     flex-wrap: wrap;
   }
 

@@ -17,8 +17,12 @@ import {
   MINI_ORDER_STATUS,
   MINI_PAY_STATUS,
   MINI_REFUND_STATUS,
-  MINI_SETTLEMENT_STATUS
+  MINI_SETTLEMENT_STATUS,
+  reverseMiniOrderSettlement,
+  settleMiniOrderIncome
 } from "./mini-order.service";
+import type { RefundReviewPayload } from "../controllers/schemas";
+import { createMiniMessage } from "./mini-message.service";
 
 interface BannerItem {
   id: number;
@@ -331,6 +335,106 @@ async function saveAdminStoreProducts(storeId: number, products: any[]) {
       productCount: countOnSaleProducts(products)
     }
   });
+}
+
+async function findAdminStoreOrder(adminUserId: number, storeId: number, orderId: number) {
+  const store = await findAdminStoreWithScope(adminUserId, storeId);
+  if (!store) {
+    throw new ApiError("店铺不存在或无权访问", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  const order = await prisma.miniOrder.findFirst({
+    where: {
+      id: orderId,
+      storeDetailId: store.detailId
+    },
+    include: {
+      user: {
+        select: {
+          nickname: true
+        }
+      },
+      refunds: {
+        orderBy: {
+          applyTime: "desc"
+        },
+        include: {
+          reviewer: {
+            select: {
+              name: true
+            }
+          }
+        }
+      }
+    }
+  });
+
+  if (!order) {
+    throw new ApiError("订单不存在或不属于当前店铺", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  return { store, order };
+}
+
+function formatRefundItem(refund: any) {
+  return {
+    id: refund.id,
+    refundNo: refund.refundNo,
+    amount: roundMoney(Number(refund.amount || 0)),
+    reason: refund.reason,
+    status: refund.status,
+    reviewNote: refund.reviewNote || "",
+    reviewerName: refund.reviewer?.name || "",
+    applyTime: formatDateTime(refund.applyTime),
+    reviewedAt: formatDateTime(refund.reviewedAt)
+  };
+}
+
+function mapAdminOrderDetail(order: any) {
+  const latestRefund = Array.isArray(order.refunds) && order.refunds.length ? order.refunds[0] : null;
+  const hasPendingRefund = Boolean(latestRefund && latestRefund.status === MINI_REFUND_STATUS.pending);
+  const canFinish =
+    (order.status === MINI_ORDER_STATUS.processing || order.status === MINI_ORDER_STATUS.accepted) &&
+    order.payStatus === MINI_PAY_STATUS.paid &&
+    !hasPendingRefund;
+  const canCancel = order.status === MINI_ORDER_STATUS.pending && order.payStatus === MINI_PAY_STATUS.pending;
+
+  return {
+    id: order.id,
+    orderNo: order.orderNo,
+    school: order.school,
+    buyer: order.user?.nickname || order.receiverName || "-",
+    storeName: order.storeName,
+    productName: order.productName,
+    productDesc: order.productDesc || "",
+    productCover: order.productCover || "",
+    skuName: order.skuName || "",
+    quantity: order.quantity,
+    unitPrice: roundMoney(Number(order.unitPrice || 0)),
+    amount: roundMoney(Number(order.amount || 0)),
+    payStatus: order.payStatus,
+    orderStatus: normalizeAdminOrderStatus(order.status),
+    rawOrderStatus: order.status,
+    settlementStatus: order.settlementStatus,
+    receiverName: order.receiverName,
+    receiverPhone: order.receiverPhone,
+    receiverAddress: order.receiverAddress,
+    addressTag: order.addressTag || "",
+    remark: order.remark || "",
+    paymentChannel: order.paymentChannel || "",
+    paymentMode: order.paymentMode || "",
+    createdAt: formatDateTime(order.createdAt),
+    paidAt: formatDateTime(order.paidAt),
+    finishedAt: formatDateTime(order.finishedAt),
+    canceledAt: formatDateTime(order.canceledAt),
+    refunds: Array.isArray(order.refunds) ? order.refunds.map((item: any) => formatRefundItem(item)) : [],
+    latestRefund: latestRefund ? formatRefundItem(latestRefund) : null,
+    actions: {
+      canFinish,
+      canCancel,
+      canReviewRefund: hasPendingRefund
+    }
+  };
 }
 
 export async function getAdminStoreDashboard(adminUserId: number, storeId: number) {
@@ -690,4 +794,137 @@ export async function deleteAdminStoreProduct(adminUserId: number, storeId: numb
     storeId: store.id,
     deletedProductId: String(productId)
   };
+}
+
+export async function getAdminStoreOrderDetail(adminUserId: number, storeId: number, orderId: number) {
+  const { order } = await findAdminStoreOrder(adminUserId, storeId, orderId);
+  return mapAdminOrderDetail(order);
+}
+
+export async function finishAdminStoreOrder(adminUserId: number, storeId: number, orderId: number) {
+  const { order } = await findAdminStoreOrder(adminUserId, storeId, orderId);
+  const latestRefund = Array.isArray(order.refunds) && order.refunds.length ? order.refunds[0] : null;
+
+  if (latestRefund && latestRefund.status !== MINI_REFUND_STATUS.rejected) {
+    throw new ApiError("当前订单存在退款申请，暂时不能直接完成", ERROR_CODES.BAD_REQUEST, 400);
+  }
+
+  if (
+    (order.status !== MINI_ORDER_STATUS.processing && order.status !== MINI_ORDER_STATUS.accepted) ||
+    order.payStatus !== MINI_PAY_STATUS.paid
+  ) {
+    throw new ApiError("当前订单状态不允许执行完成操作", ERROR_CODES.BAD_REQUEST, 400);
+  }
+
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    await tx.miniOrder.update({
+      where: { id: orderId },
+      data: {
+        status: MINI_ORDER_STATUS.finished,
+        finishedAt: order.finishedAt || new Date()
+      }
+    });
+    await settleMiniOrderIncome(orderId, tx);
+  });
+
+  await createMiniMessage({
+    school: order.school,
+    type: "system",
+    category: "订单通知",
+    content: `管理员已将订单 ${order.orderNo} 标记为已完成。`,
+    receiverUserId: order.userId,
+    targetType: "order",
+    targetId: String(order.id)
+  });
+
+  return getAdminStoreOrderDetail(adminUserId, storeId, orderId);
+}
+
+export async function cancelAdminStoreOrder(adminUserId: number, storeId: number, orderId: number) {
+  const { order } = await findAdminStoreOrder(adminUserId, storeId, orderId);
+
+  if (order.status !== MINI_ORDER_STATUS.pending || order.payStatus !== MINI_PAY_STATUS.pending) {
+    throw new ApiError("只有未支付订单才允许直接取消，已支付订单请走退款流程", ERROR_CODES.BAD_REQUEST, 400);
+  }
+
+  await prisma.miniOrder.update({
+    where: { id: orderId },
+    data: {
+      status: MINI_ORDER_STATUS.canceled,
+      canceledAt: new Date(),
+      settlementStatus: MINI_SETTLEMENT_STATUS.closed
+    }
+  });
+
+  await createMiniMessage({
+    school: order.school,
+    type: "system",
+    category: "订单通知",
+    content: `管理员已取消订单 ${order.orderNo}。`,
+    receiverUserId: order.userId,
+    targetType: "order",
+    targetId: String(order.id)
+  });
+
+  return getAdminStoreOrderDetail(adminUserId, storeId, orderId);
+}
+
+export async function reviewAdminStoreOrderRefund(
+  adminUserId: number,
+  storeId: number,
+  orderId: number,
+  refundId: number,
+  payload: RefundReviewPayload
+) {
+  const { order } = await findAdminStoreOrder(adminUserId, storeId, orderId);
+  const refund = Array.isArray(order.refunds) ? order.refunds.find((item: any) => item.id === refundId) : null;
+
+  if (!refund) {
+    throw new ApiError("退款记录不存在", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  if (refund.status !== MINI_REFUND_STATUS.pending) {
+    throw new ApiError("当前退款记录不可重复审核", ERROR_CODES.BAD_REQUEST, 400);
+  }
+
+  const reviewedAt = new Date();
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    await tx.miniRefundRecord.update({
+      where: { id: refundId },
+      data: {
+        status: payload.status,
+        reviewNote: payload.reviewNote || "",
+        reviewerId: adminUserId,
+        reviewedAt
+      }
+    });
+
+    if (payload.status === MINI_REFUND_STATUS.approved) {
+      await reverseMiniOrderSettlement(order.id, tx);
+      await tx.miniOrder.update({
+        where: { id: order.id },
+        data: {
+          payStatus: MINI_PAY_STATUS.refunded,
+          status: order.status === MINI_ORDER_STATUS.finished ? MINI_ORDER_STATUS.finished : MINI_ORDER_STATUS.canceled,
+          canceledAt: order.status === MINI_ORDER_STATUS.finished ? order.canceledAt : reviewedAt,
+          settlementStatus: MINI_SETTLEMENT_STATUS.refunded
+        }
+      });
+    }
+  });
+
+  await createMiniMessage({
+    school: order.school,
+    type: "system",
+    category: "退款通知",
+    content:
+      payload.status === MINI_REFUND_STATUS.approved
+        ? `管理员已通过退款申请 ${refund.refundNo}，退款将按原路返回。`
+        : `管理员已驳回退款申请 ${refund.refundNo}，原因：${payload.reviewNote || "请联系平台管理员了解详情"}`,
+    receiverUserId: order.userId,
+    targetType: "refund",
+    targetId: String(refund.id)
+  });
+
+  return getAdminStoreOrderDetail(adminUserId, storeId, orderId);
 }

@@ -1,15 +1,20 @@
 import { Router } from "express";
 import {
+  cancelAdminStoreOrderAction,
   createAdminStoreProductAction,
   deleteAdminStoreProductAction,
+  finishAdminStoreOrderAction,
   getAdminStoreDashboardAction,
+  getAdminStoreOrderDetailAction,
   getMiniStoreDetailAction,
   listAdminStoreAction,
   listMiniStoreAction,
+  reviewAdminStoreOrderRefundAction,
   toggleAdminStoreProductStatusAction,
   updateAdminStoreProductAction
 } from "../controllers/mini-store.controller";
 import { miniMerchantProductSchema } from "../controllers/mini-commerce-schemas";
+import { refundReviewSchema } from "../controllers/schemas";
 import { asyncHandler } from "../middlewares/async-handler";
 import { requireAdminAuth, requireAdminMenuAccess } from "../middlewares/auth";
 import { validateBody } from "../middlewares/validate";
@@ -45,6 +50,31 @@ router.delete(
   requireAdminAuth,
   requireAdminMenuAccess("/store/list"),
   asyncHandler(deleteAdminStoreProductAction)
+);
+router.get(
+  "/admin/detail/:id/order/:orderId",
+  requireAdminAuth,
+  requireAdminMenuAccess("/store/list"),
+  asyncHandler(getAdminStoreOrderDetailAction)
+);
+router.post(
+  "/admin/detail/:id/order/:orderId/finish",
+  requireAdminAuth,
+  requireAdminMenuAccess("/store/list"),
+  asyncHandler(finishAdminStoreOrderAction)
+);
+router.post(
+  "/admin/detail/:id/order/:orderId/cancel",
+  requireAdminAuth,
+  requireAdminMenuAccess("/store/list"),
+  asyncHandler(cancelAdminStoreOrderAction)
+);
+router.post(
+  "/admin/detail/:id/order/:orderId/refund/:refundId/review",
+  requireAdminAuth,
+  requireAdminMenuAccess("/store/list"),
+  validateBody(refundReviewSchema),
+  asyncHandler(reviewAdminStoreOrderRefundAction)
 );
 
 export default router;
