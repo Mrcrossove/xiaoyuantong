@@ -6,14 +6,7 @@
       <view class="back-btn" bindtap="goBack"></view>
     </view>
     <view class="verify-title">校园认证</view>
-    <view class="nav-right">
-      <view class="circle-btn more-btn">
-        <view></view>
-        <view></view>
-        <view></view>
-      </view>
-      <view class="ring-btn"></view>
-    </view>
+    <view class="nav-spacer"></view>
   </view>
 
   <view class="verify-banner">

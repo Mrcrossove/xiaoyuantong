@@ -26,6 +26,5 @@
     "backgroundColor": "#f5f7fb",
     "backgroundTextStyle": "light"
   },
-  "style": "v2",
-  "sitemapLocation": "sitemap.json"
+  "style": "v2"
 }

@@ -34,7 +34,7 @@
   </view>
 
   <view class="overlay" wx:if="{{modalVisible}}" bindtap="closeModal"></view>
-  <view class="address-modal" wx:if="{{modalVisible}}">
+  <view class="address-modal" wx:if="{{modalVisible}}" catchtap="noop">
     <view class="modal-title">{{editingId ? labels.editTitle : labels.addTitle}}</view>
 
     <view class="field-item">

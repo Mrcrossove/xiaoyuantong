@@ -14,7 +14,7 @@
 }
 
 .nav-left,
-.nav-right {
+.nav-spacer {
   display: flex;
   align-items: center;
 }
@@ -23,9 +23,9 @@
   justify-content: flex-start;
 }
 
-.nav-right {
+.nav-spacer {
   justify-content: flex-end;
-  gap: 16rpx;
+  min-height: 64rpx;
 }
 
 .verify-title {

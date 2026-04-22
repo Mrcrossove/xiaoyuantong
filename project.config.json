@@ -1,7 +1,52 @@
 {
   "description": "校园通微信小程序原型",
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      {
+        "type": "folder",
+        "value": "admin-api"
+      },
+      {
+        "type": "folder",
+        "value": "admin-web"
+      },
+      {
+        "type": "folder",
+        "value": "merchant-web"
+      },
+      {
+        "type": "folder",
+        "value": ".git"
+      },
+      {
+        "type": "folder",
+        "value": "scripts"
+      },
+      {
+        "type": "folder",
+        "value": "tasks"
+      },
+      {
+        "type": "folder",
+        "value": "高校清单"
+      },
+      {
+        "type": "file",
+        "value": "CLAUDE.md"
+      },
+      {
+        "type": "file",
+        "value": "project.md"
+      },
+      {
+        "type": "file",
+        "value": "开发规则.md"
+      },
+      {
+        "type": "file",
+        "value": "管理后台开发需求文档.md"
+      }
+    ],
     "include": []
   },
   "setting": {
