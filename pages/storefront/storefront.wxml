@@ -2,14 +2,7 @@
   <view class="storefront-nav">
     <view class="nav-spacer"></view>
     <view class="storefront-title">创业店铺</view>
-    <view class="topbar-right">
-      <view class="circle-btn more-btn">
-        <view></view>
-        <view></view>
-        <view></view>
-      </view>
-      <view class="ring-btn"></view>
-    </view>
+    <view class="nav-spacer"></view>
   </view>
 
   <view class="storefront-body">

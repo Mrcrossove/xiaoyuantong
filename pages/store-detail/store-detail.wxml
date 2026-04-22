@@ -4,12 +4,6 @@
     <view class="detail-title">{{detail.title}}</view>
     <view class="detail-actions">
       <view class="action-chip" bindtap="toggleStoreFavorite">{{favorite ? '已收藏' : '收藏'}}</view>
-      <view class="action-chip more-chip">
-        <view></view>
-        <view></view>
-        <view></view>
-      </view>
-      <view class="action-chip mini-program-chip"></view>
     </view>
   </view>
 

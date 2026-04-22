@@ -37,7 +37,12 @@ export async function queryMiniAddressList(userId: number) {
 }
 
 export async function createMiniAddress(userId: number, payload: MiniAddressPayload) {
-  if (payload.isDefault) {
+  const currentAddressCount = await prisma.miniAddress.count({
+    where: { userId }
+  });
+  const shouldSetDefault = !!payload.isDefault || currentAddressCount === 0;
+
+  if (shouldSetDefault) {
     await clearDefaultAddress(userId);
   }
 
@@ -49,7 +54,7 @@ export async function createMiniAddress(userId: number, payload: MiniAddressPayl
       phone: payload.phone,
       detail: payload.detail,
       tag: payload.tag,
-      isDefault: !!payload.isDefault
+      isDefault: shouldSetDefault
     }
   });
 

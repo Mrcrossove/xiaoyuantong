@@ -22,7 +22,7 @@
 .detail-actions {
   display: flex;
   align-items: center;
-  gap: 12rpx;
+  justify-content: flex-end;
 }
 
 .action-chip {
@@ -33,32 +33,6 @@
   box-shadow: 0 10rpx 24rpx rgba(50, 77, 132, 0.1);
 }
 
-.more-chip {
-  padding: 0 14rpx;
-  display: flex;
-  align-items: center;
-  gap: 6rpx;
-}
-
-.more-chip view {
-  width: 6rpx;
-  height: 6rpx;
-  border-radius: 50%;
-  background: #1d2433;
-}
-
-.mini-program-chip {
-  position: relative;
-  width: 42rpx;
-}
-
-.mini-program-chip::before {
-  content: "";
-  position: absolute;
-  inset: 10rpx;
-  border: 3rpx solid #1d2433;
-  border-radius: 50%;
-}
 
 .detail-scroll {
   height: calc(100vh - 88rpx - env(safe-area-inset-top) - 108rpx);

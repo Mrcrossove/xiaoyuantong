@@ -6,14 +6,7 @@
       <view class="back-btn" bindtap="goBack"></view>
     </view>
     <view class="topbar-title detail-title">帖子详情</view>
-    <view class="topbar-right">
-      <view class="circle-btn more-btn">
-        <view></view>
-        <view></view>
-        <view></view>
-      </view>
-      <view class="ring-btn"></view>
-    </view>
+    <view class="topbar-right"></view>
   </view>
 
   <block wx:if="{{post}}">
