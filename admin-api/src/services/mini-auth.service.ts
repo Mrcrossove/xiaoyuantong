@@ -33,8 +33,9 @@ export async function miniLogin(payload: MiniLoginPayload) {
   const nickname = payload.nickname?.trim() || "校园用户";
   const school = payload.school?.trim() || undefined;
   const avatarUrl = payload.avatarUrl?.trim() || undefined;
+  const loginCode = String(payload.code || "").trim();
 
-  if (!payload.code?.trim()) {
+  if (!env.wechatUseMock && !loginCode) {
     throw new ApiError("缺少微信登录 code", ERROR_CODES.BAD_REQUEST, 400);
   }
 
@@ -43,7 +44,7 @@ export async function miniLogin(payload: MiniLoginPayload) {
         openid: `mock_openid_${deviceId}`,
         unionid: `mock_unionid_${deviceId}`
       }
-    : await fetchWechatSession(payload.code.trim());
+    : await fetchWechatSession(loginCode);
 
   const user = await prisma.miniUser.upsert({
     where: { openid: wechatSession.openid },
