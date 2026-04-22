@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import type { MiniMerchantProductPayload } from "../controllers/mini-commerce-schemas";
 import { parsePageParams } from "../utils/pagination";
 import { prisma } from "../lib/prisma";
 import { getAdminSchoolScope } from "./admin-scope.service";
@@ -6,9 +7,12 @@ import {
   buildProductDisplayPrice,
   getDefaultSku,
   MERCHANT_PRODUCT_STATUS,
+  normalizeMerchantProductPayload,
   parseMoneyNumber,
   toMerchantProducts
 } from "../utils/merchant-product";
+import { ApiError } from "../utils/api-error";
+import { ERROR_CODES } from "../constants/error-codes";
 import {
   MINI_ORDER_STATUS,
   MINI_PAY_STATUS,
@@ -296,10 +300,14 @@ function calcPercent(value: number, total: number) {
   return Math.round((value / total) * 100);
 }
 
-export async function getAdminStoreDashboard(adminUserId: number, storeId: number) {
+function countOnSaleProducts(products: Array<{ status?: string }>) {
+  return products.filter((item) => String(item.status || MERCHANT_PRODUCT_STATUS.onSale) === MERCHANT_PRODUCT_STATUS.onSale).length;
+}
+
+async function findAdminStoreWithScope(adminUserId: number, storeId: number) {
   const scope = await getAdminSchoolScope(adminUserId);
 
-  const store = await prisma.miniStore.findFirstOrThrow({
+  return prisma.miniStore.findFirst({
     where: {
       id: storeId,
       school: buildSchoolWhere(scope, "")
@@ -313,6 +321,23 @@ export async function getAdminStoreDashboard(adminUserId: number, storeId: numbe
       }
     }
   });
+}
+
+async function saveAdminStoreProducts(storeId: number, products: any[]) {
+  return prisma.miniStore.update({
+    where: { id: storeId },
+    data: {
+      products,
+      productCount: countOnSaleProducts(products)
+    }
+  });
+}
+
+export async function getAdminStoreDashboard(adminUserId: number, storeId: number) {
+  const store = await findAdminStoreWithScope(adminUserId, storeId);
+  if (!store) {
+    throw new ApiError("店铺不存在或无权访问", ERROR_CODES.NOT_FOUND, 404);
+  }
 
   const [orders, merchantAccount] = await prisma.$transaction([
     prisma.miniOrder.findMany({
@@ -374,11 +399,25 @@ export async function getAdminStoreDashboard(adminUserId: number, storeId: numbe
       price: defaultSku ? parseMoneyNumber(defaultSku.price) : parseMoneyNumber(product.price),
       priceText: buildProductDisplayPrice(product),
       stock: Number(product.stock || 0),
+      dailyLimit: Number(product.dailyLimit || 0),
       sales,
       revenue,
       status,
       recommended: Boolean(product.recommended),
-      skuCount: Array.isArray(product.skus) ? product.skus.length : 0
+      specMode: String(product.specMode || "single"),
+      defaultSkuId: String(product.defaultSkuId || ""),
+      skuCount: Array.isArray(product.skus) ? product.skus.length : 0,
+      skus: Array.isArray(product.skus)
+        ? product.skus.map((sku: any) => ({
+            id: String(sku.id || ""),
+            name: String(sku.name || ""),
+            price: String(sku.price || ""),
+            stock: Number(sku.stock || 0),
+            dailyLimit: Number(sku.dailyLimit || 0),
+            status: String(sku.status || MERCHANT_PRODUCT_STATUS.onSale),
+            isDefault: Boolean(sku.isDefault)
+          }))
+        : []
     };
   });
 
@@ -527,5 +566,128 @@ export async function getAdminStoreDashboard(adminUserId: number, storeId: numbe
       settlementStatus: item.settlementStatus,
       createdAt: formatDateTime(item.createdAt)
     }))
+  };
+}
+
+function mapAdminEditableProduct(item: any) {
+  return {
+    id: String(item.id || ""),
+    name: String(item.name || ""),
+    desc: String(item.desc || ""),
+    cover: String(item.cover || ""),
+    recommended: Boolean(item.recommended),
+    status: String(item.status || MERCHANT_PRODUCT_STATUS.onSale),
+    specMode: item.specMode === "multi" ? "multi" : "single",
+    price: String(item.price || ""),
+    stock: Number(item.stock || 0),
+    dailyLimit: Number(item.dailyLimit || 0),
+    defaultSkuId: String(item.defaultSkuId || ""),
+    skus: Array.isArray(item.skus)
+      ? item.skus.map((sku: any) => ({
+          id: String(sku.id || ""),
+          name: String(sku.name || ""),
+          price: String(sku.price || ""),
+          stock: Number(sku.stock || 0),
+          dailyLimit: Number(sku.dailyLimit || 0),
+          status: String(sku.status || MERCHANT_PRODUCT_STATUS.onSale),
+          isDefault: Boolean(sku.isDefault)
+        }))
+      : []
+  };
+}
+
+export async function createAdminStoreProduct(adminUserId: number, storeId: number, payload: MiniMerchantProductPayload) {
+  const store = await findAdminStoreWithScope(adminUserId, storeId);
+  if (!store) {
+    throw new ApiError("店铺不存在或无权访问", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  const products = toMerchantProducts(store.products);
+  const productId = `p${Date.now()}`;
+  const nextProduct = normalizeMerchantProductPayload(productId, payload);
+  const row = await saveAdminStoreProducts(store.id, products.concat(nextProduct));
+
+  return {
+    storeId: row.id,
+    product: mapAdminEditableProduct(nextProduct)
+  };
+}
+
+export async function updateAdminStoreProduct(
+  adminUserId: number,
+  storeId: number,
+  productId: string,
+  payload: MiniMerchantProductPayload
+) {
+  const store = await findAdminStoreWithScope(adminUserId, storeId);
+  if (!store) {
+    throw new ApiError("店铺不存在或无权访问", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  const products = toMerchantProducts(store.products);
+  const index = products.findIndex((item) => String(item.id) === String(productId));
+  if (index === -1) {
+    throw new ApiError("商品不存在", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  const nextProduct = normalizeMerchantProductPayload(String(productId), payload);
+  const nextProducts = products.slice();
+  nextProducts[index] = nextProduct;
+  await saveAdminStoreProducts(store.id, nextProducts);
+
+  return {
+    storeId: store.id,
+    product: mapAdminEditableProduct(nextProduct)
+  };
+}
+
+export async function toggleAdminStoreProductStatus(adminUserId: number, storeId: number, productId: string) {
+  const store = await findAdminStoreWithScope(adminUserId, storeId);
+  if (!store) {
+    throw new ApiError("店铺不存在或无权访问", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  const products = toMerchantProducts(store.products);
+  const index = products.findIndex((item) => String(item.id) === String(productId));
+  if (index === -1) {
+    throw new ApiError("商品不存在", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  const current = products[index];
+  const nextStatus =
+    current.status === MERCHANT_PRODUCT_STATUS.onSale ? MERCHANT_PRODUCT_STATUS.offSale : MERCHANT_PRODUCT_STATUS.onSale;
+  const nextProducts = products.slice();
+  nextProducts[index] = {
+    ...current,
+    status: nextStatus,
+    skus: (current.skus || []).map((sku: any) => ({
+      ...sku,
+      status: nextStatus === MERCHANT_PRODUCT_STATUS.offSale ? MERCHANT_PRODUCT_STATUS.offSale : sku.status
+    }))
+  };
+  await saveAdminStoreProducts(store.id, nextProducts);
+
+  return {
+    storeId: store.id,
+    product: mapAdminEditableProduct(nextProducts[index])
+  };
+}
+
+export async function deleteAdminStoreProduct(adminUserId: number, storeId: number, productId: string) {
+  const store = await findAdminStoreWithScope(adminUserId, storeId);
+  if (!store) {
+    throw new ApiError("店铺不存在或无权访问", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  const products = toMerchantProducts(store.products);
+  const nextProducts = products.filter((item) => String(item.id) !== String(productId));
+  if (nextProducts.length === products.length) {
+    throw new ApiError("商品不存在", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  await saveAdminStoreProducts(store.id, nextProducts);
+  return {
+    storeId: store.id,
+    deletedProductId: String(productId)
   };
 }

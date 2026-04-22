@@ -1,6 +1,7 @@
 import type {
   AdminStoreDashboardResult,
   AdminStoreItem,
+  AdminStoreProductPayload,
   AdminStoreQuery,
   PageResult,
   StoreApplyItem,
@@ -37,5 +38,35 @@ export function getAdminStoreDashboardApi(id: number) {
   return request<AdminStoreDashboardResult>({
     url: `/mini/store/admin/detail/${id}`,
     method: "GET"
+  });
+}
+
+export function createAdminStoreProductApi(storeId: number, payload: AdminStoreProductPayload) {
+  return request({
+    url: `/mini/store/admin/detail/${storeId}/product`,
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateAdminStoreProductApi(storeId: number, productId: string, payload: AdminStoreProductPayload) {
+  return request({
+    url: `/mini/store/admin/detail/${storeId}/product/${productId}`,
+    method: "PUT",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function toggleAdminStoreProductStatusApi(storeId: number, productId: string) {
+  return request({
+    url: `/mini/store/admin/detail/${storeId}/product/${productId}/status`,
+    method: "POST"
+  });
+}
+
+export function deleteAdminStoreProductApi(storeId: number, productId: string) {
+  return request({
+    url: `/mini/store/admin/detail/${storeId}/product/${productId}`,
+    method: "DELETE"
   });
 }

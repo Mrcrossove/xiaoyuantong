@@ -867,11 +867,38 @@ export interface AdminStoreDashboardProductItem {
   price: number;
   priceText: string;
   stock: number;
+  dailyLimit: number;
   sales: number;
   revenue: number;
   status: string;
   recommended: boolean;
+  specMode: string;
+  defaultSkuId: string;
   skuCount: number;
+  skus: AdminStoreProductSkuPayload[];
+}
+
+export interface AdminStoreProductSkuPayload {
+  id?: string;
+  name: string;
+  price: string;
+  stock: number;
+  dailyLimit: number;
+  status: string;
+  isDefault: boolean;
+}
+
+export interface AdminStoreProductPayload {
+  name: string;
+  desc: string;
+  specMode: "single" | "multi";
+  price: string;
+  cover: string;
+  stock: number;
+  dailyLimit: number;
+  recommended: boolean;
+  status: string;
+  skus: AdminStoreProductSkuPayload[];
 }
 
 export interface AdminStoreDashboardOrderItem {

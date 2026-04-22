@@ -1,16 +1,43 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ElMessage } from "element-plus";
-import type { AdminStoreDashboardResult } from "../../api/contracts";
-import { getAdminStoreDashboardApi } from "../../api/modules/store";
+import { ElMessage, ElMessageBox } from "element-plus";
+import type {
+  AdminStoreDashboardProductItem,
+  AdminStoreDashboardResult,
+  AdminStoreProductPayload,
+  AdminStoreProductSkuPayload
+} from "../../api/contracts";
+import {
+  createAdminStoreProductApi,
+  deleteAdminStoreProductApi,
+  getAdminStoreDashboardApi,
+  toggleAdminStoreProductStatusApi,
+  updateAdminStoreProductApi
+} from "../../api/modules/store";
 import { ApiRequestError } from "../../api/request";
 
 const route = useRoute();
 const router = useRouter();
 
 const loading = ref(false);
+const actionLoading = ref(false);
 const data = ref<AdminStoreDashboardResult | null>(null);
+const productDialogVisible = ref(false);
+const editingProductId = ref("");
+
+const productForm = reactive<AdminStoreProductPayload>({
+  name: "",
+  desc: "",
+  specMode: "single",
+  price: "",
+  cover: "",
+  stock: 0,
+  dailyLimit: 0,
+  recommended: false,
+  status: "已上架",
+  skus: []
+});
 
 const summaryCards = computed(() => {
   const summary = data.value?.summary;
@@ -33,8 +60,184 @@ const trendMax = computed(() => {
   return Math.max(...list.map((item) => item.orders), 1);
 });
 
+const isEditMode = computed(() => Boolean(editingProductId.value));
+const statusOptions = computed(() => {
+  const statuses = new Set<string>();
+  (data.value?.products || []).forEach((item) => {
+    if (item.status) statuses.add(item.status);
+    item.skus.forEach((sku) => {
+      if (sku.status) statuses.add(sku.status);
+    });
+  });
+
+  if (!statuses.size) {
+    statuses.add("已上架");
+    statuses.add("已下架");
+  }
+
+  return Array.from(statuses);
+});
+
 function formatCurrency(value: number) {
   return `￥${Number(value || 0).toFixed(2)}`;
+}
+
+function createEmptySku(): AdminStoreProductSkuPayload {
+  return {
+    name: "",
+    price: "",
+    stock: 0,
+    dailyLimit: 0,
+    status: statusOptions.value[0] || "已上架",
+    isDefault: false
+  };
+}
+
+function resetProductForm() {
+  editingProductId.value = "";
+  productForm.name = "";
+  productForm.desc = "";
+  productForm.specMode = "single";
+  productForm.price = "";
+  productForm.cover = "";
+  productForm.stock = 0;
+  productForm.dailyLimit = 0;
+  productForm.recommended = false;
+  productForm.status = statusOptions.value[0] || "已上架";
+  productForm.skus = [];
+}
+
+function normalizePriceText(value: string) {
+  return value.trim();
+}
+
+function ensureSingleDefaultSku() {
+  if (productForm.specMode !== "multi") return;
+  if (!productForm.skus.length) {
+    productForm.skus.push({ ...createEmptySku(), isDefault: true });
+    return;
+  }
+
+  const hasDefault = productForm.skus.some((sku) => sku.isDefault);
+  if (!hasDefault) {
+    productForm.skus[0].isDefault = true;
+  }
+}
+
+function setDefaultSku(index: number) {
+  productForm.skus.forEach((sku, currentIndex) => {
+    sku.isDefault = currentIndex === index;
+  });
+}
+
+function addSku() {
+  if (productForm.specMode !== "multi") return;
+  const sku = createEmptySku();
+  sku.isDefault = productForm.skus.length === 0;
+  productForm.skus.push(sku);
+}
+
+function removeSku(index: number) {
+  productForm.skus.splice(index, 1);
+  ensureSingleDefaultSku();
+}
+
+function openCreateProductDialog() {
+  resetProductForm();
+  productDialogVisible.value = true;
+}
+
+function openEditProductDialog(product: AdminStoreDashboardProductItem) {
+  editingProductId.value = product.id;
+  productForm.name = product.name;
+  productForm.desc = product.desc;
+  productForm.specMode = product.specMode === "multi" ? "multi" : "single";
+  productForm.price = product.priceText;
+  productForm.cover = product.cover || "";
+  productForm.stock = product.stock;
+  productForm.dailyLimit = product.dailyLimit;
+  productForm.recommended = product.recommended;
+  productForm.status = product.status;
+  productForm.skus = product.skus.map((sku) => ({
+    id: sku.id,
+    name: sku.name,
+    price: sku.price,
+    stock: sku.stock,
+    dailyLimit: sku.dailyLimit,
+    status: sku.status,
+    isDefault: sku.isDefault
+  }));
+  ensureSingleDefaultSku();
+  productDialogVisible.value = true;
+}
+
+function buildProductPayload(): AdminStoreProductPayload | null {
+  if (!productForm.name.trim()) {
+    ElMessage.warning("请输入商品名称");
+    return null;
+  }
+  if (!productForm.desc.trim()) {
+    ElMessage.warning("请输入商品描述");
+    return null;
+  }
+
+  if (productForm.specMode === "single") {
+    if (!normalizePriceText(productForm.price)) {
+      ElMessage.warning("请输入商品价格");
+      return null;
+    }
+
+    return {
+      name: productForm.name.trim(),
+      desc: productForm.desc.trim(),
+      specMode: "single",
+      price: normalizePriceText(productForm.price),
+      cover: productForm.cover.trim(),
+      stock: Number(productForm.stock || 0),
+      dailyLimit: Number(productForm.dailyLimit || 0),
+      recommended: Boolean(productForm.recommended),
+      status: productForm.status,
+      skus: []
+    };
+  }
+
+  if (!productForm.skus.length) {
+    ElMessage.warning("多规格商品至少需要一个规格");
+    return null;
+  }
+
+  ensureSingleDefaultSku();
+  for (const sku of productForm.skus) {
+    if (!sku.name.trim()) {
+      ElMessage.warning("请填写规格名称");
+      return null;
+    }
+    if (!normalizePriceText(sku.price)) {
+      ElMessage.warning("请填写规格价格");
+      return null;
+    }
+  }
+
+  return {
+    name: productForm.name.trim(),
+    desc: productForm.desc.trim(),
+    specMode: "multi",
+    price: normalizePriceText(productForm.skus.find((item) => item.isDefault)?.price || productForm.skus[0].price),
+    cover: productForm.cover.trim(),
+    stock: Number(productForm.stock || 0),
+    dailyLimit: Number(productForm.dailyLimit || 0),
+    recommended: Boolean(productForm.recommended),
+    status: productForm.status,
+    skus: productForm.skus.map((sku) => ({
+      id: sku.id,
+      name: sku.name.trim(),
+      price: normalizePriceText(sku.price),
+      stock: Number(sku.stock || 0),
+      dailyLimit: Number(sku.dailyLimit || 0),
+      status: sku.status,
+      isDefault: Boolean(sku.isDefault)
+    }))
+  };
 }
 
 function showApiError(error: unknown, fallback: string) {
@@ -66,6 +269,63 @@ async function loadData() {
   }
 }
 
+async function submitProduct() {
+  const storeId = Number(route.params.id);
+  const payload = buildProductPayload();
+  if (!payload) return;
+
+  actionLoading.value = true;
+  try {
+    if (isEditMode.value) {
+      await updateAdminStoreProductApi(storeId, editingProductId.value, payload);
+      ElMessage.success("商品已更新");
+    } else {
+      await createAdminStoreProductApi(storeId, payload);
+      ElMessage.success("商品已新增");
+    }
+    productDialogVisible.value = false;
+    await loadData();
+  } catch (error) {
+    showApiError(error, isEditMode.value ? "商品更新失败" : "商品新增失败");
+  } finally {
+    actionLoading.value = false;
+  }
+}
+
+async function toggleProductStatus(product: AdminStoreDashboardProductItem) {
+  const storeId = Number(route.params.id);
+  actionLoading.value = true;
+  try {
+    await toggleAdminStoreProductStatusApi(storeId, product.id);
+    ElMessage.success("商品状态已更新");
+    await loadData();
+  } catch (error) {
+    showApiError(error, "商品状态更新失败");
+  } finally {
+    actionLoading.value = false;
+  }
+}
+
+async function deleteProduct(product: AdminStoreDashboardProductItem) {
+  const storeId = Number(route.params.id);
+  try {
+    await ElMessageBox.confirm(`确认删除商品“${product.name}”吗？`, "删除商品", {
+      type: "warning",
+      confirmButtonText: "删除",
+      cancelButtonText: "取消"
+    });
+    actionLoading.value = true;
+    await deleteAdminStoreProductApi(storeId, product.id);
+    ElMessage.success("商品已删除");
+    await loadData();
+  } catch (error) {
+    if (error === "cancel") return;
+    showApiError(error, "商品删除失败");
+  } finally {
+    actionLoading.value = false;
+  }
+}
+
 function goProductList() {
   router.push({ path: "/product/list", query: { keyword: data.value?.store.storeName || "" } });
 }
@@ -78,7 +338,7 @@ onMounted(loadData);
 </script>
 
 <template>
-  <div class="page" v-loading="loading">
+  <div class="page" v-loading="loading || actionLoading">
     <div class="page-head">
       <div>
         <div class="page-title">店铺经营看板</div>
@@ -195,7 +455,10 @@ onMounted(loadData);
         <template #header>
           <div class="card-header">
             <span>店铺商品</span>
-            <span class="header-extra">当前页展示的是该店铺商品明细</span>
+            <div class="header-actions">
+              <span class="header-extra">管理员可直接新增、编辑、上下架和删除商品</span>
+              <el-button type="primary" @click="openCreateProductDialog">新增商品</el-button>
+            </div>
           </div>
         </template>
         <el-table :data="data.products" stripe>
@@ -214,6 +477,17 @@ onMounted(loadData);
           </el-table-column>
           <el-table-column prop="status" label="状态" width="120" />
           <el-table-column prop="skuCount" label="规格数" width="100" />
+          <el-table-column label="操作" min-width="240" fixed="right">
+            <template #default="{ row }">
+              <div class="table-actions">
+                <el-button link type="primary" @click="openEditProductDialog(row)">编辑</el-button>
+                <el-button link type="warning" @click="toggleProductStatus(row)">
+                  {{ row.status.includes("下架") ? "上架" : "下架" }}
+                </el-button>
+                <el-button link type="danger" @click="deleteProduct(row)">删除</el-button>
+              </div>
+            </template>
+          </el-table-column>
         </el-table>
       </el-card>
 
@@ -239,6 +513,110 @@ onMounted(loadData);
         </el-table>
       </el-card>
     </template>
+
+    <el-dialog
+      v-model="productDialogVisible"
+      :title="isEditMode ? '编辑商品' : '新增商品'"
+      width="900px"
+      destroy-on-close
+    >
+      <el-form label-width="100px">
+        <div class="dialog-grid">
+          <el-form-item label="商品名称">
+            <el-input v-model="productForm.name" maxlength="30" show-word-limit />
+          </el-form-item>
+          <el-form-item label="商品状态">
+            <el-select v-model="productForm.status">
+              <el-option v-for="item in statusOptions" :key="item" :label="item" :value="item" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="商品描述" class="full-row">
+            <el-input v-model="productForm.desc" type="textarea" :rows="3" maxlength="60" show-word-limit />
+          </el-form-item>
+          <el-form-item label="封面地址" class="full-row">
+            <el-input v-model="productForm.cover" placeholder="可填图片 URL，不填则沿用默认占位图" />
+          </el-form-item>
+          <el-form-item label="规格模式">
+            <el-radio-group v-model="productForm.specMode" @change="ensureSingleDefaultSku">
+              <el-radio value="single">单规格</el-radio>
+              <el-radio value="multi">多规格</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item label="推荐商品">
+            <el-switch v-model="productForm.recommended" />
+          </el-form-item>
+        </div>
+
+        <template v-if="productForm.specMode === 'single'">
+          <div class="dialog-grid">
+            <el-form-item label="商品价格">
+              <el-input v-model="productForm.price" placeholder="例如：￥12 或 12.5" />
+            </el-form-item>
+            <el-form-item label="库存">
+              <el-input-number v-model="productForm.stock" :min="0" :max="99999" class="full-input" />
+            </el-form-item>
+            <el-form-item label="限购数">
+              <el-input-number v-model="productForm.dailyLimit" :min="0" :max="9999" class="full-input" />
+            </el-form-item>
+          </div>
+        </template>
+
+        <template v-else>
+          <div class="sku-head">
+            <div class="sku-title">规格列表</div>
+            <el-button @click="addSku">新增规格</el-button>
+          </div>
+          <el-table :data="productForm.skus" border>
+            <el-table-column label="默认" width="80">
+              <template #default="{ $index }">
+                <el-radio :model-value="productForm.skus[$index].isDefault" :label="true" @change="setDefaultSku($index)">
+                  <span></span>
+                </el-radio>
+              </template>
+            </el-table-column>
+            <el-table-column label="规格名称" min-width="160">
+              <template #default="{ row }">
+                <el-input v-model="row.name" placeholder="如：大份 / 热饮" />
+              </template>
+            </el-table-column>
+            <el-table-column label="价格" width="160">
+              <template #default="{ row }">
+                <el-input v-model="row.price" placeholder="如：￥12" />
+              </template>
+            </el-table-column>
+            <el-table-column label="库存" width="120">
+              <template #default="{ row }">
+                <el-input-number v-model="row.stock" :min="0" :max="99999" class="full-input" />
+              </template>
+            </el-table-column>
+            <el-table-column label="限购数" width="120">
+              <template #default="{ row }">
+                <el-input-number v-model="row.dailyLimit" :min="0" :max="9999" class="full-input" />
+              </template>
+            </el-table-column>
+            <el-table-column label="状态" width="140">
+              <template #default="{ row }">
+                <el-select v-model="row.status">
+                  <el-option v-for="item in statusOptions" :key="item" :label="item" :value="item" />
+                </el-select>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="100">
+              <template #default="{ $index }">
+                <el-button link type="danger" @click="removeSku($index)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </template>
+      </el-form>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="productDialogVisible = false">取消</el-button>
+          <el-button type="primary" :loading="actionLoading" @click="submitProduct">保存</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -369,7 +747,7 @@ onMounted(loadData);
 
 .trend-row {
   display: grid;
-  grid-template-columns: 48px 1fr 120px;
+  grid-template-columns: 48px 1fr 140px;
   gap: 12px;
   align-items: center;
 }
@@ -400,15 +778,56 @@ onMounted(loadData);
   font-weight: 600;
 }
 
-.card-header {
+.card-header,
+.header-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
 }
 
 .header-extra {
   color: #667085;
   font-size: 12px;
+}
+
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dialog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+
+.full-row {
+  grid-column: 1 / -1;
+}
+
+.full-input {
+  width: 100%;
+}
+
+.sku-head {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sku-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #101828;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
 }
 
 @media (max-width: 1280px) {
@@ -422,12 +841,14 @@ onMounted(loadData);
   .page-head,
   .store-card__content,
   .summary-grid,
-  .chart-grid {
-    grid-template-columns: 1fr;
+  .chart-grid,
+  .dialog-grid {
     display: grid;
+    grid-template-columns: 1fr;
   }
 
-  .page-actions {
+  .page-actions,
+  .header-actions {
     flex-wrap: wrap;
   }
 
