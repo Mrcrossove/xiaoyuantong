@@ -1,6 +1,6 @@
 const { getSelectedSchool } = require("../../utils/school-state");
-const { getVerificationInfo, setVerificationInfo } = require("../../utils/verification-state");
-const { ensureMiniSession } = require("../../utils/mini-auth");
+const { getVerificationInfo, setVerificationInfo, clearVerificationInfo } = require("../../utils/verification-state");
+const { ensureMiniSession, clearSession, isDevtoolsEnv } = require("../../utils/mini-auth");
 const { fetchCurrentVerification } = require("../../utils/verification-api");
 
 const contentRouteMap = {
@@ -17,15 +17,20 @@ const supportRouteMap = {
   about: "/pages/about/about"
 };
 
+function buildGuestUser() {
+  return {
+    name: "校园用户",
+    school: getSelectedSchool(),
+    verified: false,
+    statusText: "去认证"
+  };
+}
+
 Page({
   data: {
     statusBarHeight: 20,
-    user: {
-      name: "校园用户",
-      school: "",
-      verified: false,
-      statusText: "去认证"
-    },
+    logoutText: "退出登录",
+    user: buildGuestUser(),
     contentItems: [
       { label: "我的订单", icon: "order" },
       { label: "我的发布", icon: "publish" },
@@ -43,7 +48,8 @@ Page({
   onLoad() {
     const systemInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
     this.setData({
-      statusBarHeight: systemInfo.statusBarHeight || 20
+      statusBarHeight: systemInfo.statusBarHeight || 20,
+      logoutText: isDevtoolsEnv() ? "切换测试账号" : "退出登录"
     });
   },
 
@@ -72,6 +78,44 @@ Page({
         statusText: verificationInfo.verified ? "已认证" : "去认证"
       }
     });
+  },
+
+  async handleLogout() {
+    const devMode = isDevtoolsEnv();
+    const { confirm } = await wx.showModal({
+      title: devMode ? "切换测试账号" : "退出登录",
+      content: devMode
+        ? "当前为开发环境。确认后会清除当前账户缓存，并直接创建一个新的测试账号。"
+        : "退出后会清除当前小程序账户缓存，是否继续？",
+      confirmText: devMode ? "切换" : "退出",
+      cancelText: "取消"
+    });
+
+    if (!confirm) {
+      return;
+    }
+
+    try {
+      clearSession();
+      wx.removeStorageSync("miniDeviceId");
+      clearVerificationInfo();
+      this.setData({
+        user: buildGuestUser()
+      });
+      await ensureMiniSession({
+        forceFreshAccount: devMode
+      });
+      await this.syncVerification();
+      wx.showToast({
+        title: devMode ? "已切换测试账号" : "已退出当前账户",
+        icon: "success"
+      });
+    } catch (error) {
+      wx.showToast({
+        title: "退出失败",
+        icon: "none"
+      });
+    }
   },
 
   goHome() {

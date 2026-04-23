@@ -36,17 +36,37 @@ function getProfile() {
   }
 }
 
+function createDeviceId() {
+  return `device_${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
+}
+
+function setDeviceId(deviceId) {
+  try {
+    wx.setStorageSync(DEVICE_KEY, deviceId);
+  } catch (error) {}
+  return deviceId;
+}
+
+function resetDeviceId() {
+  return setDeviceId(createDeviceId());
+}
+
 function getDeviceId() {
   try {
     const cached = wx.getStorageSync(DEVICE_KEY);
     if (cached) return cached;
   } catch (error) {}
 
-  const deviceId = `device_${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
+  return setDeviceId(createDeviceId());
+}
+
+function isDevtoolsEnv() {
   try {
-    wx.setStorageSync(DEVICE_KEY, deviceId);
-  } catch (error) {}
-  return deviceId;
+    const info = wx.getAccountInfoSync ? wx.getAccountInfoSync() : null;
+    return Boolean(info && info.miniProgram && info.miniProgram.envVersion === "develop");
+  } catch (error) {
+    return false;
+  }
 }
 
 function getWechatCode() {
@@ -67,28 +87,47 @@ function getWechatCode() {
   });
 }
 
-async function ensureMiniSession() {
+async function loginWithPayload(data) {
+  const session = await request({
+    url: "/auth/mini/login",
+    method: "POST",
+    data
+  });
+
+  return setSession(session);
+}
+
+async function ensureMiniSession(options = {}) {
+  const { forceFreshAccount = false } = options;
   const token = getToken();
-  if (token) {
+
+  if (token && !forceFreshAccount) {
     return {
       token,
       profile: getProfile()
     };
   }
 
-  const code = await getWechatCode();
-  const session = await request({
-    url: "/auth/mini/login",
-    method: "POST",
-    data: {
-      code,
-      deviceId: getDeviceId(),
+  if (forceFreshAccount) {
+    clearSession();
+    const freshDeviceId = resetDeviceId();
+    return loginWithPayload({
+      code: "",
+      deviceId: freshDeviceId,
       nickname: "校园用户",
-      school: getSelectedSchool()
-    }
-  });
+      school: getSelectedSchool(),
+      devLoginMode: "device",
+      devSwitchNonce: `${Date.now()}_${Math.floor(Math.random() * 1000000)}`
+    });
+  }
 
-  return setSession(session);
+  const code = await getWechatCode();
+  return loginWithPayload({
+    code,
+    deviceId: getDeviceId(),
+    nickname: "校园用户",
+    school: getSelectedSchool()
+  });
 }
 
 function buildAuthHeader(token) {
@@ -130,6 +169,9 @@ async function authRequest(options) {
 module.exports = {
   getToken,
   getProfile,
+  getDeviceId,
+  resetDeviceId,
+  isDevtoolsEnv,
   ensureMiniSession,
   clearSession,
   buildAuthHeader,

@@ -59,7 +59,7 @@
     </view>
   </view>
 
-  <view class="logout-btn">退出登录</view>
+  <view class="logout-btn" bindtap="handleLogout">{{logoutText}}</view>
 
   <view class="tabbar card">
     <view class="tab" bindtap="goHome">

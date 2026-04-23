@@ -25,7 +25,9 @@ export const miniLoginSchema = z
     deviceId: z.string().trim().optional(),
     nickname: z.string().trim().optional(),
     avatarUrl: z.string().trim().optional(),
-    school: z.string().trim().optional()
+    school: z.string().trim().optional(),
+    devLoginMode: z.enum(["wechat", "device"]).optional(),
+    devSwitchNonce: z.string().trim().optional()
   })
   .refine((value) => !!value.code || !!value.deviceId, {
     message: "code 和 deviceId 至少传一个"

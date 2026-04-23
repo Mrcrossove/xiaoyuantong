@@ -42,7 +42,16 @@ function setVerificationInfo(payload) {
   return nextValue;
 }
 
+function clearVerificationInfo() {
+  try {
+    wx.removeStorageSync(STORAGE_KEY);
+  } catch (error) {}
+
+  return getDefaultVerification();
+}
+
 module.exports = {
   getVerificationInfo,
-  setVerificationInfo
+  setVerificationInfo,
+  clearVerificationInfo
 };

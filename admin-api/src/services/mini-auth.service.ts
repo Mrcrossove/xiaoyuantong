@@ -28,23 +28,33 @@ function buildDeviceId(payload: MiniLoginPayload) {
   return raw || `wechat_${Date.now()}`;
 }
 
+function shouldUseDeviceLogin(payload: MiniLoginPayload) {
+  return env.allowMiniDevAccountSwitch && payload.devLoginMode === "device";
+}
+
 export async function miniLogin(payload: MiniLoginPayload) {
   const deviceId = buildDeviceId(payload);
   const nickname = payload.nickname?.trim() || "校园用户";
   const school = payload.school?.trim() || undefined;
   const avatarUrl = payload.avatarUrl?.trim() || undefined;
   const loginCode = String(payload.code || "").trim();
+  const useDeviceLogin = shouldUseDeviceLogin(payload);
 
-  if (!env.wechatUseMock && !loginCode) {
+  if (!env.wechatUseMock && !useDeviceLogin && !loginCode) {
     throw new ApiError("缺少微信登录 code", ERROR_CODES.BAD_REQUEST, 400);
   }
 
-  const wechatSession = env.wechatUseMock
+  const wechatSession = useDeviceLogin
     ? {
-        openid: `mock_openid_${deviceId}`,
-        unionid: `mock_unionid_${deviceId}`
+        openid: `dev_switch_openid_${deviceId}`,
+        unionid: `dev_switch_unionid_${payload.devSwitchNonce || deviceId}`
       }
-    : await fetchWechatSession(loginCode);
+    : env.wechatUseMock
+      ? {
+          openid: `mock_openid_${deviceId}`,
+          unionid: `mock_unionid_${deviceId}`
+        }
+      : await fetchWechatSession(loginCode);
 
   const user = await prisma.miniUser.upsert({
     where: { openid: wechatSession.openid },
