@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   createAdminRoleAction,
+  createAdminRoleFromTemplateAction,
   createAdminUserManageAction,
   deleteAdminRoleAction,
   deleteAdminUserManageAction,
@@ -83,6 +84,13 @@ router.post(
   requireAdminPermission("auth:role:add"),
   validateBody(adminRolePayloadSchema),
   asyncHandler(createAdminRoleAction)
+);
+router.post(
+  "/role/template/:code",
+  requireAdminAuth,
+  requireAdminMenuAccess("/auth/role"),
+  requireAdminPermission("auth:role:add"),
+  asyncHandler(createAdminRoleFromTemplateAction)
 );
 router.put(
   "/role/:id",

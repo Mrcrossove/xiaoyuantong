@@ -3,8 +3,9 @@ import { formatDateTime } from "../utils/time";
 import { parsePageParams } from "../utils/pagination";
 import { ApiError } from "../utils/api-error";
 import { ERROR_CODES } from "../constants/error-codes";
-import { getAdminSchoolScope } from "./admin-scope.service";
-import type { PostReportReviewPayload } from "../controllers/schemas";
+import { assertSchoolInScope, getAdminSchoolScope } from "./admin-scope.service";
+import { createMiniMessage } from "./mini-message.service";
+import type { PostReportReviewPayload, PostReviewPayload } from "../controllers/schemas";
 
 function paginateList<T>(list: T[], page: number, pageSize: number) {
   const start = (page - 1) * pageSize;
@@ -25,6 +26,22 @@ function buildSchoolWhere(scope: Awaited<ReturnType<typeof getAdminSchoolScope>>
   };
 }
 
+function mapPost(item: any) {
+  return {
+    id: item.id,
+    title: item.title,
+    author: item.authorName,
+    school: item.school,
+    category: item.category,
+    status: item.status,
+    favoriteCount: Number(item.likeCount || 0),
+    createdAt: formatDateTime(item.createdAt),
+    reviewNote: item.reviewNote || "",
+    reviewerName: item.reviewer?.name || "",
+    reviewedAt: item.reviewedAt ? formatDateTime(item.reviewedAt) : ""
+  };
+}
+
 export async function queryAdminPostList(adminUserId: number, rawQuery: Record<string, unknown>) {
   const { page, pageSize } = parsePageParams(rawQuery);
   const keyword = String(rawQuery.keyword || "").trim();
@@ -36,19 +53,17 @@ export async function queryAdminPostList(adminUserId: number, rawQuery: Record<s
     where: {
       school: buildSchoolWhere(scope, school)
     },
+    include: {
+      reviewer: {
+        select: {
+          name: true
+        }
+      }
+    },
     orderBy: { id: "desc" }
   });
 
-  const mapped = rows.map((item: any) => ({
-    id: item.id,
-    title: item.title,
-    author: item.authorName,
-    school: item.school,
-    category: item.category,
-    status: item.status,
-    favoriteCount: Number(item.likeCount || 0),
-    createdAt: formatDateTime(item.createdAt)
-  }));
+  const mapped = rows.map(mapPost);
 
   const filtered = mapped.filter((item: any) => {
     const matchKeyword = !keyword || item.title.includes(keyword) || item.author.includes(keyword);
@@ -68,6 +83,62 @@ export async function queryAdminPostList(adminUserId: number, rawQuery: Record<s
       schoolOptions: [...new Set(mapped.map((item: any) => item.school))]
     }
   };
+}
+
+export async function reviewAdminPost(id: number, reviewerId: number, payload: PostReviewPayload) {
+  const [row, scope] = await Promise.all([
+    prisma.miniPost.findUnique({
+      where: { id }
+    }),
+    getAdminSchoolScope(reviewerId)
+  ]);
+
+  if (!row) {
+    throw new ApiError("帖子不存在", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  assertSchoolInScope(scope, row.school);
+
+  if (row.status === payload.status && String(row.reviewNote || "") === String(payload.reviewNote || "")) {
+    throw new ApiError("帖子状态未发生变化", ERROR_CODES.BAD_REQUEST, 400);
+  }
+
+  const reviewedAt = new Date();
+  const updated = await prisma.miniPost.update({
+    where: { id },
+    data: {
+      status: payload.status,
+      reviewNote: payload.reviewNote || "",
+      reviewerId,
+      reviewedAt
+    },
+    include: {
+      reviewer: {
+        select: {
+          name: true
+        }
+      }
+    }
+  });
+
+  const reviewText =
+    payload.status === "已发布"
+      ? `你的帖子《${updated.title}》已审核通过并发布。`
+      : payload.status === "已驳回"
+        ? `你的帖子《${updated.title}》未通过审核，原因：${payload.reviewNote || "请修改后重新提交"}`
+        : `你的帖子《${updated.title}》已被下架，原因：${payload.reviewNote || "请联系校园管理员了解详情"}`;
+
+  await createMiniMessage({
+    school: updated.school,
+    type: "system",
+    category: "帖子审核",
+    content: reviewText,
+    receiverUserId: updated.userId,
+    targetType: "post",
+    targetId: String(updated.id)
+  });
+
+  return mapPost(updated);
 }
 
 export async function queryAdminPostReportList(adminUserId: number, rawQuery: Record<string, unknown>) {
@@ -214,6 +285,9 @@ export async function reviewAdminPostReport(id: number, reviewerId: number, payl
   if (!row) {
     throw new ApiError("举报记录不存在", ERROR_CODES.NOT_FOUND, 404);
   }
+
+  const scope = await getAdminSchoolScope(reviewerId);
+  assertSchoolInScope(scope, row.school);
 
   if (row.status !== "待处理") {
     throw new ApiError("当前举报记录不可重复处理", ERROR_CODES.BAD_REQUEST, 400);

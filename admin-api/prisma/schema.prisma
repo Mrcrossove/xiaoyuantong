@@ -45,6 +45,7 @@ model AdminUser {
   roleId      Int
   role        AdminRole          @relation(fields: [roleId], references: [id])
   reviews     UserVerification[] @relation("VerificationReviewer")
+  postReviews MiniPost[]         @relation("MiniPostReviewer")
   postReports MiniPostReport[]   @relation("PostReportReviewer")
   refunds     MiniRefundRecord[] @relation("RefundReviewer")
   createdAt   DateTime           @default(now())
@@ -116,27 +117,31 @@ model UserVerification {
 }
 
 model MiniPost {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  user        MiniUser @relation(fields: [userId], references: [id])
-  school      String
-  authorName  String
-  category    String
-  title       String
-  content     String
-  images      Json
-  contacts    Json
-  isAnonymous Boolean  @default(false)
-  onlyCampus  Boolean  @default(true)
-  status      String
-  likeCount   Int      @default(0)
-  commentCount Int     @default(0)
-  viewCount   Int      @default(0)
-  likes       MiniPostLike[]
-  comments    MiniPostComment[]
-  reports     MiniPostReport[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           Int        @id @default(autoincrement())
+  userId       Int
+  user         MiniUser   @relation(fields: [userId], references: [id])
+  school       String
+  authorName   String
+  category     String
+  title        String
+  content      String
+  images       Json
+  contacts     Json
+  isAnonymous  Boolean    @default(false)
+  onlyCampus   Boolean    @default(true)
+  status       String
+  reviewNote   String?
+  reviewerId   Int?
+  reviewer     AdminUser? @relation("MiniPostReviewer", fields: [reviewerId], references: [id])
+  reviewedAt   DateTime?
+  likeCount    Int        @default(0)
+  commentCount Int        @default(0)
+  viewCount    Int        @default(0)
+  likes        MiniPostLike[]
+  comments     MiniPostComment[]
+  reports      MiniPostReport[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
 
 model MiniPostLike {

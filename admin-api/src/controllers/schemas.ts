@@ -297,6 +297,11 @@ export const postReportReviewSchema = z.object({
   reviewNote: z.string().trim().max(100, "审核备注最多 100 个字").optional().default("")
 });
 
+export const postReviewSchema = z.object({
+  status: z.enum(["已发布", "已驳回", "已下架"]),
+  reviewNote: z.string().trim().max(100, "审核备注最多 100 个字").optional().default("")
+});
+
 export const refundReviewSchema = z.object({
   status: z.enum(["已通过", "已驳回"]),
   reviewNote: z.string().trim().max(100, "审核备注最多 100 个字").optional().default("")
@@ -351,6 +356,7 @@ export type MiniLoginPayload = z.infer<typeof miniLoginSchema>;
 export type VerifySubmitPayload = z.infer<typeof verifySubmitSchema>;
 export type VerifyReviewPayload = z.infer<typeof verifyReviewSchema>;
 export type PostReportReviewPayload = z.infer<typeof postReportReviewSchema>;
+export type PostReviewPayload = z.infer<typeof postReviewSchema>;
 export type MiniPostPayload = z.infer<typeof miniPostPayloadSchema>;
 export type MiniShopApplyPayload = z.infer<typeof miniShopApplySchema>;
 export type MiniShopApplyReviewPayload = z.infer<typeof miniShopApplyReviewSchema>;

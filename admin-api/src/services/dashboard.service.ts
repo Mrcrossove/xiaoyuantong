@@ -9,7 +9,7 @@ export async function getDashboardOverview(adminUserId: number) {
   const scope = await getAdminSchoolScope(adminUserId);
   const schoolWhere = scope.isAll ? undefined : { in: scope.schools };
 
-  const [schools, users, posts, stores, orders, pendingVerify, pendingApply, pendingWithdraw] = await Promise.all([
+  const [schools, users, posts, stores, orders, pendingVerify, pendingApply, pendingWithdraw, pendingPost] = await Promise.all([
     prisma.schoolContent.findMany({
       where: {
         school: schoolWhere
@@ -53,6 +53,12 @@ export async function getDashboardOverview(adminUserId: number) {
         school: schoolWhere,
         status: "待审核"
       }
+    }),
+    prisma.miniPost.count({
+      where: {
+        school: schoolWhere,
+        status: "待审核"
+      }
     })
   ]);
 
@@ -63,11 +69,12 @@ export async function getDashboardOverview(adminUserId: number) {
   return {
     cards: [
       { key: "schoolCount", label: "已接入高校", value: totalSchool, remark: `已启用 ${enabledSchool} 所` },
-      { key: "userCount", label: "用户总数", value: users, remark: "按高校范围统计" },
+      { key: "userCount", label: "用户总数", value: users, remark: "按当前数据范围统计" },
       { key: "postCount", label: "帖子总数", value: posts, remark: `店铺 ${stores} 家，订单 ${orders} 笔` },
       { key: "gmv", label: "累计交易额", value: `￥${formatMoney(totalGmv)}`, remark: "来自高校内容统计数据" }
     ],
     todos: [
+      { key: "post", label: "待审核帖子", count: pendingPost, path: "/post/list" },
       { key: "verify", label: "待审核认证", count: pendingVerify, path: "/verify/list" },
       { key: "storeApply", label: "待审核入驻", count: pendingApply, path: "/store/apply" },
       { key: "withdraw", label: "待审核提现", count: pendingWithdraw, path: "/trade/withdraw" }

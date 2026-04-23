@@ -257,6 +257,15 @@ export interface RoleOptionItem {
   status: "启用" | "停用";
 }
 
+export interface RoleTemplateItem {
+  code: string;
+  name: string;
+  scopeType: "all" | "assigned";
+  description: string;
+  menuPaths: string[];
+  permissionsList: string[];
+}
+
 export interface MenuTreeNode {
   key: string;
   title: string;
@@ -281,6 +290,7 @@ export interface AuthManageMeta {
   currentRoleName: string;
   schoolOptions: string[];
   roleOptions: RoleOptionItem[];
+  roleTemplates: RoleTemplateItem[];
   menuTree: MenuTreeNode[];
   permissionGroups: PermissionGroup[];
 }
@@ -702,6 +712,14 @@ export interface AdminPostItem {
   status: string;
   favoriteCount: number;
   createdAt: string;
+  reviewNote: string;
+  reviewerName: string;
+  reviewedAt: string;
+}
+
+export interface PostReviewPayload {
+  status: "已发布" | "已驳回" | "已下架";
+  reviewNote?: string;
 }
 
 export interface AdminPostListResult extends PageResult<AdminPostItem> {

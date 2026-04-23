@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import type { DashboardCardItem, DashboardRankingItem, DashboardTodoItem } from "../../api/contracts";
 import { getDashboardOverviewApi } from "../../api/modules/dashboard";
+import { useAuthStore } from "../../stores/auth";
 
 const router = useRouter();
+const authStore = useAuthStore();
 const loading = ref(false);
 const cards = ref<DashboardCardItem[]>([]);
 const todos = ref<DashboardTodoItem[]>([]);
 const rankings = ref<DashboardRankingItem[]>([]);
+
+const boardTitle = computed(() => (authStore.profile?.roleCode === "campus_team_admin" ? "校园运营看板" : "平台数据看板"));
+const rankingTitle = computed(() => (authStore.profile?.scopeType === "assigned" ? "当前高校数据概览" : "高校数据排行"));
 
 async function loadData() {
   loading.value = true;
@@ -31,6 +36,13 @@ onMounted(loadData);
 
 <template>
   <div class="page" v-loading="loading">
+    <el-card shadow="never" class="intro-card">
+      <div class="intro-title">{{ boardTitle }}</div>
+      <div class="intro-desc">
+        {{ authStore.schoolScopeLabel === "全部高校" ? "当前展示平台整体经营数据。" : `当前仅展示 ${authStore.schoolScopeLabel} 的数据范围。` }}
+      </div>
+    </el-card>
+
     <el-row :gutter="16">
       <el-col v-for="item in cards" :key="item.key" :span="6">
         <el-card shadow="hover" class="metric-card">
@@ -55,7 +67,7 @@ onMounted(loadData);
       </el-col>
       <el-col :span="14">
         <el-card shadow="never">
-          <template #header>高校数据排行</template>
+          <template #header>{{ rankingTitle }}</template>
           <el-table :data="rankings" stripe>
             <el-table-column prop="school" label="高校" min-width="180" />
             <el-table-column prop="userCount" label="用户数" width="100" />
@@ -78,30 +90,38 @@ onMounted(loadData);
   display: grid;
   gap: 16px;
 }
-
+.intro-card {
+  border: none;
+  background: linear-gradient(135deg, #f8fbff 0%, #eef5ff 100%);
+}
+.intro-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+.intro-desc {
+  margin-top: 8px;
+  color: #667085;
+}
 .metric-card .label {
   color: #667085;
   font-size: 14px;
 }
-
 .metric-card .value {
   margin-top: 14px;
   font-size: 32px;
   font-weight: 700;
   color: #111827;
 }
-
 .metric-card .remark {
   margin-top: 12px;
   color: #667085;
   line-height: 1.8;
 }
-
 .todo-list {
   display: grid;
   gap: 12px;
 }
-
 .todo-item {
   width: 100%;
   border: 1px solid #e5e7eb;
@@ -114,7 +134,6 @@ onMounted(loadData);
   cursor: pointer;
   transition: border-color 0.2s ease, transform 0.2s ease;
 }
-
 .todo-item:hover {
   border-color: #2f68e3;
   transform: translateY(-1px);

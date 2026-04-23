@@ -24,6 +24,7 @@ const meta = ref<AuthManageMeta>({
   currentRoleName: "",
   schoolOptions: [],
   roleOptions: [],
+  roleTemplates: [],
   menuTree: [],
   permissionGroups: []
 });

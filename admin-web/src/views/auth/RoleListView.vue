@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from "element-plus";
-import type { AdminRoleItem, AdminRolePayload, AdminRoleSummary } from "../../api/contracts";
+import type { AdminRoleItem, AdminRolePayload, AdminRoleSummary, AuthManageMeta, RoleTemplateItem } from "../../api/contracts";
 import { ApiRequestError } from "../../api/request";
 import {
   createAdminRoleApi,
+  createAdminRoleFromTemplateApi,
   deleteAdminRoleApi,
   getAdminRoleListApi,
+  getAuthManageMetaApi,
   toggleAdminRoleStatusApi,
   updateAdminRoleApi
 } from "../../api/modules/auth-manage";
@@ -27,6 +29,16 @@ const summary = ref<AdminRoleSummary>({
   total: 0,
   enabledCount: 0,
   userCount: 0
+});
+const meta = ref<AuthManageMeta>({
+  currentRoleId: 0,
+  currentRoleCode: "",
+  currentRoleName: "",
+  schoolOptions: [],
+  roleOptions: [],
+  roleTemplates: [],
+  menuTree: [],
+  permissionGroups: []
 });
 
 const query = reactive({
@@ -50,6 +62,13 @@ const rules: FormRules<typeof form> = {
   status: [{ required: true, message: "请选择状态", trigger: "change" }]
 };
 
+const templateMap = computed(() =>
+  meta.value.roleTemplates.reduce<Record<string, RoleTemplateItem>>((result, item) => {
+    result[item.code] = item;
+    return result;
+  }, {})
+);
+
 function showApiError(error: unknown, fallback: string) {
   if (error instanceof ApiRequestError) {
     ElMessage.error(error.traceId ? `${error.message}（追踪号: ${error.traceId}）` : error.message);
@@ -70,18 +89,8 @@ function resetForm() {
   form.status = "启用";
 }
 
-function openCreateDialog() {
-  resetForm();
-  dialogVisible.value = true;
-}
-
-function openEditDialog(row: AdminRoleItem) {
-  editingId.value = row.id;
-  form.code = row.code;
-  form.name = row.name;
-  form.scopeType = row.scopeTypeValue;
-  form.status = row.status as "启用" | "停用";
-  dialogVisible.value = true;
+async function loadMeta() {
+  meta.value = await getAuthManageMetaApi();
 }
 
 async function loadData() {
@@ -98,21 +107,27 @@ async function loadData() {
   }
 }
 
-function handleSearch() {
-  query.page = 1;
-  loadData();
+async function loadPage() {
+  try {
+    await loadMeta();
+  } catch (error) {
+    showApiError(error, "角色元数据加载失败");
+  }
+  await loadData();
 }
 
-function handleReset() {
-  query.page = 1;
-  query.keyword = "";
-  query.status = "";
-  loadData();
+function openCreateDialog() {
+  resetForm();
+  dialogVisible.value = true;
 }
 
-function handlePageChange(page: number) {
-  query.page = page;
-  loadData();
+function openEditDialog(row: AdminRoleItem) {
+  editingId.value = row.id;
+  form.code = row.code;
+  form.name = row.name;
+  form.scopeType = row.scopeTypeValue;
+  form.status = row.status as "启用" | "停用";
+  dialogVisible.value = true;
 }
 
 async function refreshCurrentSessionIfNeeded(targetRoleId: number) {
@@ -125,6 +140,31 @@ async function refreshCurrentSessionIfNeeded(targetRoleId: number) {
     return true;
   }
   return false;
+}
+
+async function createFromTemplate(template: RoleTemplateItem) {
+  try {
+    await ElMessageBox.confirm(
+      `确认按模板创建角色“${template.name}”吗？系统会自动写入菜单和按钮权限。`,
+      "创建角色模板",
+      { type: "warning" }
+    );
+    await createAdminRoleFromTemplateApi(template.code);
+    ElMessage.success("角色模板已创建");
+    await loadPage();
+  } catch (error) {
+    if (error === "cancel") return;
+    showApiError(error, "角色模板创建失败");
+  }
+}
+
+function applyTemplateToForm(template: RoleTemplateItem) {
+  editingId.value = null;
+  form.code = template.code;
+  form.name = template.name;
+  form.scopeType = template.scopeType;
+  form.status = "启用";
+  dialogVisible.value = true;
 }
 
 async function submitForm() {
@@ -152,7 +192,7 @@ async function submitForm() {
       await createAdminRoleApi(payload);
       ElMessage.success("角色已创建");
       dialogVisible.value = false;
-      await loadData();
+      await loadPage();
     }
   } catch (error) {
     showApiError(error, "角色保存失败");
@@ -178,13 +218,30 @@ async function removeRow(row: AdminRoleItem) {
   try {
     await deleteAdminRoleApi(row.id);
     ElMessage.success("角色已删除");
-    await loadData();
+    await loadPage();
   } catch (error) {
     showApiError(error, "角色删除失败");
   }
 }
 
-onMounted(loadData);
+function handleSearch() {
+  query.page = 1;
+  loadData();
+}
+
+function handleReset() {
+  query.page = 1;
+  query.keyword = "";
+  query.status = "";
+  loadData();
+}
+
+function handlePageChange(page: number) {
+  query.page = page;
+  loadData();
+}
+
+onMounted(loadPage);
 </script>
 
 <template>
@@ -201,8 +258,27 @@ onMounted(loadData);
       </el-col>
     </el-row>
 
+    <el-card v-if="meta.roleTemplates.length" shadow="never">
+      <template #header>角色模板</template>
+      <div class="template-grid">
+        <div v-for="item in meta.roleTemplates" :key="item.code" class="template-card">
+          <div class="template-title">{{ item.name }}</div>
+          <div class="template-desc">{{ item.description }}</div>
+          <div class="template-tags">
+            <el-tag size="small">{{ item.scopeType === "assigned" ? "指定高校" : "全部高校" }}</el-tag>
+            <el-tag size="small" type="info">菜单 {{ item.menuPaths.length }}</el-tag>
+            <el-tag size="small" type="warning">权限 {{ item.permissionsList.length }}</el-tag>
+          </div>
+          <div class="template-actions">
+            <el-button v-permission="'auth:role:add'" type="primary" plain @click="createFromTemplate(item)">一键创建</el-button>
+            <el-button v-permission="'auth:role:add'" @click="applyTemplateToForm(item)">仅填入表单</el-button>
+          </div>
+        </div>
+      </div>
+    </el-card>
+
     <el-card shadow="never">
-      <template #header>筛选条件</template>
+      <template #header>角色筛选</template>
       <div class="toolbar">
         <el-input v-model="query.keyword" placeholder="搜索角色名称或编码" clearable class="input" @keyup.enter="handleSearch" />
         <el-select v-model="query.status" placeholder="全部状态" clearable class="select">
@@ -255,7 +331,11 @@ onMounted(loadData);
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑角色' : '新增角色'" width="620px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="96px">
         <el-form-item label="角色名称" prop="name"><el-input v-model="form.name" /></el-form-item>
-        <el-form-item label="角色编码" prop="code"><el-input v-model="form.code" /></el-form-item>
+        <el-form-item label="角色编码" prop="code">
+          <el-input v-model="form.code">
+            <template v-if="!editingId && templateMap[form.code]" #append>模板</template>
+          </el-input>
+        </el-form-item>
         <el-form-item label="数据范围" prop="scopeType">
           <el-radio-group v-model="form.scopeType">
             <el-radio label="assigned">指定高校</el-radio>
@@ -313,5 +393,35 @@ onMounted(loadData);
   margin-top: 16px;
   display: flex;
   justify-content: flex-end;
+}
+.template-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+.template-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+.template-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+.template-desc {
+  color: #667085;
+  line-height: 1.7;
+}
+.template-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.template-actions {
+  display: flex;
+  gap: 10px;
 }
 </style>

@@ -11,6 +11,7 @@ import { assertRiskPassed } from "./risk-control.service";
 const LABELS = {
   anonymousUser: "\u533f\u540d\u7528\u6237",
   campusUser: "\u6821\u56ed\u7528\u6237",
+  pending: "\u5f85\u5ba1\u6838",
   published: "\u5df2\u53d1\u5e03"
 };
 
@@ -172,7 +173,7 @@ export async function createMiniPost(userId: number, payload: MiniPostPayload) {
       contacts: payload.contacts,
       isAnonymous: payload.anonymous,
       onlyCampus: payload.onlyCampus,
-      status: LABELS.published
+      status: LABELS.pending
     }
   });
   return mapPost(row);

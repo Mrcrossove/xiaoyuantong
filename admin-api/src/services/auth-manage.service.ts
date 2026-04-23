@@ -23,6 +23,26 @@ function uniqueStrings(list: string[]) {
   return Array.from(new Set(list.map((item) => String(item).trim()).filter(Boolean)));
 }
 
+interface RoleTemplate {
+  code: string;
+  name: string;
+  scopeType: "all" | "assigned";
+  description: string;
+  menuPaths: string[];
+  permissionsList: string[];
+}
+
+const ROLE_TEMPLATES: RoleTemplate[] = [
+  {
+    code: "campus_team_admin",
+    name: "校园团队管理员",
+    scopeType: "assigned" as const,
+    description: "负责指定高校的轮播图管理、帖子审核与校园数据查看。",
+    menuPaths: ["/dashboard/overview", "/post/list", "/operation/banner", "/stat/user", "/stat/post", "/stat/store"],
+    permissionsList: ["operation:banner:add", "operation:banner:edit", "post:review"]
+  }
+];
+
 function paginateList<T>(list: T[], page: number, pageSize: number) {
   const start = (page - 1) * pageSize;
   return list.slice(start, start + pageSize);
@@ -314,6 +334,12 @@ export async function queryAuthManageMeta(adminUserId: number) {
         scopeType: item.scopeType === "all" ? "all" : "assigned",
         status: item.status
       })),
+    roleTemplates: ROLE_TEMPLATES.filter(
+      (item) =>
+        (item.scopeType !== "all" || context.isSuperAdmin) &&
+        (context.canGrantAllMenus || item.menuPaths.every((menuPath) => context.menuPaths.includes(menuPath))) &&
+        (context.canGrantAllPermissions || item.permissionsList.every((code) => context.permissions.includes(code)))
+    ),
     menuTree: ADMIN_MENU_TREE,
     permissionGroups: ADMIN_PERMISSION_GROUPS
   };
@@ -531,6 +557,42 @@ export async function createAdminRole(adminUserId: number, payload: AdminRolePay
       status: payload.status,
       permissions: [],
       menuPaths: []
+    },
+    include: {
+      users: {
+        select: {
+          id: true,
+          schools: true
+        }
+      }
+    }
+  });
+
+  return mapAdminRole(row);
+}
+
+export async function createAdminRoleFromTemplate(adminUserId: number, templateCode: string) {
+  const context = await getOperatorContext(adminUserId);
+  const template = ROLE_TEMPLATES.find((item) => item.code === templateCode);
+
+  if (!template) {
+    throw new ApiError("角色模板不存在", ERROR_CODES.BAD_REQUEST, 400);
+  }
+
+  if (template.scopeType === "all" && !context.isSuperAdmin) {
+    forbidden("无权创建全部高校角色模板");
+  }
+
+  await ensureUniqueRoleCode(template.code);
+
+  const row = await prisma.adminRole.create({
+    data: {
+      code: template.code,
+      name: template.name,
+      scopeType: template.scopeType,
+      status: "启用",
+      menuPaths: ensureMenuPathsGrantable(context, template.menuPaths),
+      permissions: ensurePermissionsGrantable(context, template.permissionsList)
     },
     include: {
       users: {

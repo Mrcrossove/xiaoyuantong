@@ -175,7 +175,8 @@ export const ADMIN_PERMISSION_GROUPS: AdminPermissionGroup[] = [
       { code: "store:category:edit", title: "编辑店铺分类" },
       { code: "product:category:add", title: "新增商品分类" },
       { code: "product:category:edit", title: "编辑商品分类" },
-      { code: "post:report:review", title: "审核帖子举报" }
+      { code: "post:report:review", title: "审核帖子举报" },
+      { code: "post:review", title: "审核帖子" }
     ]
   },
   {

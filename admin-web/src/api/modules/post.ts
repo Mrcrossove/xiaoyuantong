@@ -1,10 +1,12 @@
 import type {
   AdminPostListResult,
   AdminPostQuery,
+  AdminPostItem,
   PostReportItem,
   PostReportListResult,
   PostReportQuery,
-  PostReportReviewPayload
+  PostReportReviewPayload,
+  PostReviewPayload
 } from "../contracts";
 import { request } from "../request";
 
@@ -13,6 +15,14 @@ export function getAdminPostListApi(query: AdminPostQuery) {
     url: "/post/admin/list",
     method: "GET",
     params: query
+  });
+}
+
+export function reviewAdminPostApi(id: number, payload: PostReviewPayload) {
+  return request<AdminPostItem>({
+    url: `/post/admin/${id}/review`,
+    method: "POST",
+    body: JSON.stringify(payload)
   });
 }
 

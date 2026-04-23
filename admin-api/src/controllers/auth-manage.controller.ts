@@ -3,6 +3,7 @@ import { ok } from "../utils/response";
 import { idParamSchema } from "./schemas";
 import {
   createAdminRole,
+  createAdminRoleFromTemplate,
   createAdminUser,
   deleteAdminRole,
   deleteAdminUser,
@@ -58,6 +59,12 @@ export async function listAdminRoleAction(req: Request, res: Response) {
 export async function createAdminRoleAction(req: Request, res: Response) {
   const data = await createAdminRole(req.adminAuth!.userId, req.body);
   return ok(res, data, req.traceId, "角色创建成功");
+}
+
+export async function createAdminRoleFromTemplateAction(req: Request, res: Response) {
+  const templateCode = String(req.params.code || "").trim();
+  const data = await createAdminRoleFromTemplate(req.adminAuth!.userId, templateCode);
+  return ok(res, data, req.traceId, "角色模板创建成功");
 }
 
 export async function updateAdminRoleAction(req: Request, res: Response) {

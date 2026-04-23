@@ -74,6 +74,13 @@ export function createAdminRoleApi(payload: AdminRolePayload) {
   });
 }
 
+export function createAdminRoleFromTemplateApi(code: string) {
+  return request<AdminRoleItem>({
+    url: `/auth/role/template/${code}`,
+    method: "POST"
+  });
+}
+
 export function updateAdminRoleApi(id: number, payload: AdminRolePayload) {
   return request<AdminRoleItem>({
     url: `/auth/role/${id}`,
