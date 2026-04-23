@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, nextTick, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import type {
@@ -148,6 +148,15 @@ async function loadDashboard() {
   loading.value = true;
   try {
     data.value = await getAdminStoreDashboardWithQueryApi(storeId, buildDashboardParams());
+    const targetProductId = String(route.query.productId || "").trim();
+    if (targetProductId) {
+      await nextTick();
+      const target = data.value.products.find((item) => String(item.id) === targetProductId);
+      if (target) {
+        openEditProductDialog(target);
+      }
+      router.replace({ path: route.path, query: {} });
+    }
   } catch (error) {
     showApiError(error, "店铺经营数据加载失败");
   } finally {

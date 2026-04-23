@@ -59,6 +59,12 @@ onMounted(loadData);
 
 <template>
   <div class="page">
+    <el-alert
+      title="店铺管理作为单店经营后台入口，负责查看店铺经营情况、商品、订单和运营数据。"
+      type="info"
+      :closable="false"
+    />
+
     <el-row :gutter="16">
       <el-col :span="8">
         <el-card shadow="never"><div class="metric-label">店铺总数</div><div class="metric-value">{{ total }}</div></el-card>

@@ -46,7 +46,7 @@ export const adminMenus: AdminMenuItem[] = [
     title: "店铺管理",
     children: [
       { key: "store-apply", title: "入驻申请", path: "/store/apply" },
-      { key: "store-list", title: "店铺列表", path: "/store/list" },
+      { key: "store-list", title: "店铺管理", path: "/store/list" },
       { key: "store-category", title: "店铺分类", path: "/store/category" }
     ]
   },
@@ -54,7 +54,7 @@ export const adminMenus: AdminMenuItem[] = [
     key: "product",
     title: "商品管理",
     children: [
-      { key: "product-list", title: "商品列表", path: "/product/list" },
+      { key: "product-list", title: "商品巡检", path: "/product/list" },
       { key: "product-spec", title: "商品规格管理", path: "/product/spec" },
       { key: "product-category", title: "商品分类", path: "/product/category" }
     ]

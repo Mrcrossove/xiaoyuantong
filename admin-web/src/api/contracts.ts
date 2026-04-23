@@ -717,6 +717,9 @@ export interface AdminPostQuery extends PageQuery {}
 
 export interface AdminProductItem {
   id: string;
+  storeId: number;
+  storeDetailId: string;
+  productId: string;
   name: string;
   storeName: string;
   school: string;

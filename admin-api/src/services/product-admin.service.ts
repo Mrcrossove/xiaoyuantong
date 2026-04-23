@@ -44,6 +44,9 @@ export async function queryAdminProductList(adminUserId: number, rawQuery: Recor
   const mapped = stores.flatMap((store: any) =>
     toArray(store.products).map((product: any) => ({
       id: `${store.id}-${product.id}`,
+      storeId: store.id,
+      storeDetailId: store.detailId,
+      productId: String(product.id || ""),
       name: String(product.name || ""),
       storeName: store.name,
       school: store.school,
