@@ -10,7 +10,7 @@ const route = useRoute();
 const router = useRouter();
 const authStore = useMerchantAuthStore();
 
-const activeTab = ref<"code" | "password">("code");
+const activeTab = ref<"code" | "password">("password");
 const loading = ref(false);
 const sending = ref(false);
 
@@ -27,7 +27,7 @@ const passwordForm = reactive({
 const redirectPath = computed(() => String(route.query.redirect || "/dashboard"));
 
 function nextPath() {
-  return authStore.needActivate ? "/account" : redirectPath.value;
+  return authStore.mustChangePassword ? "/account" : redirectPath.value;
 }
 
 async function handleSendCode() {
@@ -84,19 +84,35 @@ async function handlePasswordLogin() {
       <div class="hero">
         <div class="hero-badge">校园通商家中心</div>
         <h1>商家后台登录</h1>
-        <p>平台审核通过后，系统会自动为商家创建账号。首次请使用手机号验证码登录并完成激活。</p>
+        <p>
+          平台审核通过后，系统会自动创建商家后台账号，并把登录账号和初始密码推送到小程序消息中心。
+          首次登录后必须先修改密码，修改完成后才能正常使用后台。
+        </p>
         <ul class="tips">
-          <li>账号手机号等于入驻申请联系人手机号</li>
-          <li>首次登录后必须设置密码</li>
-          <li>后续支持手机号验证码或密码登录</li>
+          <li>登录账号默认是入驻申请里填写的手机号</li>
+          <li>初始密码请到小程序“消息”页查看</li>
+          <li>短信验证码登录可作为补充登录方式</li>
         </ul>
       </div>
       <div class="form-card">
         <el-tabs v-model="activeTab" stretch>
+          <el-tab-pane label="密码登录" name="password">
+            <el-form label-position="top" @submit.prevent="handlePasswordLogin">
+              <el-form-item label="手机号">
+                <el-input v-model.trim="passwordForm.phone" maxlength="11" placeholder="请输入入驻申请联系人手机号" />
+              </el-form-item>
+              <el-form-item label="密码">
+                <el-input v-model.trim="passwordForm.password" show-password placeholder="请输入登录密码" />
+              </el-form-item>
+              <el-button class="submit-btn" type="primary" :loading="loading" @click="handlePasswordLogin">
+                登录并进入后台
+              </el-button>
+            </el-form>
+          </el-tab-pane>
           <el-tab-pane label="验证码登录" name="code">
             <el-form label-position="top" @submit.prevent="handleCodeLogin">
               <el-form-item label="手机号">
-                <el-input v-model.trim="codeForm.phone" maxlength="11" placeholder="请输入联系人手机号" />
+                <el-input v-model.trim="codeForm.phone" maxlength="11" placeholder="请输入入驻申请联系人手机号" />
               </el-form-item>
               <el-form-item label="验证码">
                 <div class="code-row">
@@ -105,19 +121,6 @@ async function handlePasswordLogin() {
                 </div>
               </el-form-item>
               <el-button class="submit-btn" type="primary" :loading="loading" @click="handleCodeLogin">
-                登录并进入后台
-              </el-button>
-            </el-form>
-          </el-tab-pane>
-          <el-tab-pane label="密码登录" name="password">
-            <el-form label-position="top" @submit.prevent="handlePasswordLogin">
-              <el-form-item label="手机号">
-                <el-input v-model.trim="passwordForm.phone" maxlength="11" placeholder="请输入联系人手机号" />
-              </el-form-item>
-              <el-form-item label="密码">
-                <el-input v-model.trim="passwordForm.password" show-password placeholder="请输入登录密码" />
-              </el-form-item>
-              <el-button class="submit-btn" type="primary" :loading="loading" @click="handlePasswordLogin">
                 登录并进入后台
               </el-button>
             </el-form>

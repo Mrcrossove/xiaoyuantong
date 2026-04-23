@@ -92,7 +92,9 @@ router.beforeEach((to) => {
   const isPublic = Boolean(to.meta.public);
 
   if (isPublic) {
-    if (to.path === "/login" && authStore.isLogin) return "/dashboard";
+    if (to.path === "/login" && authStore.isLogin) {
+      return authStore.mustChangePassword ? "/account" : "/dashboard";
+    }
     return true;
   }
 
@@ -100,8 +102,8 @@ router.beforeEach((to) => {
     return `/login?redirect=${encodeURIComponent(to.fullPath)}`;
   }
 
-  if (authStore.needActivate && to.path !== "/account") {
-    ElMessage.warning("请先完成商家账号激活");
+  if (authStore.mustChangePassword && to.path !== "/account") {
+    ElMessage.warning("首次登录后需要先修改密码");
     return "/account";
   }
 

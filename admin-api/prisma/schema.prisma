@@ -215,7 +215,10 @@ model MerchantAccount {
   name          String
   password      String?
   status        String
+  mustChangePassword Boolean  @default(false)
   activatedAt   DateTime?
+  passwordUpdatedAt DateTime?
+  initialPasswordSentAt DateTime?
   lastLoginAt   DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

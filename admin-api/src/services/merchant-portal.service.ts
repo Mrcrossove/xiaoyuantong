@@ -825,6 +825,7 @@ export async function getMerchantAccountProfile(accountId: number) {
     name: context.name,
     status: context.status,
     isActivated: Boolean(context.activatedAt),
+    mustChangePassword: Boolean(context.mustChangePassword),
     lastLoginAt: context.lastLoginAt ? formatDateTime(context.lastLoginAt) : "",
     storeName: context.store.name,
     school: context.store.school
@@ -845,6 +846,7 @@ export async function updateMerchantAccountProfile(accountId: number, payload: M
     name: row.name,
     status: row.status,
     isActivated: Boolean(row.activatedAt),
+    mustChangePassword: Boolean(row.mustChangePassword),
     lastLoginAt: row.lastLoginAt ? formatDateTime(row.lastLoginAt) : ""
   };
 }

@@ -22,6 +22,7 @@ export const useMerchantAuthStore = defineStore("merchant-auth", () => {
 
   const isLogin = computed(() => Boolean(token.value));
   const needActivate = computed(() => Boolean(profile.value) && !profile.value!.isActivated);
+  const mustChangePassword = computed(() => Boolean(profile.value?.mustChangePassword));
 
   function applySession(result: MerchantSessionResponse, nextToken?: string) {
     if (nextToken) {
@@ -84,6 +85,7 @@ export const useMerchantAuthStore = defineStore("merchant-auth", () => {
     permissions,
     isLogin,
     needActivate,
+    mustChangePassword,
     loginByCode,
     loginByPassword,
     refreshSession,

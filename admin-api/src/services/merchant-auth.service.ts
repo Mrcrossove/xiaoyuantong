@@ -17,12 +17,27 @@ function generateCode() {
   return `${Math.floor(100000 + Math.random() * 900000)}`;
 }
 
+async function maskMerchantInitialPasswordMessage(account: { id: number; miniUserId: number }) {
+  await prisma.miniMessage.updateMany({
+    where: {
+      receiverUserId: account.miniUserId,
+      targetType: "merchant_account",
+      targetId: String(account.id),
+      category: "商家后台账号开通"
+    },
+    data: {
+      content: "商家后台账号已开通，初始密码已失效，请使用你已设置的新密码登录。"
+    }
+  });
+}
+
 function buildMerchantSession(account: {
   id: number;
   phone: string;
   name: string;
   status: string;
   activatedAt: Date | null;
+  mustChangePassword: boolean;
   store: {
     id: number;
     detailId: string;
@@ -42,6 +57,7 @@ function buildMerchantSession(account: {
       name: account.name,
       status: account.status,
       isActivated: Boolean(account.activatedAt),
+      mustChangePassword: Boolean(account.mustChangePassword),
       storeId: account.store.id,
       storeDetailId: account.store.detailId,
       storeName: account.store.name,
@@ -153,6 +169,7 @@ export async function merchantSendLoginCode(payload: MerchantSendCodePayload) {
     phone: payload.phone,
     expiresAt: expiresAt.toISOString(),
     isActivated: Boolean(account.activatedAt),
+    mustChangePassword: Boolean(account.mustChangePassword),
     provider: smsResult.provider
   };
 }
@@ -172,7 +189,7 @@ export async function merchantPasswordLogin(payload: MerchantPasswordLoginPayloa
   const account = await loadAccountByPhone(payload.phone);
 
   if (!account.password) {
-    throw new ApiError("该账号尚未激活，请先使用验证码登录并设置密码", ERROR_CODES.BAD_REQUEST, 400);
+    throw new ApiError("该账号尚未设置密码，请联系平台重新开通商家后台账号", ERROR_CODES.BAD_REQUEST, 400);
   }
 
   if (!verifyPassword(payload.password, account.password)) {
@@ -197,13 +214,18 @@ export async function merchantPasswordLogin(payload: MerchantPasswordLoginPayloa
 }
 
 export async function merchantActivate(accountId: number, payload: MerchantActivatePayload) {
-  const account = await loadAccountById(accountId);
+  const current = await prisma.merchantAccount.findUniqueOrThrow({
+    where: { id: accountId }
+  });
+
   const row = await prisma.merchantAccount.update({
     where: { id: accountId },
     data: {
       password: hashPassword(payload.password),
       status: "启用",
-      activatedAt: account.activatedAt || new Date()
+      activatedAt: new Date(),
+      mustChangePassword: false,
+      passwordUpdatedAt: new Date()
     },
     include: {
       store: {
@@ -217,6 +239,8 @@ export async function merchantActivate(accountId: number, payload: MerchantActiv
       }
     }
   });
+
+  await maskMerchantInitialPasswordMessage(current);
 
   return buildMerchantSession(row);
 }

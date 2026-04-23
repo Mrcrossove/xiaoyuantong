@@ -1,11 +1,7 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage } from "element-plus";
-import {
-  getAccountProfileApi,
-  updateAccountPasswordApi,
-  updateAccountProfileApi
-} from "../../api/modules/merchant";
+import { getAccountProfileApi, updateAccountPasswordApi, updateAccountProfileApi } from "../../api/modules/merchant";
 import { useMerchantAuthStore } from "../../stores/auth";
 
 const authStore = useMerchantAuthStore();
@@ -27,6 +23,8 @@ const passwordForm = reactive({
 const activateForm = reactive({
   password: ""
 });
+
+const mustChangePassword = computed(() => Boolean(profile.value?.mustChangePassword || authStore.mustChangePassword));
 
 async function loadData() {
   loading.value = true;
@@ -74,10 +72,10 @@ async function handleActivate() {
   try {
     await authStore.activate(activateForm.password);
     activateForm.password = "";
-    ElMessage.success("商家账号已激活");
+    ElMessage.success("新密码设置成功");
     await loadData();
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : "账号激活失败");
+    ElMessage.error(error instanceof Error ? error.message : "新密码设置失败");
   } finally {
     activating.value = false;
   }
@@ -88,14 +86,16 @@ onMounted(loadData);
 
 <template>
   <div class="page" v-loading="loading">
-    <el-card v-if="authStore.needActivate" class="activate-card">
+    <el-card v-if="mustChangePassword" class="activate-card">
       <template #header>
-        <div class="section-title">首次登录激活</div>
+        <div class="section-title">首次登录请先修改密码</div>
       </template>
-      <p class="activate-desc">当前账号仍处于待激活状态，请先设置登录密码。激活后即可使用密码登录商家后台。</p>
+      <p class="activate-desc">
+        当前账号正在使用系统下发的初始密码。为了保证商家后台安全，首次登录后必须先设置一个新的登录密码。
+      </p>
       <div class="activate-row">
-        <el-input v-model.trim="activateForm.password" show-password placeholder="请设置 6-30 位登录密码" />
-        <el-button type="primary" :loading="activating" @click="handleActivate">立即激活</el-button>
+        <el-input v-model.trim="activateForm.password" show-password placeholder="请设置 6-30 位新密码" />
+        <el-button type="primary" :loading="activating" @click="handleActivate">保存新密码</el-button>
       </div>
     </el-card>
 
@@ -107,9 +107,11 @@ onMounted(loadData);
         <el-descriptions-item label="登录手机号">{{ profile?.phone || "-" }}</el-descriptions-item>
         <el-descriptions-item label="账号状态">{{ profile?.status || "-" }}</el-descriptions-item>
         <el-descriptions-item label="店铺名称">{{ profile?.storeName || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="所属高校">{{ profile?.school || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="所属学校">{{ profile?.school || "-" }}</el-descriptions-item>
         <el-descriptions-item label="最近登录">{{ profile?.lastLoginAt || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="激活状态">{{ profile?.isActivated ? "已激活" : "待激活" }}</el-descriptions-item>
+        <el-descriptions-item label="密码状态">
+          {{ mustChangePassword ? "需立即修改" : "正常" }}
+        </el-descriptions-item>
       </el-descriptions>
 
       <el-divider />
@@ -122,7 +124,7 @@ onMounted(loadData);
       </el-form>
     </el-card>
 
-    <el-card>
+    <el-card v-if="!mustChangePassword">
       <template #header>
         <div class="section-title">修改密码</div>
       </template>

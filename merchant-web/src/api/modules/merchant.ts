@@ -8,7 +8,7 @@ export interface MerchantSessionResponse {
 }
 
 export function sendCodeApi(payload: { phone: string; scene?: "login" }) {
-  return request<{ phone: string; expiresAt: string; isActivated: boolean; provider: string }>({
+  return request<{ phone: string; expiresAt: string; isActivated: boolean; mustChangePassword?: boolean; provider: string }>({
     url: "/merchant/auth/send-code",
     method: "POST",
     body: JSON.stringify(payload)
@@ -96,5 +96,5 @@ export const getStatApi = () => request<any>({ url: "/merchant/stat/overview", m
 export const getAccountProfileApi = () => request<any>({ url: "/merchant/account/profile", method: "GET" });
 export const updateAccountProfileApi = (payload: { name: string }) =>
   request<any>({ url: "/merchant/account/profile", method: "PUT", body: JSON.stringify(payload) });
-export const updateAccountPasswordApi = (payload: { oldPassword: string; newPassword: string }) =>
+export const updateAccountPasswordApi = (payload: { oldPassword?: string; newPassword: string }) =>
   request<any>({ url: "/merchant/account/password", method: "PUT", body: JSON.stringify(payload) });

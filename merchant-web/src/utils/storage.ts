@@ -9,6 +9,7 @@ export interface MerchantProfile {
   name: string;
   status: string;
   isActivated: boolean;
+  mustChangePassword: boolean;
   storeId: number;
   storeDetailId: string;
   storeName: string;

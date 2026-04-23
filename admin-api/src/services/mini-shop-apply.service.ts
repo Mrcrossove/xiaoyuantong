@@ -5,17 +5,19 @@ import type { MiniShopApplyPayload, MiniShopApplyReviewPayload } from "../contro
 import { ApiError } from "../utils/api-error";
 import { ERROR_CODES } from "../constants/error-codes";
 import { assertRiskPassed } from "./risk-control.service";
+import { createMiniMessage } from "./mini-message.service";
+import { hashPassword } from "../utils/password";
 
 const STATUS = {
   pending: "待审核",
   approved: "已通过",
   rejected: "已驳回"
-};
+} as const;
 
 const ERROR_MESSAGES = {
   pendingExists: "你已有待审核的开店申请",
   approvedExists: "你已有审核通过的店铺申请"
-};
+} as const;
 
 const STORE_CATEGORY_MAP: Record<
   string,
@@ -80,6 +82,15 @@ function buildDetailId(applyId: number) {
   return `apply-store-${applyId}`;
 }
 
+function generateInitialPassword() {
+  const seed = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+  let result = "";
+  for (let i = 0; i < 10; i += 1) {
+    result += seed[Math.floor(Math.random() * seed.length)];
+  }
+  return result;
+}
+
 async function createStoreForApprovedApply(apply: any) {
   const existingStore = await prisma.miniStore.findFirst({
     where: {
@@ -103,7 +114,7 @@ async function createStoreForApprovedApply(apply: any) {
       groupLabel: mapped.groupLabel,
       sectionKey: mapped.sectionKey,
       sectionLabel: mapped.sectionLabel,
-      subtitle: `${apply.category} / 新店开张`,
+      subtitle: `${apply.category} / 新店开业`,
       rating: 5,
       monthlySales: "0",
       distance: "校内配送",
@@ -112,7 +123,7 @@ async function createStoreForApprovedApply(apply: any) {
       tags: [apply.category, "新店入驻"],
       badge: mapped.badge,
       cover: mapped.cover,
-      title: "店铺主页",
+      title: "店铺首页",
       notice: apply.description,
       phone: apply.contactPhone,
       address: `${apply.school} 校园商家服务区`,
@@ -133,28 +144,53 @@ async function createMerchantAccountForApprovedApply(apply: any, storeId: number
     }
   });
 
-  if (existing) {
-    return prisma.merchantAccount.update({
-      where: { id: existing.id },
-      data: {
-        miniUserId: apply.userId,
-        storeId,
-        phone: apply.contactPhone,
-        name: apply.contactName,
-        status: existing.activatedAt ? "启用" : "待激活"
-      }
+  const now = new Date();
+  const shouldGenerateInitialPassword = !existing?.password || !existing.activatedAt || existing.mustChangePassword;
+  const initialPassword = shouldGenerateInitialPassword ? generateInitialPassword() : "";
+  const nextPassword = shouldGenerateInitialPassword ? hashPassword(initialPassword) : existing?.password;
+
+  const account = existing
+    ? await prisma.merchantAccount.update({
+        where: { id: existing.id },
+        data: {
+          miniUserId: apply.userId,
+          storeId,
+          phone: apply.contactPhone,
+          name: apply.contactName,
+          status: "启用",
+          password: nextPassword,
+          activatedAt: existing.activatedAt || now,
+          mustChangePassword: shouldGenerateInitialPassword,
+          initialPasswordSentAt: shouldGenerateInitialPassword ? now : existing.initialPasswordSentAt
+        }
+      })
+    : await prisma.merchantAccount.create({
+        data: {
+          miniUserId: apply.userId,
+          storeId,
+          phone: apply.contactPhone,
+          name: apply.contactName,
+          password: nextPassword,
+          status: "启用",
+          mustChangePassword: true,
+          activatedAt: now,
+          initialPasswordSentAt: now
+        }
+      });
+
+  if (shouldGenerateInitialPassword) {
+    await createMiniMessage({
+      school: apply.school,
+      type: "system",
+      category: "商家后台账号开通",
+      content: `你的商家后台账号已开通。登录账号：${apply.contactPhone}；初始密码：${initialPassword}。请尽快登录商家后台并修改密码。`,
+      receiverUserId: apply.userId,
+      targetType: "merchant_account",
+      targetId: String(account.id)
     });
   }
 
-  return prisma.merchantAccount.create({
-    data: {
-      miniUserId: apply.userId,
-      storeId,
-      phone: apply.contactPhone,
-      name: apply.contactName,
-      status: "待激活"
-    }
-  });
+  return account;
 }
 
 export async function getCurrentMiniShopApply(userId: number) {
