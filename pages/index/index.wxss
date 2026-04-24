@@ -364,6 +364,79 @@
   -webkit-box-orient: vertical;
 }
 
+.post-actions {
+  margin-top: 18rpx;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 24rpx;
+  color: #8c97ab;
+  font-size: 22rpx;
+}
+
+.post-action-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.post-action-icon {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.post-action-icon.comment {
+  width: 24rpx;
+  height: 18rpx;
+  border: 3rpx solid #a5afc0;
+  border-radius: 10rpx;
+}
+
+.post-action-icon.comment::after {
+  content: "";
+  position: absolute;
+  left: 4rpx;
+  bottom: -7rpx;
+  width: 8rpx;
+  height: 8rpx;
+  border-left: 3rpx solid #a5afc0;
+  border-bottom: 3rpx solid #a5afc0;
+  background: #ffffff;
+  transform: skewX(-18deg) rotate(-12deg);
+}
+
+.post-action-icon.like {
+  width: 22rpx;
+  height: 20rpx;
+  transform: rotate(-45deg);
+  border-left: 3rpx solid #a5afc0;
+  border-bottom: 3rpx solid #a5afc0;
+  border-radius: 4rpx 0 4rpx 8rpx;
+}
+
+.post-action-icon.like::before,
+.post-action-icon.like::after {
+  content: "";
+  position: absolute;
+  border: 3rpx solid #a5afc0;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.post-action-icon.like::before {
+  width: 12rpx;
+  height: 12rpx;
+  left: -3rpx;
+  top: -10rpx;
+}
+
+.post-action-icon.like::after {
+  width: 12rpx;
+  height: 12rpx;
+  left: 7rpx;
+  top: 0rpx;
+}
+
 .fab {
   position: fixed;
   right: 36rpx;
@@ -426,17 +499,19 @@
 
 .school-overlay {
   z-index: 80;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
+  display: block;
+  padding: 170rpx 24rpx 0;
+  box-sizing: border-box;
 }
 
 .school-picker {
-  width: 100%;
+  width: 580rpx;
+  max-width: calc(100vw - 48rpx);
   max-height: 72vh;
-  border-radius: 36rpx 36rpx 0 0;
-  padding: 28rpx 24rpx 24rpx;
+  border-radius: 28rpx;
+  padding: 24rpx 20rpx 20rpx;
   box-sizing: border-box;
+  box-shadow: 0 24rpx 60rpx rgba(33, 57, 115, 0.18);
 }
 
 .school-picker-head {
@@ -458,37 +533,95 @@
 
 .school-picker-search {
   margin-top: 20rpx;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 132rpx;
+  gap: 12rpx;
+  align-items: center;
+}
+
+.school-picker-search-box {
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 12rpx;
   padding: 18rpx 20rpx;
-  background: #f2f5fa;
+  background: #f7f9fc;
+  border: 2rpx solid #edf1f6;
   border-radius: 22rpx;
 }
 
+.school-picker-search-box input {
+  width: 100%;
+}
+
+.school-all-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
+  border-radius: 22rpx;
+  border: 3rpx solid #80aef7;
+  background: #ffffff;
+  color: #3f83ff;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.school-all-btn.active {
+  background: rgba(63, 131, 255, 0.12);
+}
+
 .school-list {
-  margin-top: 20rpx;
-  max-height: 52vh;
+  margin-top: 22rpx;
+  max-height: 46vh;
+  background: #ffffff;
+  border-radius: 28rpx;
+  overflow: hidden;
 }
 
 .school-group {
-  margin-top: 22rpx;
+  margin-top: 0;
+  border-bottom: 2rpx solid #eff3f8;
 }
 
-.school-group:first-child {
-  margin-top: 0;
+.school-group:last-child {
+  border-bottom: 0;
+}
+
+.school-group-head {
+  min-height: 104rpx;
+  padding: 0 16rpx 0 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .school-group-title {
-  margin-bottom: 12rpx;
-  padding: 0 8rpx;
-  color: #8d98ac;
-  font-size: 22rpx;
+  color: #26324b;
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.school-group-arrow {
+  width: 18rpx;
+  height: 18rpx;
+  border-right: 4rpx solid #bbc5d6;
+  border-bottom: 4rpx solid #bbc5d6;
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+}
+
+.school-group-arrow.expanded {
+  transform: rotate(225deg);
+}
+
+.school-group-body {
+  padding-bottom: 4rpx;
 }
 
 .school-item {
   min-height: 88rpx;
-  padding: 0 8rpx;
+  padding: 0 8rpx 0 24rpx;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -496,10 +629,6 @@
   border-bottom: 2rpx solid #eff3f8;
   color: #33405c;
   font-size: 28rpx;
-}
-
-.school-item-all {
-  margin-bottom: 8rpx;
 }
 
 .school-item.active {

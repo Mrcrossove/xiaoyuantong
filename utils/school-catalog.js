@@ -1,4 +1,5 @@
 const schools = require("./schools");
+const GUIZHOU_PROVINCE = "\u8d35\u5dde\u7701";
 
 const PROVINCE_STARTERS = [
   ["北京市", "北京大学"],
@@ -51,10 +52,16 @@ schools.forEach((school) => {
   groupedMap.get(currentProvince).push(school);
 });
 
-const provinceSchoolGroups = Array.from(groupedMap.entries()).map(([province, items]) => ({
-  province,
-  schools: items.slice()
-}));
+const provinceSchoolGroups = Array.from(groupedMap.entries())
+  .map(([province, items]) => ({
+    province,
+    schools: items.slice()
+  }))
+  .sort((left, right) => {
+    if (left.province === GUIZHOU_PROVINCE) return -1;
+    if (right.province === GUIZHOU_PROVINCE) return 1;
+    return left.province.localeCompare(right.province, "zh-CN");
+  });
 
 function cloneGroups(groups) {
   return groups.map((group) => ({

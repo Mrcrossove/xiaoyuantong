@@ -4,7 +4,6 @@ import type { MiniLoginPayload } from "../controllers/schemas";
 import { fetchWechatSession } from "./wechat-auth.service";
 import { ApiError } from "../utils/api-error";
 import { ERROR_CODES } from "../constants/error-codes";
-import { env } from "../config/env";
 
 const VERIFY_STATUS_VERIFIED = "已认证";
 
@@ -23,55 +22,27 @@ function buildVerifyInfo(user: {
   };
 }
 
-function buildDeviceId(payload: MiniLoginPayload) {
-  const raw = String(payload.deviceId || "").trim();
-  return raw || `wechat_${Date.now()}`;
-}
-
-function shouldUseDeviceLogin(payload: MiniLoginPayload) {
-  return env.allowMiniDevAccountSwitch && payload.devLoginMode === "device";
+function createServerDeviceId() {
+  return `wechat_${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
 }
 
 export async function miniLogin(payload: MiniLoginPayload) {
-  const deviceId = buildDeviceId(payload);
-  const nickname = payload.nickname?.trim() || "校园用户";
-  const school = payload.school?.trim() || undefined;
-  const avatarUrl = payload.avatarUrl?.trim() || undefined;
   const loginCode = String(payload.code || "").trim();
-  const useDeviceLogin = shouldUseDeviceLogin(payload);
-
-  if (!env.wechatUseMock && !useDeviceLogin && !loginCode) {
+  if (!loginCode) {
     throw new ApiError("缺少微信登录 code", ERROR_CODES.BAD_REQUEST, 400);
   }
 
-  const wechatSession = useDeviceLogin
-    ? {
-        openid: `dev_switch_openid_${deviceId}`,
-        unionid: `dev_switch_unionid_${payload.devSwitchNonce || deviceId}`
-      }
-    : env.wechatUseMock
-      ? {
-          openid: `mock_openid_${deviceId}`,
-          unionid: `mock_unionid_${deviceId}`
-        }
-      : await fetchWechatSession(loginCode);
-
+  const wechatSession = await fetchWechatSession(loginCode);
   const user = await prisma.miniUser.upsert({
     where: { openid: wechatSession.openid },
     create: {
       openid: wechatSession.openid,
       unionId: wechatSession.unionid,
-      deviceId,
-      nickname,
-      avatarUrl,
-      school
+      deviceId: createServerDeviceId(),
+      nickname: "校园用户"
     },
     update: {
-      unionId: wechatSession.unionid || undefined,
-      nickname,
-      avatarUrl,
-      school: school || undefined,
-      deviceId
+      unionId: wechatSession.unionid || undefined
     }
   });
 

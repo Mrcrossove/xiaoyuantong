@@ -83,6 +83,16 @@
       <view class="image-grid">
         <view class="image-item {{img}}" wx:for="{{item.images}}" wx:for-item="img" wx:key="*this"></view>
       </view>
+      <view class="post-actions">
+        <view class="post-action-item">
+          <view class="post-action-icon comment"></view>
+          <text>{{item.commentCount || 0}}</text>
+        </view>
+        <view class="post-action-item">
+          <view class="post-action-icon like"></view>
+          <text>{{item.likeCount || 0}}</text>
+        </view>
+      </view>
     </view>
 
     <view wx:if="{{postsLoading}}" class="empty-feed card">
@@ -127,31 +137,35 @@
         <view class="school-picker-close" bindtap="closeSchoolPicker">关闭</view>
       </view>
       <view class="school-picker-search">
-        <view class="search-icon"></view>
-        <input
-          value="{{schoolKeyword}}"
-          placeholder="输入高校名称搜索"
-          placeholder-class="placeholder"
-          bindinput="onSchoolKeywordInput"
-        />
+        <view class="school-picker-search-box">
+          <view class="search-icon"></view>
+          <input
+            value="{{schoolKeyword}}"
+            placeholder="搜索学校"
+            placeholder-class="placeholder"
+            bindinput="onSchoolKeywordInput"
+          />
+        </view>
+        <view class="school-all-btn {{selectedFeedMode === 'all' ? 'active' : ''}}" bindtap="selectAllNetwork">全网</view>
       </view>
       <scroll-view class="school-list" scroll-y enhanced show-scrollbar="{{false}}">
-        <view class="school-item school-item-all {{selectedFeedMode === 'all' ? 'active' : ''}}" bindtap="selectAllNetwork">
-          <text>全网</text>
-          <text wx:if="{{selectedFeedMode === 'all'}}" class="school-item-mark">当前</text>
-        </view>
         <view wx:for="{{filteredProvinceSchoolGroups}}" wx:key="province" class="school-group">
-          <view class="school-group-title">{{item.province}}</view>
-          <view
-            class="school-item {{schoolItem === selectedFeedSchool && selectedFeedMode === 'school' ? 'active' : ''}}"
-            wx:for="{{item.schools}}"
-            wx:for-item="schoolItem"
-            wx:key="*this"
-            data-school="{{schoolItem}}"
-            bindtap="selectSchool"
-          >
-            <text>{{schoolItem}}</text>
-            <text wx:if="{{schoolItem === selectedFeedSchool && selectedFeedMode === 'school'}}" class="school-item-mark">当前</text>
+          <view class="school-group-head" data-province="{{item.province}}" catchtap="toggleProvince">
+            <view class="school-group-title">{{item.province}}</view>
+            <view class="school-group-arrow {{item.expanded ? 'expanded' : ''}}"></view>
+          </view>
+          <view wx:if="{{item.expanded}}" class="school-group-body">
+            <view
+              class="school-item {{schoolItem === selectedFeedSchool && selectedFeedMode === 'school' ? 'active' : ''}}"
+              wx:for="{{item.schools}}"
+              wx:for-item="schoolItem"
+              wx:key="*this"
+              data-school="{{schoolItem}}"
+              bindtap="selectSchool"
+            >
+              <text>{{schoolItem}}</text>
+              <text wx:if="{{schoolItem === selectedFeedSchool && selectedFeedMode === 'school'}}" class="school-item-mark">当前</text>
+            </view>
           </view>
         </view>
         <view wx:if="{{!filteredProvinceSchoolGroups.length}}" class="school-empty">没有匹配到高校</view>

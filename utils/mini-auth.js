@@ -1,9 +1,7 @@
 const { request } = require("./api");
-const { getSelectedSchool } = require("./school-state");
 
 const TOKEN_KEY = "miniToken";
 const PROFILE_KEY = "miniProfile";
-const DEVICE_KEY = "miniDeviceId";
 
 function getToken() {
   try {
@@ -34,30 +32,6 @@ function getProfile() {
   } catch (error) {
     return {};
   }
-}
-
-function createDeviceId() {
-  return `device_${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
-}
-
-function setDeviceId(deviceId) {
-  try {
-    wx.setStorageSync(DEVICE_KEY, deviceId);
-  } catch (error) {}
-  return deviceId;
-}
-
-function resetDeviceId() {
-  return setDeviceId(createDeviceId());
-}
-
-function getDeviceId() {
-  try {
-    const cached = wx.getStorageSync(DEVICE_KEY);
-    if (cached) return cached;
-  } catch (error) {}
-
-  return setDeviceId(createDeviceId());
 }
 
 function isDevtoolsEnv() {
@@ -110,23 +84,11 @@ async function ensureMiniSession(options = {}) {
 
   if (forceFreshAccount) {
     clearSession();
-    const freshDeviceId = resetDeviceId();
-    return loginWithPayload({
-      code: "",
-      deviceId: freshDeviceId,
-      nickname: "校园用户",
-      school: getSelectedSchool(),
-      devLoginMode: "device",
-      devSwitchNonce: `${Date.now()}_${Math.floor(Math.random() * 1000000)}`
-    });
   }
 
   const code = await getWechatCode();
   return loginWithPayload({
-    code,
-    deviceId: getDeviceId(),
-    nickname: "校园用户",
-    school: getSelectedSchool()
+    code
   });
 }
 
@@ -169,8 +131,6 @@ async function authRequest(options) {
 module.exports = {
   getToken,
   getProfile,
-  getDeviceId,
-  resetDeviceId,
   isDevtoolsEnv,
   ensureMiniSession,
   clearSession,

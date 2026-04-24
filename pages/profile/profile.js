@@ -1,6 +1,6 @@
 const { getSelectedSchool } = require("../../utils/school-state");
 const { getVerificationInfo, setVerificationInfo, clearVerificationInfo } = require("../../utils/verification-state");
-const { ensureMiniSession, clearSession, isDevtoolsEnv } = require("../../utils/mini-auth");
+const { ensureMiniSession, clearSession } = require("../../utils/mini-auth");
 const { fetchCurrentVerification } = require("../../utils/verification-api");
 
 const contentRouteMap = {
@@ -49,7 +49,7 @@ Page({
     const systemInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
     this.setData({
       statusBarHeight: systemInfo.statusBarHeight || 20,
-      logoutText: isDevtoolsEnv() ? "切换测试账号" : "退出登录"
+      logoutText: "退出登录"
     });
   },
 
@@ -81,13 +81,10 @@ Page({
   },
 
   async handleLogout() {
-    const devMode = isDevtoolsEnv();
     const { confirm } = await wx.showModal({
-      title: devMode ? "切换测试账号" : "退出登录",
-      content: devMode
-        ? "当前为开发环境。确认后会清除当前账户缓存，并直接创建一个新的测试账号。"
-        : "退出后会清除当前小程序账户缓存，是否继续？",
-      confirmText: devMode ? "切换" : "退出",
+      title: "退出登录",
+      content: "退出后会清除当前小程序账户缓存，是否继续？",
+      confirmText: "退出",
       cancelText: "取消"
     });
 
@@ -97,17 +94,14 @@ Page({
 
     try {
       clearSession();
-      wx.removeStorageSync("miniDeviceId");
       clearVerificationInfo();
       this.setData({
         user: buildGuestUser()
       });
-      await ensureMiniSession({
-        forceFreshAccount: devMode
-      });
+      await ensureMiniSession();
       await this.syncVerification();
       wx.showToast({
-        title: devMode ? "已切换测试账号" : "已退出当前账户",
+        title: "已退出当前账户",
         icon: "success"
       });
     } catch (error) {

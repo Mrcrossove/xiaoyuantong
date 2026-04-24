@@ -28,19 +28,9 @@ export const adminPasswordUpdateSchema = z.object({
   newPassword: z.string().trim().min(6, "新密码至少 6 个字符").max(30, "新密码最多 30 个字符")
 });
 
-export const miniLoginSchema = z
-  .object({
-    code: z.string().trim().optional(),
-    deviceId: z.string().trim().optional(),
-    nickname: z.string().trim().optional(),
-    avatarUrl: z.string().trim().optional(),
-    school: z.string().trim().optional(),
-    devLoginMode: z.enum(["wechat", "device"]).optional(),
-    devSwitchNonce: z.string().trim().optional()
-  })
-  .refine((value) => !!value.code || !!value.deviceId, {
-    message: "code 和 deviceId 至少传一个"
-  });
+export const miniLoginSchema = z.object({
+  code: requiredText("微信登录 code")
+});
 
 export const verifySubmitSchema = z.object({
   name: requiredText("姓名"),

@@ -13,6 +13,8 @@ const DEFAULT_HOME_BANNER = {
   isDefault: true
 };
 
+const DEFAULT_EXPANDED_PROVINCES = [];
+
 Page({
   data: {
     services,
@@ -29,6 +31,7 @@ Page({
     businessSchool: DEFAULT_SCHOOL,
     schoolKeyword: "",
     schoolPickerOpen: false,
+    expandedProvinces: DEFAULT_EXPANDED_PROVINCES,
     fabOpen: false,
     statusBarHeight: 20,
     postsLoading: false,
@@ -42,7 +45,7 @@ Page({
     this.setData({
       statusBarHeight: systemInfo.statusBarHeight || 20,
       provinceSchoolGroups,
-      filteredProvinceSchoolGroups: provinceSchoolGroups
+      filteredProvinceSchoolGroups: this.buildDisplayGroups("", provinceSchoolGroups, DEFAULT_EXPANDED_PROVINCES)
     });
   },
 
@@ -51,11 +54,35 @@ Page({
     this.applyFeedScope(getHomeFeedScope(businessSchool), businessSchool);
   },
 
+  buildDisplayGroups(keyword, sourceGroups = this.data.provinceSchoolGroups, expandedProvinces = this.data.expandedProvinces) {
+    const trimmed = String(keyword || "").trim();
+    const groups = trimmed ? filterProvinceSchoolGroups(trimmed) : sourceGroups;
+    return groups.map((group) => {
+      const expanded = trimmed ? true : expandedProvinces.includes(group.province);
+      return {
+        province: group.province,
+        schools: expanded ? group.schools : [],
+        totalSchools: group.schools.length,
+        expanded
+      };
+    });
+  },
+
+  getExpandedProvincesForKeyword(keyword) {
+    const trimmed = String(keyword || "").trim();
+    if (!trimmed) {
+      return DEFAULT_EXPANDED_PROVINCES.slice();
+    }
+    return filterProvinceSchoolGroups(trimmed).map((group) => group.province);
+  },
+
   async applyFeedScope(feedScope, businessSchool = getSelectedSchool()) {
     const selectedFeedMode = feedScope.mode || "school";
     const selectedFeedSchool = feedScope.school || "";
     const selectedFeedLabel = feedScope.label || (selectedFeedMode === "all" ? "全网" : businessSchool);
     const schoolKeyword = "";
+    const expandedProvinces = DEFAULT_EXPANDED_PROVINCES.slice();
+
     this.setData({
       businessSchool,
       selectedFeedMode,
@@ -65,7 +92,8 @@ Page({
       displayBanners: [DEFAULT_HOME_BANNER],
       bannerCurrent: 0,
       schoolKeyword,
-      filteredProvinceSchoolGroups: this.filterSchoolGroups(schoolKeyword),
+      expandedProvinces,
+      filteredProvinceSchoolGroups: this.buildDisplayGroups(schoolKeyword, this.data.provinceSchoolGroups, expandedProvinces),
       postsLoading: true,
       postsErrorText: ""
     });
@@ -110,14 +138,10 @@ Page({
     }
   },
 
-  filterSchoolGroups(keyword) {
-    return filterProvinceSchoolGroups(keyword);
-  },
-
   openSchoolPicker() {
     this.setData({
       schoolPickerOpen: true,
-      filteredProvinceSchoolGroups: this.filterSchoolGroups(this.data.schoolKeyword)
+      filteredProvinceSchoolGroups: this.buildDisplayGroups(this.data.schoolKeyword)
     });
   },
 
@@ -128,15 +152,39 @@ Page({
     this.setData({
       schoolPickerOpen: false,
       schoolKeyword: "",
-      filteredProvinceSchoolGroups: this.filterSchoolGroups("")
+      expandedProvinces: DEFAULT_EXPANDED_PROVINCES.slice(),
+      filteredProvinceSchoolGroups: this.buildDisplayGroups("", this.data.provinceSchoolGroups, DEFAULT_EXPANDED_PROVINCES)
     });
   },
 
   onSchoolKeywordInput(event) {
     const schoolKeyword = event.detail.value;
+    const expandedProvinces = this.getExpandedProvincesForKeyword(schoolKeyword);
     this.setData({
       schoolKeyword,
-      filteredProvinceSchoolGroups: this.filterSchoolGroups(schoolKeyword)
+      expandedProvinces,
+      filteredProvinceSchoolGroups: this.buildDisplayGroups(schoolKeyword, this.data.provinceSchoolGroups, expandedProvinces)
+    });
+  },
+
+  toggleProvince(event) {
+    const { province } = event.currentTarget.dataset;
+    if (!province) {
+      return;
+    }
+
+    const expandedSet = new Set(this.data.expandedProvinces || []);
+    if (expandedSet.has(province)) {
+      expandedSet.delete(province);
+    } else {
+      expandedSet.add(province);
+    }
+
+    const expandedProvinces = Array.from(expandedSet);
+    const keyword = String(this.data.schoolKeyword || "").trim();
+    this.setData({
+      expandedProvinces,
+      filteredProvinceSchoolGroups: this.buildDisplayGroups(keyword, this.data.provinceSchoolGroups, expandedProvinces)
     });
   },
 
