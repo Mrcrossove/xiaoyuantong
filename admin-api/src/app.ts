@@ -26,7 +26,16 @@ app.use(
 app.use(express.json({ limit: "12mb" }));
 app.use(morgan("dev"));
 app.use(traceIdMiddleware);
-app.use("/uploads", express.static(env.uploadsDir));
+app.use(
+  "/uploads",
+  express.static(env.uploadsDir, {
+    setHeaders(res) {
+      // Allow images uploaded by admins to be embedded by the mini-program.
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+      res.setHeader("Access-Control-Allow-Origin", "*");
+    }
+  })
+);
 
 app.get("/health", (req, res) => {
   res.json({
