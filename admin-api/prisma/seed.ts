@@ -1,5 +1,8 @@
 import { Prisma, PrismaClient } from "@prisma/client";
+import dotenv from "dotenv";
 import { hashPassword } from "../src/utils/password";
+
+dotenv.config();
 
 const prisma = new PrismaClient();
 
@@ -55,6 +58,7 @@ async function main() {
   await prisma.miniFavorite.deleteMany();
   await prisma.miniMessage.deleteMany();
   await prisma.miniShopApply.deleteMany();
+  await prisma.schoolAdminApplication.deleteMany();
   await prisma.miniStore.deleteMany();
   await prisma.miniPost.deleteMany();
   await prisma.userVerification.deleteMany();
@@ -158,6 +162,79 @@ async function main() {
     }
   });
 
+  const schoolAdminRole = await prisma.adminRole.create({
+    data: {
+      code: "school_admin",
+      name: "校园管理员",
+      scopeType: "assigned",
+      status: TEXT.enabled,
+      permissions: [
+        "verify:view",
+        "verify:approve",
+        "verify:reject",
+        "store:apply:view",
+        "store:apply:approve",
+        "store:apply:reject",
+        "post:report:review",
+        "post:review",
+        "order:view",
+        "order:export",
+        "wallet:view",
+        "wallet:export",
+        "refund:review",
+        "withdraw:review",
+        "message:template:add",
+        "message:template:edit",
+        "operation:banner:add",
+        "operation:banner:edit",
+        "operation:recommend:add",
+        "operation:recommend:edit",
+        "operation:search:add",
+        "operation:search:edit",
+        "operation:help:add",
+        "operation:help:edit",
+        "post:category:add",
+        "post:category:edit",
+        "store:category:add",
+        "store:category:edit",
+        "product:category:add",
+        "product:category:edit"
+      ],
+      menuPaths: [
+        "/dashboard/overview",
+        "/school/content",
+        "/user/list",
+        "/user/publish",
+        "/verify/list",
+        "/post/list",
+        "/post/category",
+        "/post/report",
+        "/store/apply",
+        "/store/list",
+        "/store/category",
+        "/product/list",
+        "/product/spec",
+        "/product/category",
+        "/message/system",
+        "/message/interactive",
+        "/message/send",
+        "/message/template",
+        "/operation/banner",
+        "/operation/recommend",
+        "/operation/search-word",
+        "/operation/help",
+        "/trade/order",
+        "/trade/refund",
+        "/trade/wallet",
+        "/trade/withdraw",
+        "/stat/user",
+        "/stat/post",
+        "/stat/store",
+        "/stat/order"
+      ]
+    }
+  });
+
   const superAdmin = await prisma.adminUser.create({
     data: {
       account: "admin",
@@ -194,6 +271,14 @@ async function main() {
         status: TEXT.enabled,
         schools: [SCHOOLS.pku],
         roleId: serviceRole.id
+      },
+      {
+        account: "school_admin_demo",
+        password: hashPassword("ChangeMe_School_123"),
+        name: "\u6821\u56ed\u7ba1\u7406\u5458",
+        status: TEXT.enabled,
+        schools: [SCHOOLS.liupanshui],
+        roleId: schoolAdminRole.id
       }
     ]
   });
@@ -220,6 +305,19 @@ async function main() {
       reviewNote: "\u7cfb\u7edf\u81ea\u52a8\u8ba4\u8bc1\u901a\u8fc7",
       reviewedAt: new Date("2026-04-08T10:00:00+08:00")
     }
+  });
+
+  await prisma.schoolAdminApplication.createMany({
+    data: [
+      {
+        userId: miniUser.id,
+        school: SCHOOLS.tsinghua,
+        teamSize: 8,
+        contact: "13800010001",
+        status: "待处理",
+        reviewNote: ""
+      }
+    ]
   });
 
   await prisma.miniPost.createMany({

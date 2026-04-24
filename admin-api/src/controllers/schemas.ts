@@ -19,6 +19,15 @@ export const adminLoginSchema = z.object({
   password: requiredText("密码")
 });
 
+export const adminActivateSchema = z.object({
+  password: z.string().trim().min(6, "新密码至少 6 个字符").max(30, "新密码最多 30 个字符")
+});
+
+export const adminPasswordUpdateSchema = z.object({
+  oldPassword: z.string().trim().min(1, "请输入原密码").optional(),
+  newPassword: z.string().trim().min(6, "新密码至少 6 个字符").max(30, "新密码最多 30 个字符")
+});
+
 export const miniLoginSchema = z
   .object({
     code: z.string().trim().optional(),
@@ -76,6 +85,28 @@ export const miniShopApplySchema = z.object({
 export const miniShopApplyReviewSchema = z.object({
   status: z.enum(["已通过", "已驳回"]),
   reviewNote: z.string().trim().max(100, "审核备注最多 100 个字").optional().default("")
+});
+
+export const schoolAdminApplicationSchema = z.object({
+  school: requiredText("学校"),
+  teamSize: z.number().int().min(1, "团队人数至少 1 人").max(500, "团队人数不能超过 500 人"),
+  contact: z.string().trim().min(5, "联系方式至少 5 个字").max(50, "联系方式最多 50 个字")
+});
+
+export const schoolAdminApplicationReviewSchema = z.object({
+  status: z.enum(["待处理", "已联系", "已拒绝", "已关闭"]),
+  reviewNote: z.string().trim().max(100, "处理备注最多 100 个字").optional().default("")
+});
+
+export const schoolAdminApplicationAssignSchema = z.object({
+  account: z
+    .string()
+    .trim()
+    .min(4, "账号至少 4 个字符")
+    .max(30, "账号最多 30 个字符")
+    .regex(/^[a-zA-Z0-9_]+$/, "账号仅支持字母、数字和下划线"),
+  name: z.string().trim().min(2, "姓名至少 2 个字符").max(20, "姓名最多 20 个字符"),
+  reviewNote: z.string().trim().max(100, "分配备注最多 100 个字").optional().default("")
 });
 
 export const miniFavoriteToggleSchema = z.object({
@@ -354,6 +385,8 @@ export const rolePermissionAssignSchema = z.object({
 });
 
 export type AdminLoginPayload = z.infer<typeof adminLoginSchema>;
+export type AdminActivatePayload = z.infer<typeof adminActivateSchema>;
+export type AdminPasswordUpdatePayload = z.infer<typeof adminPasswordUpdateSchema>;
 export type MiniLoginPayload = z.infer<typeof miniLoginSchema>;
 export type VerifySubmitPayload = z.infer<typeof verifySubmitSchema>;
 export type VerifyReviewPayload = z.infer<typeof verifyReviewSchema>;
@@ -362,6 +395,9 @@ export type PostReviewPayload = z.infer<typeof postReviewSchema>;
 export type MiniPostPayload = z.infer<typeof miniPostPayloadSchema>;
 export type MiniShopApplyPayload = z.infer<typeof miniShopApplySchema>;
 export type MiniShopApplyReviewPayload = z.infer<typeof miniShopApplyReviewSchema>;
+export type SchoolAdminApplicationPayload = z.infer<typeof schoolAdminApplicationSchema>;
+export type SchoolAdminApplicationReviewPayload = z.infer<typeof schoolAdminApplicationReviewSchema>;
+export type SchoolAdminApplicationAssignPayload = z.infer<typeof schoolAdminApplicationAssignSchema>;
 export type MiniFavoriteTogglePayload = z.infer<typeof miniFavoriteToggleSchema>;
 export type MiniAddressPayload = z.infer<typeof miniAddressPayloadSchema>;
 export type MiniOrderCreatePayload = z.infer<typeof miniOrderCreateSchema>;

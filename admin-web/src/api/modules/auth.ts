@@ -33,3 +33,37 @@ export function getAdminSessionApi() {
     method: "GET"
   });
 }
+
+export function activateAdminApi(payload: { password: string }) {
+  return request<AdminSessionResponse>({
+    url: "/auth/admin/activate",
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function getAdminAccountProfileApi() {
+  return request<{
+    id: number;
+    account: string;
+    name: string;
+    status: string;
+    roleName: string;
+    roleCode: string;
+    schools: string[];
+    mustChangePassword: boolean;
+    lastLoginAt: string;
+    passwordUpdatedAt: string;
+  }>({
+    url: "/auth/admin/account/profile",
+    method: "GET"
+  });
+}
+
+export function updateAdminAccountPasswordApi(payload: { oldPassword?: string; newPassword: string }) {
+  return request<AdminSessionResponse>({
+    url: "/auth/admin/account/password",
+    method: "PUT",
+    body: JSON.stringify(payload)
+  });
+}

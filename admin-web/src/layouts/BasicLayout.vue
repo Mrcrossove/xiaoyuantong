@@ -23,6 +23,10 @@ function handleSelect(path: string) {
   router.push(path);
 }
 
+function openAccount() {
+  router.push("/account");
+}
+
 function handleLogout() {
   authStore.logout();
   router.replace("/login");
@@ -50,6 +54,7 @@ function handleLogout() {
           <el-tag type="success">{{ authStore.profile?.roleName || "未登录" }}</el-tag>
           <el-tag type="info">数据范围：{{ authStore.schoolScopeLabel }}</el-tag>
           <span class="admin-name">{{ authStore.profile?.name || "-" }}</span>
+          <el-button link type="primary" @click="openAccount">账号设置</el-button>
           <el-button link type="danger" @click="handleLogout">退出登录</el-button>
         </div>
       </el-header>

@@ -17,6 +17,7 @@ const router = createRouter({
       children: [
         { path: "", redirect: "/dashboard/overview" },
         { path: "dashboard/overview", component: () => import("../views/dashboard/DashboardOverview.vue"), meta: { title: "数据概览" } },
+        { path: "account", component: () => import("../views/account/AccountView.vue"), meta: { title: "账号设置" } },
         { path: "school/list", component: () => import("../views/school/SchoolListView.vue"), meta: { title: "高校列表", menuPath: "/school/list" } },
         { path: "school/content", component: () => import("../views/school/SchoolContentView.vue"), meta: { title: "高校内容统计", menuPath: "/school/content" } },
         { path: "user/list", component: () => import("../views/user/UserListView.vue"), meta: { title: "用户列表", menuPath: "/user/list" } },
@@ -53,6 +54,7 @@ const router = createRouter({
         { path: "system/log", component: () => import("../views/system/OperationLogView.vue"), meta: { title: "操作日志", menuPath: "/system/log" } },
         { path: "system/version", component: () => import("../views/system/VersionInfoView.vue"), meta: { title: "版本信息", menuPath: "/system/version" } },
         { path: "auth/admin", component: () => import("../views/auth/AdminListView.vue"), meta: { title: "管理员列表", menuPath: "/auth/admin" } },
+        { path: "auth/school-admin-apply", component: () => import("../views/auth/SchoolAdminApplyView.vue"), meta: { title: "管理员申请", menuPath: "/auth/school-admin-apply" } },
         { path: "auth/role", component: () => import("../views/auth/RoleListView.vue"), meta: { title: "角色列表", menuPath: "/auth/role" } },
         { path: "auth/menu", component: () => import("../views/auth/MenuPermissionView.vue"), meta: { title: "菜单权限", menuPath: "/auth/menu" } }
       ]
@@ -66,14 +68,21 @@ router.beforeEach((to) => {
   const isPublic = Boolean(to.meta.public);
 
   if (isPublic) {
-    if (to.path === "/login" && authStore.isLogin) return "/dashboard/overview";
+    if (to.path === "/login" && authStore.isLogin) {
+      return authStore.mustChangePassword ? "/account" : "/dashboard/overview";
+    }
     return true;
   }
 
   if (!authStore.isLogin) return `/login?redirect=${encodeURIComponent(to.fullPath)}`;
 
+  if (authStore.mustChangePassword && to.path !== "/account") {
+    ElMessage.warning("首次登录后需要先修改密码");
+    return "/account";
+  }
+
   const menuPath = String(to.meta.menuPath || to.path);
-  if (!authStore.hasMenuAccess(menuPath)) {
+  if (to.path !== "/account" && !authStore.hasMenuAccess(menuPath)) {
     ElMessage.warning("当前账号无权访问该页面");
     return "/dashboard/overview";
   }

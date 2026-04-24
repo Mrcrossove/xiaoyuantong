@@ -266,6 +266,62 @@ export interface RoleTemplateItem {
   permissionsList: string[];
 }
 
+export interface SchoolAdminApplicationItem {
+  id: number;
+  userId: number;
+  applicantName: string;
+  applicantPhone: string;
+  school: string;
+  teamSize: number;
+  contact: string;
+  status: string;
+  statusClass: string;
+  reviewNote: string;
+  assignedAdminUserId: number;
+  assignedAdminAccount: string;
+  assignedAdminName: string;
+  reviewedByName: string;
+  createdAt: string;
+  updatedAt: string;
+  schoolPendingCount: number;
+}
+
+export interface SchoolAdminApplicationQuery extends PageQuery {}
+
+export interface SchoolAdminApplicationReviewPayload {
+  status: "待处理" | "已联系" | "已拒绝" | "已关闭";
+  reviewNote?: string;
+}
+
+export interface SchoolAdminApplicationAssignPayload {
+  account: string;
+  name: string;
+  reviewNote?: string;
+}
+
+export interface SchoolAdminApplicationAssignResult {
+  application: SchoolAdminApplicationItem;
+  adminUser: {
+    id: number;
+    account: string;
+    name: string;
+    school: string;
+    roleCode: string;
+    roleName: string;
+    initialPassword: string;
+  };
+}
+
+export interface SchoolAdminApplicationListResult extends PageResult<SchoolAdminApplicationItem> {
+  summary: {
+    total: number;
+    pendingCount: number;
+    contactedCount: number;
+    assignedCount: number;
+    schoolOptions: string[];
+  };
+}
+
 export interface MenuTreeNode {
   key: string;
   title: string;

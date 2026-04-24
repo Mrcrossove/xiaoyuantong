@@ -1,0 +1,153 @@
+.hero {
+  margin-top: 24rpx;
+  padding: 32rpx;
+  background: linear-gradient(135deg, #173985, #3b82f6 62%, #83b7ff);
+  color: #ffffff;
+}
+
+.hero-badge {
+  display: inline-flex;
+  padding: 10rpx 18rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.hero-title {
+  margin-top: 16rpx;
+  font-size: 42rpx;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.hero-desc {
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  line-height: 1.7;
+  opacity: 0.92;
+}
+
+.status-card,
+.form-card {
+  margin-top: 24rpx;
+  padding: 28rpx;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 800;
+  color: #12213a;
+}
+
+.status-row {
+  margin-top: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.status-label,
+.detail-label,
+.field-label {
+  color: #66758f;
+  font-size: 24rpx;
+}
+
+.status-value {
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.status-warning {
+  background: #fff4d9;
+  color: #b7791f;
+}
+
+.status-primary {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-success {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-danger,
+.status-default {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.status-desc {
+  margin-top: 16rpx;
+  color: #42526b;
+  font-size: 24rpx;
+  line-height: 1.7;
+}
+
+.detail-grid {
+  margin-top: 18rpx;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18rpx;
+}
+
+.detail-item {
+  padding: 20rpx;
+  border-radius: 24rpx;
+  background: #f5f8ff;
+}
+
+.detail-value {
+  margin-top: 10rpx;
+  color: #12213a;
+  font-size: 26rpx;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.review-note {
+  margin-top: 18rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 20rpx;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.field {
+  margin-top: 22rpx;
+}
+
+.field-input,
+.field-textarea {
+  margin-top: 12rpx;
+  width: 100%;
+  border-radius: 24rpx;
+  background: #f5f7fb;
+  padding: 24rpx;
+  box-sizing: border-box;
+  font-size: 26rpx;
+  color: #12213a;
+}
+
+.field-textarea {
+  min-height: 180rpx;
+}
+
+.submit-btn {
+  margin-top: 28rpx;
+  width: 100%;
+  height: 92rpx;
+  border-radius: 999rpx;
+  border: 0;
+  background: linear-gradient(135deg, #173985, #3b82f6);
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 700;
+}

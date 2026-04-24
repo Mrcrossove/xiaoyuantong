@@ -125,6 +125,7 @@ export const ADMIN_MENU_TREE: AdminMenuNode[] = [
     title: "权限管理",
     children: [
       { key: "auth-admin", title: "管理员列表", path: "/auth/admin" },
+      { key: "auth-school-admin-apply", title: "管理员申请", path: "/auth/school-admin-apply" },
       { key: "auth-role", title: "角色列表", path: "/auth/role" },
       { key: "auth-menu", title: "菜单权限", path: "/auth/menu" }
     ]
@@ -138,6 +139,9 @@ export const ADMIN_PERMISSION_GROUPS: AdminPermissionGroup[] = [
     permissions: [
       { code: "auth:admin:add", title: "新增管理员" },
       { code: "auth:admin:edit", title: "编辑管理员" },
+      { code: "auth:school-admin-apply:view", title: "查看管理员申请" },
+      { code: "auth:school-admin-apply:review", title: "处理管理员申请" },
+      { code: "auth:school-admin-apply:assign", title: "分配学校管理员账号" },
       { code: "auth:role:add", title: "新增角色" },
       { code: "auth:role:edit", title: "编辑角色" },
       { code: "auth:menu:edit", title: "配置菜单权限" }

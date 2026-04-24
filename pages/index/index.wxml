@@ -29,14 +29,14 @@
     <view class="primary-btn" bindtap="openSearchPage">搜索</view>
   </view>
 
-  <view class="banner card">
+  <view class="banner card" bindtap="openSchoolAdminApply">
     <view class="banner-art">
       <view class="banner-copy">
-        <text class="banner-tag">校园通</text>
-        <view class="banner-title">校园合伙人招募中</view>
-        <view class="banner-desc">提供校园广告、二手交易、兼职信息等本地服务能力</view>
+        <text class="banner-tag">校园通后台招募</text>
+        <view class="banner-title">校园管理员招募中</view>
+        <view class="banner-desc">点击提交学校、团队人数和联系方式，平台审核后为你开通学校专属管理后台</view>
       </view>
-      <view class="banner-badge">等你来</view>
+      <view class="banner-badge">立即申请</view>
     </view>
     <view class="banner-dots">
       <view></view>

@@ -3,7 +3,7 @@ import { prisma } from "../lib/prisma";
 import { ApiError } from "../utils/api-error";
 import { ERROR_CODES } from "../constants/error-codes";
 import { issueToken } from "../utils/token";
-import type { AdminLoginPayload } from "../controllers/schemas";
+import type { AdminActivatePayload, AdminLoginPayload, AdminPasswordUpdatePayload } from "../controllers/schemas";
 import { normalizeAdminPermissions } from "../utils/admin-permission";
 import { hashPassword, isPasswordHashed, verifyPassword } from "../utils/password";
 
@@ -17,6 +17,7 @@ function buildAdminSession(user: {
   account: string;
   status: string;
   schools: Prisma.JsonValue | null;
+  mustChangePassword: boolean;
   roleId: number;
   role: {
     code: string;
@@ -40,7 +41,8 @@ function buildAdminSession(user: {
       roleCode: user.role.code,
       roleName: user.role.name,
       scopeType: user.role.scopeType === "all" ? "all" : "assigned",
-      schools: toStringArray(user.schools)
+      schools: toStringArray(user.schools),
+      mustChangePassword: Boolean(user.mustChangePassword)
     },
     permissions: normalizeAdminPermissions(toStringArray(user.role.permissions)),
     menuPaths: toStringArray(user.role.menuPaths)
@@ -81,4 +83,63 @@ export async function getAdminSession(adminUserId: number) {
   });
 
   return buildAdminSession(user);
+}
+
+export async function getAdminAccountProfile(adminUserId: number) {
+  const user = await prisma.adminUser.findUniqueOrThrow({
+    where: { id: adminUserId },
+    include: { role: true }
+  });
+
+  return {
+    id: user.id,
+    account: user.account,
+    name: user.name,
+    status: user.status,
+    roleName: user.role.name,
+    roleCode: user.role.code,
+    schools: toStringArray(user.schools),
+    mustChangePassword: Boolean(user.mustChangePassword),
+    lastLoginAt: user.lastLoginAt?.toISOString() || "",
+    passwordUpdatedAt: user.passwordUpdatedAt?.toISOString() || ""
+  };
+}
+
+export async function adminActivate(adminUserId: number, payload: AdminActivatePayload) {
+  const row = await prisma.adminUser.update({
+    where: { id: adminUserId },
+    data: {
+      password: hashPassword(payload.password),
+      mustChangePassword: false,
+      passwordUpdatedAt: new Date()
+    },
+    include: { role: true }
+  });
+
+  return buildAdminSession(row);
+}
+
+export async function updateAdminPassword(adminUserId: number, payload: AdminPasswordUpdatePayload) {
+  const user = await prisma.adminUser.findUniqueOrThrow({
+    where: { id: adminUserId },
+    include: { role: true }
+  });
+
+  if (!user.mustChangePassword) {
+    if (!payload.oldPassword || !verifyPassword(payload.oldPassword, user.password)) {
+      throw new ApiError("原密码错误", ERROR_CODES.BAD_REQUEST, 400);
+    }
+  }
+
+  const row = await prisma.adminUser.update({
+    where: { id: adminUserId },
+    data: {
+      password: hashPassword(payload.newPassword),
+      mustChangePassword: false,
+      passwordUpdatedAt: new Date()
+    },
+    include: { role: true }
+  });
+
+  return buildAdminSession(row);
 }

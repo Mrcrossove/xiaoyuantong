@@ -15,11 +15,20 @@ import {
   updateAdminUserManageAction,
   updateRolePermissionAction
 } from "../controllers/auth-manage.controller";
-import { adminLoginAction, getAdminSessionAction, miniLoginAction } from "../controllers/auth.controller";
 import {
+  adminActivateAction,
+  adminLoginAction,
+  getAdminAccountProfileAction,
+  getAdminSessionAction,
+  miniLoginAction,
+  updateAdminPasswordAction
+} from "../controllers/auth.controller";
+import {
+  adminActivateSchema,
   adminLoginSchema,
   adminManagerCreateSchema,
   adminManagerUpdateSchema,
+  adminPasswordUpdateSchema,
   adminRolePayloadSchema,
   miniLoginSchema,
   rolePermissionAssignSchema
@@ -44,6 +53,9 @@ router.post(
   asyncHandler(adminLoginAction)
 );
 router.get("/admin/session", requireAdminAuth, asyncHandler(getAdminSessionAction));
+router.post("/admin/activate", requireAdminAuth, validateBody(adminActivateSchema), asyncHandler(adminActivateAction));
+router.get("/admin/account/profile", requireAdminAuth, asyncHandler(getAdminAccountProfileAction));
+router.put("/admin/account/password", requireAdminAuth, validateBody(adminPasswordUpdateSchema), asyncHandler(updateAdminPasswordAction));
 router.get("/meta", requireAdminAuth, requireAdminMenuAccess("/auth/admin", "/auth/role", "/auth/menu"), asyncHandler(getAuthManageMetaAction));
 router.get("/admin-user/list", requireAdminAuth, requireAdminMenuAccess("/auth/admin"), asyncHandler(listAdminUserManageAction));
 router.post(

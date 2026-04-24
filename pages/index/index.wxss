@@ -102,6 +102,7 @@
 .banner {
   margin-top: 24rpx;
   padding: 18rpx;
+  cursor: pointer;
 }
 
 .banner-art {

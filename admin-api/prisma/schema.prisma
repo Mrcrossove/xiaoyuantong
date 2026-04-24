@@ -42,12 +42,17 @@ model AdminUser {
   status      String
   schools     Json
   lastLoginAt DateTime?
+  mustChangePassword Boolean     @default(false)
+  passwordUpdatedAt DateTime?
+  initialPasswordSentAt DateTime?
   roleId      Int
   role        AdminRole          @relation(fields: [roleId], references: [id])
   reviews     UserVerification[] @relation("VerificationReviewer")
   postReviews MiniPost[]         @relation("MiniPostReviewer")
   postReports MiniPostReport[]   @relation("PostReportReviewer")
   refunds     MiniRefundRecord[] @relation("RefundReviewer")
+  reviewedSchoolAdminApplications   SchoolAdminApplication[] @relation("SchoolAdminReviewer")
+  assignedSchoolAdminApplications   SchoolAdminApplication[] @relation("SchoolAdminAssignedAdmin")
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
 }
@@ -79,8 +84,29 @@ model MiniUser {
   messageReads  MiniMessageRead[]
   ownedStores   MiniStore[]       @relation("MiniStoreOwner")
   merchantAccount MerchantAccount?
+  schoolAdminApplications SchoolAdminApplication[]
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
+}
+
+model SchoolAdminApplication {
+  id                  Int        @id @default(autoincrement())
+  userId              Int
+  user                MiniUser   @relation(fields: [userId], references: [id])
+  school              String
+  teamSize            Int
+  contact             String
+  status              String
+  reviewNote          String?
+  assignedAdminUserId Int?
+  assignedAdminUser   AdminUser? @relation("SchoolAdminAssignedAdmin", fields: [assignedAdminUserId], references: [id])
+  reviewedById        Int?
+  reviewedBy          AdminUser? @relation("SchoolAdminReviewer", fields: [reviewedById], references: [id])
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  @@index([school, status])
+  @@index([userId, createdAt])
 }
 
 model MiniRiskEvent {

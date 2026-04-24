@@ -34,12 +34,74 @@ interface RoleTemplate {
 
 const ROLE_TEMPLATES: RoleTemplate[] = [
   {
-    code: "campus_team_admin",
-    name: "校园团队管理员",
+    code: "school_admin",
+    name: "校园管理员",
     scopeType: "assigned" as const,
-    description: "负责指定高校的轮播图管理、帖子审核与校园数据查看。",
-    menuPaths: ["/dashboard/overview", "/post/list", "/operation/banner", "/stat/user", "/stat/post", "/stat/store"],
-    permissionsList: ["operation:banner:add", "operation:banner:edit", "post:review"]
+    description: "负责单个高校的后台运营、审核、交易与内容配置，数据范围仅限所在学校。",
+    menuPaths: [
+      "/dashboard/overview",
+      "/school/content",
+      "/user/list",
+      "/user/publish",
+      "/verify/list",
+      "/post/list",
+      "/post/category",
+      "/post/report",
+      "/store/apply",
+      "/store/list",
+      "/store/category",
+      "/product/list",
+      "/product/spec",
+      "/product/category",
+      "/message/system",
+      "/message/interactive",
+      "/message/send",
+      "/message/template",
+      "/operation/banner",
+      "/operation/recommend",
+      "/operation/search-word",
+      "/operation/help",
+      "/trade/order",
+      "/trade/refund",
+      "/trade/wallet",
+      "/trade/withdraw",
+      "/stat/user",
+      "/stat/post",
+      "/stat/store",
+      "/stat/order"
+    ],
+    permissionsList: [
+      "verify:view",
+      "verify:approve",
+      "verify:reject",
+      "store:apply:view",
+      "store:apply:approve",
+      "store:apply:reject",
+      "post:report:review",
+      "post:review",
+      "order:view",
+      "order:export",
+      "wallet:view",
+      "wallet:export",
+      "refund:review",
+      "withdraw:review",
+      "message:template:add",
+      "message:template:edit",
+      "operation:banner:add",
+      "operation:banner:edit",
+      "operation:recommend:add",
+      "operation:recommend:edit",
+      "operation:search:add",
+      "operation:search:edit",
+      "operation:help:add",
+      "operation:help:edit",
+      "post:category:add",
+      "post:category:edit",
+      "store:category:add",
+      "store:category:edit",
+      "product:category:add",
+      "product:category:edit"
+    ]
   }
 ];
 
@@ -105,6 +167,13 @@ function ensureSchoolsAssignable(context: Awaited<ReturnType<typeof getOperatorC
     forbidden("无权分配超出当前账号范围的高校");
   }
   return normalized;
+}
+
+function ensureRoleSchoolConstraints(roleCode: string, schools: string[]) {
+  if (roleCode === "school_admin" && schools.length !== 1) {
+    badRequest("校园管理员必须且只能绑定一个学校");
+  }
+  return schools;
 }
 
 function ensureMenuPathsGrantable(context: Awaited<ReturnType<typeof getOperatorContext>>, menuPaths: string[]) {
@@ -388,7 +457,8 @@ export async function createAdminUser(adminUserId: number, payload: AdminManager
   const account = payload.account.trim();
   await ensureUniqueAdminAccount(account);
 
-  const schools = role.scopeType === "all" ? [] : ensureSchoolsAssignable(context, payload.schools);
+  const schools =
+    role.scopeType === "all" ? [] : ensureRoleSchoolConstraints(role.code, ensureSchoolsAssignable(context, payload.schools));
 
     const row = await prisma.adminUser.create({
       data: {
@@ -424,7 +494,8 @@ export async function updateAdminUser(adminUserId: number, id: number, payload: 
   const account = payload.account.trim();
   await ensureUniqueAdminAccount(account, id);
 
-  const schools = role.scopeType === "all" ? [] : ensureSchoolsAssignable(context, payload.schools);
+  const schools =
+    role.scopeType === "all" ? [] : ensureRoleSchoolConstraints(role.code, ensureSchoolsAssignable(context, payload.schools));
   const nextPassword = payload.password?.trim();
 
     const row = await prisma.adminUser.update({

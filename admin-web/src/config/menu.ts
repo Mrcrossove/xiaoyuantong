@@ -114,6 +114,7 @@ export const adminMenus: AdminMenuItem[] = [
     title: "权限管理",
     children: [
       { key: "auth-admin", title: "管理员列表", path: "/auth/admin" },
+      { key: "auth-school-admin-apply", title: "管理员申请", path: "/auth/school-admin-apply" },
       { key: "auth-role", title: "角色列表", path: "/auth/role" },
       { key: "auth-menu", title: "菜单权限", path: "/auth/menu" }
     ]

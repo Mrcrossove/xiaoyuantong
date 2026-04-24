@@ -8,6 +8,7 @@
     "pages/message/message",
     "pages/profile/profile",
     "pages/campus-verify/campus-verify",
+    "pages/school-admin-apply/school-admin-apply",
     "pages/my-orders/my-orders",
     "pages/order-detail/order-detail",
     "pages/my-posts/my-posts",

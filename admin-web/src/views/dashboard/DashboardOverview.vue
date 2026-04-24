@@ -12,7 +12,7 @@ const cards = ref<DashboardCardItem[]>([]);
 const todos = ref<DashboardTodoItem[]>([]);
 const rankings = ref<DashboardRankingItem[]>([]);
 
-const boardTitle = computed(() => (authStore.profile?.roleCode === "campus_team_admin" ? "校园运营看板" : "平台数据看板"));
+const boardTitle = computed(() => (authStore.profile?.roleCode === "school_admin" ? "校园运营看板" : "平台数据看板"));
 const rankingTitle = computed(() => (authStore.profile?.scopeType === "assigned" ? "当前高校数据概览" : "高校数据排行"));
 
 async function loadData() {

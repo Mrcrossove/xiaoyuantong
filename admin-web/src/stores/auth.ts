@@ -1,6 +1,6 @@
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
-import { getAdminSessionApi, loginApi, type AdminSessionResponse } from "../api/modules/auth";
+import { activateAdminApi, getAdminSessionApi, loginApi, type AdminSessionResponse } from "../api/modules/auth";
 import {
   clearSession,
   getMenuPaths,
@@ -22,6 +22,7 @@ export const useAuthStore = defineStore("auth", () => {
 
   const isLogin = computed(() => Boolean(token.value));
   const isSuperAdmin = computed(() => profile.value?.roleCode === "super_admin");
+  const mustChangePassword = computed(() => Boolean(profile.value?.mustChangePassword));
   const schoolScopeLabel = computed(() =>
     !profile.value ? "-" : profile.value.scopeType === "all" ? "全部高校" : profile.value.schools.join("、")
   );
@@ -59,6 +60,12 @@ export const useAuthStore = defineStore("auth", () => {
     return result;
   }
 
+  async function activate(password: string) {
+    const result = await activateAdminApi({ password });
+    applySession(result);
+    return result;
+  }
+
   function logout() {
     token.value = "";
     profile.value = null;
@@ -74,11 +81,13 @@ export const useAuthStore = defineStore("auth", () => {
     menuPaths,
     isLogin,
     isSuperAdmin,
+    mustChangePassword,
     schoolScopeLabel,
     hasPermission,
     hasMenuAccess,
     login,
     refreshSession,
+    activate,
     logout
   };
 });

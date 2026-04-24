@@ -12,6 +12,7 @@ export interface SessionProfile {
   roleName: string;
   scopeType: "all" | "assigned";
   schools: string[];
+  mustChangePassword?: boolean;
 }
 
 export function setToken(token: string) {

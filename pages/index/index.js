@@ -121,6 +121,12 @@ Page({
     });
   },
 
+  openSchoolAdminApply() {
+    wx.navigateTo({
+      url: "/pages/school-admin-apply/school-admin-apply"
+    });
+  },
+
   stopTap() {},
 
   toggleFabMenu() {

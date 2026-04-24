@@ -1,0 +1,66 @@
+<view class="page-shell">
+  <view class="status-bar" style="height: {{statusBarHeight}}px;"></view>
+
+  <view class="topbar">
+    <view class="topbar-left" bindtap="goBack">
+      <view class="back-arrow"></view>
+    </view>
+    <view class="topbar-title">校园管理员申请</view>
+    <view class="topbar-right"></view>
+  </view>
+
+  <view class="hero card">
+    <view class="hero-badge">校园通后台</view>
+    <view class="hero-title">申请学校专属管理后台</view>
+    <view class="hero-desc">提交学校、团队人数和联系方式后，超级管理员会筛选团队并线下联系，为通过者分配后台账号密码。</view>
+  </view>
+
+  <view wx:if="{{currentApply}}" class="status-card card">
+    <view class="section-title">最近一次申请</view>
+    <view class="status-row">
+      <text class="status-label">状态</text>
+      <text class="status-value status-{{currentApply.statusClass || 'default'}}">{{currentApply.status}}</text>
+    </view>
+    <view class="status-desc">{{currentApply.statusDesc}}</view>
+    <view class="detail-grid">
+      <view class="detail-item">
+        <view class="detail-label">学校</view>
+        <view class="detail-value">{{currentApply.school}}</view>
+      </view>
+      <view class="detail-item">
+        <view class="detail-label">团队人数</view>
+        <view class="detail-value">{{currentApply.teamSize}} 人</view>
+      </view>
+      <view class="detail-item">
+        <view class="detail-label">联系方式</view>
+        <view class="detail-value">{{currentApply.contact}}</view>
+      </view>
+      <view class="detail-item">
+        <view class="detail-label">申请时间</view>
+        <view class="detail-value">{{currentApply.createdAt}}</view>
+      </view>
+    </view>
+    <view wx:if="{{currentApply.reviewNote}}" class="review-note">处理备注：{{currentApply.reviewNote}}</view>
+  </view>
+
+  <view class="form-card card">
+    <view class="section-title">填写申请信息</view>
+
+    <view class="field">
+      <view class="field-label">学校</view>
+      <input class="field-input" value="{{form.school}}" placeholder="请输入学校名称" bindinput="onSchoolInput" />
+    </view>
+
+    <view class="field">
+      <view class="field-label">团队人数</view>
+      <input class="field-input" type="number" value="{{form.teamSize}}" placeholder="请输入团队人数" bindinput="onTeamSizeInput" />
+    </view>
+
+    <view class="field">
+      <view class="field-label">联系方式</view>
+      <textarea class="field-textarea" value="{{form.contact}}" placeholder="请输入手机号、微信号或其他有效联系方式" bindinput="onContactInput"></textarea>
+    </view>
+
+    <button class="submit-btn" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submitApply">提交申请</button>
+  </view>
+</view>
