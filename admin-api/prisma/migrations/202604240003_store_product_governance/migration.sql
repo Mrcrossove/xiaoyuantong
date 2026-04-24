@@ -117,7 +117,10 @@ WITH product_rows AS (
     s."id" AS store_id,
     p.value AS product_json,
     p.ordinality::INTEGER AS sort_order,
-    COALESCE(NULLIF(p.value->>'id', ''), CONCAT('legacy_p_', s."id", '_', p.ordinality::TEXT)) AS product_key
+    CASE
+      WHEN NULLIF(p.value->>'id', '') IS NOT NULL THEN CONCAT('store_', s."id", '_', p.value->>'id')
+      ELSE CONCAT('legacy_p_', s."id", '_', p.ordinality::TEXT)
+    END AS product_key
   FROM "MiniStore" s
   CROSS JOIN LATERAL jsonb_array_elements(COALESCE(s."products"::jsonb, '[]'::jsonb)) WITH ORDINALITY AS p(value, ordinality)
 )
@@ -157,14 +160,20 @@ WITH product_rows AS (
     s."id" AS store_id,
     p.value AS product_json,
     p.ordinality::INTEGER AS sort_order,
-    COALESCE(NULLIF(p.value->>'id', ''), CONCAT('legacy_p_', s."id", '_', p.ordinality::TEXT)) AS product_key
+    CASE
+      WHEN NULLIF(p.value->>'id', '') IS NOT NULL THEN CONCAT('store_', s."id", '_', p.value->>'id')
+      ELSE CONCAT('legacy_p_', s."id", '_', p.ordinality::TEXT)
+    END AS product_key
   FROM "MiniStore" s
   CROSS JOIN LATERAL jsonb_array_elements(COALESCE(s."products"::jsonb, '[]'::jsonb)) WITH ORDINALITY AS p(value, ordinality)
 ),
 explicit_skus AS (
   SELECT
     mp."id" AS product_id,
-    COALESCE(NULLIF(sku.value->>'id', ''), CONCAT(mp."productKey", '_sku_', sku.ordinality::TEXT)) AS sku_key,
+    CASE
+      WHEN NULLIF(sku.value->>'id', '') IS NOT NULL THEN CONCAT(mp."productKey", '__', sku.value->>'id')
+      ELSE CONCAT(mp."productKey", '_sku_', sku.ordinality::TEXT)
+    END AS sku_key,
     COALESCE(NULLIF(sku.value->>'name', ''), CONCAT('规格', sku.ordinality::TEXT)) AS sku_name,
     COALESCE(sku.value->>'price', mp."priceText", '0') AS price_text,
     COALESCE((sku.value->>'stock')::INTEGER, 0) AS stock,
@@ -180,7 +189,10 @@ explicit_skus AS (
 fallback_skus AS (
   SELECT
     mp."id" AS product_id,
-    COALESCE(NULLIF(pr.product_json->>'defaultSkuId', ''), CONCAT(mp."productKey", '_sku_1')) AS sku_key,
+    CASE
+      WHEN NULLIF(pr.product_json->>'defaultSkuId', '') IS NOT NULL THEN CONCAT(mp."productKey", '__', pr.product_json->>'defaultSkuId')
+      ELSE CONCAT(mp."productKey", '_sku_1')
+    END AS sku_key,
     '默认规格' AS sku_name,
     COALESCE(pr.product_json->>'price', mp."priceText", '0') AS price_text,
     COALESCE((pr.product_json->>'stock')::INTEGER, 0) AS stock,
