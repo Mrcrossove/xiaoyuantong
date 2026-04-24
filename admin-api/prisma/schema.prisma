@@ -53,6 +53,9 @@ model AdminUser {
   refunds     MiniRefundRecord[] @relation("RefundReviewer")
   reviewedSchoolAdminApplications   SchoolAdminApplication[] @relation("SchoolAdminReviewer")
   assignedSchoolAdminApplications   SchoolAdminApplication[] @relation("SchoolAdminAssignedAdmin")
+  storeChangeLogs AdminStoreChangeLog[]
+  requestedStoreProductApprovals StoreProductApproval[] @relation("StoreProductApprovalRequester")
+  reviewedStoreProductApprovals  StoreProductApproval[] @relation("StoreProductApprovalReviewer")
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
 }
@@ -229,6 +232,100 @@ model MiniStore {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   merchantAccount MerchantAccount?
+  productRows  MiniStoreProduct[]
+  changeLogs   AdminStoreChangeLog[]
+  productApprovals StoreProductApproval[]
+}
+
+model MiniStoreProduct {
+  id           Int      @id @default(autoincrement())
+  productKey   String   @unique
+  storeId      Int
+  store        MiniStore @relation(fields: [storeId], references: [id])
+  name         String
+  desc         String
+  cover        String
+  recommended  Boolean  @default(false)
+  status       String
+  specMode     String
+  priceText    String
+  stock        Int      @default(0)
+  dailyLimit   Int      @default(0)
+  defaultSkuKey String?
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  skus         MiniStoreProductSku[]
+
+  @@index([storeId, sortOrder])
+}
+
+model MiniStoreProductSku {
+  id          Int      @id @default(autoincrement())
+  skuKey      String   @unique
+  productId   Int
+  product     MiniStoreProduct @relation(fields: [productId], references: [id])
+  name        String
+  priceText   String
+  stock       Int      @default(0)
+  dailyLimit  Int      @default(0)
+  status      String
+  isDefault   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([productId, sortOrder])
+}
+
+model AdminStoreChangeLog {
+  id               Int       @id @default(autoincrement())
+  storeId          Int
+  store            MiniStore @relation(fields: [storeId], references: [id])
+  school           String
+  module           String
+  action           String
+  targetType       String
+  targetId         String
+  operatorId       Int
+  operator         AdminUser @relation(fields: [operatorId], references: [id])
+  operatorRoleCode String
+  operatorScopeType String
+  changeMode       String
+  summary          String
+  beforeData       Json?
+  afterData        Json?
+  createdAt        DateTime  @default(now())
+
+  @@index([storeId, createdAt])
+  @@index([operatorId, createdAt])
+  @@index([school, createdAt])
+}
+
+model StoreProductApproval {
+  id                   Int       @id @default(autoincrement())
+  storeId              Int
+  store                MiniStore @relation(fields: [storeId], references: [id])
+  school               String
+  targetType           String
+  targetId             String
+  action               String
+  status               String
+  reason               String
+  payload              Json
+  expectedStoreUpdatedAt DateTime?
+  requestedById        Int
+  requestedBy          AdminUser @relation("StoreProductApprovalRequester", fields: [requestedById], references: [id])
+  reviewedById         Int?
+  reviewedBy           AdminUser? @relation("StoreProductApprovalReviewer", fields: [reviewedById], references: [id])
+  reviewNote           String?
+  reviewedAt           DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([storeId, status, createdAt])
+  @@index([requestedById, createdAt])
+  @@index([school, status])
 }
 
 model MerchantAccount {

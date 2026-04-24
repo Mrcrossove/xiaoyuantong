@@ -56,6 +56,19 @@ export const miniMerchantProductSchema = z.object({
     .default([])
 });
 
+export const adminProductMutationControlSchema = z.object({
+  expectedUpdatedAt: z.string().trim().optional().default(""),
+  conflictStrategy: z.enum(["reject", "force", "submit_for_approval"]).optional().default("reject"),
+  conflictReason: z.string().trim().max(200, "审批原因最多 200 个字").optional().default("")
+});
+
+export const adminStoreProductMutationSchema = miniMerchantProductSchema.merge(adminProductMutationControlSchema);
+export const adminStoreProductConflictSchema = adminProductMutationControlSchema;
+export const storeProductApprovalReviewSchema = z.object({
+  status: z.enum(["approved", "rejected"]),
+  reviewNote: z.string().trim().max(200, "审批备注最多 200 个字").optional().default("")
+});
+
 export const miniMerchantMoveSchema = z.object({
   direction: z.enum(["up", "down"])
 });
@@ -87,8 +100,11 @@ export type MiniRefundApplyPayload = z.infer<typeof miniRefundApplySchema>;
 export type MiniMessageReadAllPayload = z.infer<typeof miniMessageReadAllSchema>;
 export type MiniMerchantStoreUpdatePayload = z.infer<typeof miniMerchantStoreUpdateSchema>;
 export type MiniMerchantProductPayload = z.infer<typeof miniMerchantProductSchema>;
+export type AdminStoreProductMutationPayload = z.infer<typeof adminStoreProductMutationSchema>;
+export type AdminStoreProductConflictPayload = z.infer<typeof adminStoreProductConflictSchema>;
 export type MiniMerchantMovePayload = z.infer<typeof miniMerchantMoveSchema>;
 export type MiniMerchantBatchIdsPayload = z.infer<typeof miniMerchantBatchIdsSchema>;
 export type MiniUploadImagePayload = z.infer<typeof miniUploadImageSchema>;
 export type MiniWithdrawCreatePayload = z.infer<typeof miniWithdrawCreateSchema>;
 export type RefundReviewPayload = z.infer<typeof refundReviewSchema>;
+export type StoreProductApprovalReviewPayload = z.infer<typeof storeProductApprovalReviewSchema>;

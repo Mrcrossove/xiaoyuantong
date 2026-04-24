@@ -26,9 +26,11 @@ import {
 } from "../../api/modules/store";
 import { ApiRequestError } from "../../api/request";
 import { exportTableToCsv } from "../../utils/export";
+import { useAuthStore } from "../../stores/auth";
 
 const route = useRoute();
 const router = useRouter();
+const authStore = useAuthStore();
 
 const loading = ref(false);
 const orderLoading = ref(false);
@@ -128,6 +130,29 @@ function showApiError(error: unknown, fallback: string) {
     return;
   }
   ElMessage.error(fallback);
+}
+
+async function handleConflictForSuperAdmin(action: () => Promise<void>) {
+  try {
+    await action();
+  } catch (error) {
+    if (error instanceof ApiRequestError && error.code === 409 && authStore.isSuperAdmin) {
+      try {
+        await ElMessageBox.confirm("该商品刚被其他管理员更新。是否以超级管理员身份强制覆盖当前变更？", "并发冲突", {
+          type: "warning",
+          confirmButtonText: "强制覆盖",
+          cancelButtonText: "取消"
+        });
+        await action();
+        return;
+      } catch (confirmError) {
+        if (confirmError === "cancel") return;
+        showApiError(confirmError, "操作失败");
+        return;
+      }
+    }
+    throw error;
+  }
 }
 
 function buildDashboardParams() {

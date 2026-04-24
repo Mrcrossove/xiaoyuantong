@@ -8,9 +8,11 @@ import {
   getAdminStoreOrderDetail,
   getAdminStoreDashboard,
   getMiniStoreDetail,
+  queryStoreProductApprovals,
   queryAdminStoreOrders,
   queryAdminStoreList,
   queryMiniStores,
+  reviewStoreProductApproval,
   reviewAdminStoreOrderRefund,
   toggleAdminStoreProductStatus,
   updateAdminStoreProduct
@@ -41,6 +43,11 @@ export async function listAdminStoreOrdersAction(req: Request, res: Response) {
   return ok(res, data, req.traceId);
 }
 
+export async function listStoreProductApprovalsAction(req: Request, res: Response) {
+  const data = await queryStoreProductApprovals(req.adminAuth!.userId, req.query as Record<string, unknown>);
+  return ok(res, data, req.traceId);
+}
+
 export async function createAdminStoreProductAction(req: Request, res: Response) {
   const data = await createAdminStoreProduct(req.adminAuth!.userId, Number(req.params.id), req.body);
   return ok(res, data, req.traceId);
@@ -52,12 +59,22 @@ export async function updateAdminStoreProductAction(req: Request, res: Response)
 }
 
 export async function toggleAdminStoreProductStatusAction(req: Request, res: Response) {
-  const data = await toggleAdminStoreProductStatus(req.adminAuth!.userId, Number(req.params.id), String(req.params.productId || ""));
+  const data = await toggleAdminStoreProductStatus(
+    req.adminAuth!.userId,
+    Number(req.params.id),
+    String(req.params.productId || ""),
+    req.body || {}
+  );
   return ok(res, data, req.traceId);
 }
 
 export async function deleteAdminStoreProductAction(req: Request, res: Response) {
-  const data = await deleteAdminStoreProduct(req.adminAuth!.userId, Number(req.params.id), String(req.params.productId || ""));
+  const data = await deleteAdminStoreProduct(
+    req.adminAuth!.userId,
+    Number(req.params.id),
+    String(req.params.productId || ""),
+    req.body || {}
+  );
   return ok(res, data, req.traceId);
 }
 
@@ -84,5 +101,10 @@ export async function reviewAdminStoreOrderRefundAction(req: Request, res: Respo
     Number(req.params.refundId),
     req.body
   );
+  return ok(res, data, req.traceId);
+}
+
+export async function reviewStoreProductApprovalAction(req: Request, res: Response) {
+  const data = await reviewStoreProductApproval(req.adminAuth!.userId, Number(req.params.approvalId), req.body);
   return ok(res, data, req.traceId);
 }

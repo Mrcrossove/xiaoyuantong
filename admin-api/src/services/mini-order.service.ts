@@ -6,7 +6,8 @@ import { prisma } from "../lib/prisma";
 import { ApiError } from "../utils/api-error";
 import { parsePageParams } from "../utils/pagination";
 import { createMiniMessage } from "./mini-message.service";
-import { getDefaultSku, parseMoneyNumber, toMerchantProducts } from "../utils/merchant-product";
+import { getDefaultSku, parseMoneyNumber } from "../utils/merchant-product";
+import { listStoreProductsByDetailId } from "./store-product.service";
 
 export const MINI_ORDER_STATUS = {
   pending: "待支付",
@@ -378,7 +379,7 @@ async function findStoreProduct(storeDetailId: string, productId: string, skuId?
     throw new ApiError("店铺不存在", ERROR_CODES.NOT_FOUND, 404);
   }
 
-  const products = toMerchantProducts(store.products);
+  const products = await listStoreProductsByDetailId(storeDetailId);
   const product = products.find((item) => String(item.id) === String(productId));
   if (!product) {
     throw new ApiError("商品不存在", ERROR_CODES.NOT_FOUND, 404);

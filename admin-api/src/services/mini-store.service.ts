@@ -1,18 +1,19 @@
 import { Prisma } from "@prisma/client";
 import type { MiniMerchantProductPayload } from "../controllers/mini-commerce-schemas";
-import { parsePageParams } from "../utils/pagination";
+import type { RefundReviewPayload } from "../controllers/schemas";
+import { ERROR_CODES } from "../constants/error-codes";
 import { prisma } from "../lib/prisma";
-import { getAdminSchoolScope } from "./admin-scope.service";
+import { ApiError } from "../utils/api-error";
+import { parsePageParams } from "../utils/pagination";
 import {
   buildProductDisplayPrice,
   getDefaultSku,
   MERCHANT_PRODUCT_STATUS,
-  normalizeMerchantProductPayload,
   parseMoneyNumber,
   toMerchantProducts
 } from "../utils/merchant-product";
-import { ApiError } from "../utils/api-error";
-import { ERROR_CODES } from "../constants/error-codes";
+import { getAdminSchoolScope } from "./admin-scope.service";
+import { createMiniMessage } from "./mini-message.service";
 import {
   MINI_ORDER_STATUS,
   MINI_PAY_STATUS,
@@ -21,8 +22,13 @@ import {
   reverseMiniOrderSettlement,
   settleMiniOrderIncome
 } from "./mini-order.service";
-import type { RefundReviewPayload } from "../controllers/schemas";
-import { createMiniMessage } from "./mini-message.service";
+import {
+  createStoreProductRecord,
+  deleteStoreProductRecord,
+  mapStoreProductForApi,
+  toggleStoreProductStatusRecord,
+  updateStoreProductRecord
+} from "./store-product.service";
 
 interface BannerItem {
   id: number;
@@ -32,13 +38,15 @@ interface BannerItem {
   cta: string;
 }
 
-const SCHOOLS = {
-  current: "当前高校",
-  liupanshui: "六盘水师范学院",
-  pku: "北京大学",
-  tsinghua: "清华大学",
-  fudan: "复旦大学",
-  gzu: "贵州大学"
+type AdminProductMutationControl = {
+  expectedUpdatedAt?: string;
+  conflictStrategy?: "reject" | "force" | "submit_for_approval";
+  conflictReason?: string;
+};
+
+type ApprovalReviewPayload = {
+  status: "approved" | "rejected";
+  reviewNote?: string;
 };
 
 const STORE_STATUS = {
@@ -47,6 +55,28 @@ const STORE_STATUS = {
 
 function toArray(value: Prisma.JsonValue | null | undefined) {
   return Array.isArray(value) ? value : [];
+}
+
+function formatDateTime(value: Date | null | undefined) {
+  if (!value) return "";
+  return value.toISOString().slice(0, 19).replace("T", " ");
+}
+
+function formatIsoTime(value: Date | null | undefined) {
+  return value ? value.toISOString() : "";
+}
+
+function roundMoney(value: number) {
+  return Number(Number(value || 0).toFixed(2));
+}
+
+function calcPercent(value: number, total: number) {
+  if (!total) return 0;
+  return Math.round((value / total) * 100);
+}
+
+function normalizeAdminOrderStatus(status: string) {
+  return status === MINI_ORDER_STATUS.accepted ? MINI_ORDER_STATUS.processing : status;
 }
 
 function buildSchoolWhere(scope: Awaited<ReturnType<typeof getAdminSchoolScope>>, school: string) {
@@ -61,6 +91,37 @@ function buildSchoolWhere(scope: Awaited<ReturnType<typeof getAdminSchoolScope>>
   return {
     in: scope.schools
   };
+}
+
+function parseDateRange(rawQuery: Record<string, unknown>) {
+  const dateFrom = String(rawQuery.dateFrom || "").trim();
+  const dateTo = String(rawQuery.dateTo || "").trim();
+  const createdAt: { gte?: Date; lte?: Date } = {};
+
+  if (dateFrom) {
+    const start = new Date(`${dateFrom}T00:00:00.000Z`);
+    if (!Number.isNaN(start.getTime())) createdAt.gte = start;
+  }
+
+  if (dateTo) {
+    const end = new Date(`${dateTo}T23:59:59.999Z`);
+    if (!Number.isNaN(end.getTime())) createdAt.lte = end;
+  }
+
+  return Object.keys(createdAt).length ? createdAt : undefined;
+}
+
+function buildBannerList(school: string) {
+  const title = school || "当前高校";
+  return [
+    {
+      id: 1,
+      tag: "平台推荐",
+      title: `${title}创业店铺推荐`,
+      desc: "优先展示校园热门商家、学生创业团队和高活跃店铺。",
+      cta: "查看更多"
+    }
+  ];
 }
 
 function mapStoreListItem(item: any) {
@@ -154,244 +215,32 @@ function mapAdminStoreItem(item: any) {
   };
 }
 
-function buildBannerList(school: string) {
-  const fallback: BannerItem = {
-    id: 1,
-    tag: "平台推荐",
-    title: `${school}创业店铺推荐`,
-    desc: "优先展示学生商家、宿舍超市、校内商家和校外商家中的优质店铺。",
-    cta: "查看更多"
-  };
-
-  const schoolMap: Record<string, BannerItem> = {
-    [SCHOOLS.liupanshui]: {
-      id: 1,
-      tag: "本校推荐",
-      title: "六盘水师范学院创业店铺推荐",
-      desc: "围绕宿舍配送、校内餐饮和学生服务，优先展示本校热门创业店铺。",
-      cta: "查看本校热榜"
-    },
-    [SCHOOLS.pku]: {
-      id: 1,
-      tag: "燕园精选",
-      title: "北京大学创业店铺精选",
-      desc: "优先展示学习资料、轻食咖啡和校园文创等热门创业店铺。",
-      cta: "查看燕园推荐"
-    },
-    [SCHOOLS.tsinghua]: {
-      id: 1,
-      tag: "清华推荐",
-      title: "清华大学创业店铺优选",
-      desc: "围绕宿舍补给、校内餐饮和跑腿代取，优先展示高频店铺。",
-      cta: "查看清华热卖"
-    },
-    [SCHOOLS.fudan]: {
-      id: 1,
-      tag: "复旦推荐",
-      title: "复旦大学创业店铺精选",
-      desc: "优先展示校外餐饮、生活服务和学生自营店铺。",
-      cta: "查看复旦精选"
-    },
-    [SCHOOLS.gzu]: {
-      id: 1,
-      tag: "贵大推荐",
-      title: "贵州大学创业店铺推荐",
-      desc: "优先展示校园餐饮、宿舍补给和校外生活服务热门商家。",
-      cta: "查看贵大热卖"
-    }
-  };
-
-  return [schoolMap[school] || fallback];
-}
-
-export async function queryMiniStores(rawQuery: Record<string, unknown>) {
-  const school = String(rawQuery.school || "");
-  const keyword = String(rawQuery.keyword || "").trim();
-  const groupKey = String(rawQuery.groupKey || "");
-  const sectionKey = String(rawQuery.sectionKey || "");
-
-  const where = {
-    school: school || undefined,
-    groupKey: groupKey || undefined,
-    sectionKey: sectionKey || undefined,
-    status: STORE_STATUS.open,
-    OR: keyword
-      ? [
-          { name: { contains: keyword, mode: "insensitive" as const } },
-          { subtitle: { contains: keyword, mode: "insensitive" as const } },
-          { notice: { contains: keyword, mode: "insensitive" as const } }
-        ]
-      : undefined
-  };
-
-  const list = await prisma.miniStore.findMany({
-    where,
-    orderBy: [{ groupKey: "asc" }, { id: "asc" }]
-  });
-
+function mapAdminEditableProduct(item: any) {
   return {
-    banners: buildBannerList(school || SCHOOLS.current),
-    list: list.map(mapStoreListItem)
+    id: String(item.id || item.productKey || ""),
+    name: String(item.name || ""),
+    desc: String(item.desc || ""),
+    cover: String(item.cover || ""),
+    recommended: Boolean(item.recommended),
+    status: String(item.status || MERCHANT_PRODUCT_STATUS.onSale),
+    specMode: item.specMode === "multi" ? "multi" : "single",
+    price: String(item.price || item.priceText || ""),
+    stock: Number(item.stock || 0),
+    dailyLimit: Number(item.dailyLimit || 0),
+    defaultSkuId: String(item.defaultSkuId || item.defaultSkuKey || ""),
+    updatedAt: formatIsoTime(item.updatedAt),
+    skus: Array.isArray(item.skus)
+      ? item.skus.map((sku: any) => ({
+          id: String(sku.id || sku.skuKey || ""),
+          name: String(sku.name || ""),
+          price: String(sku.price || sku.priceText || ""),
+          stock: Number(sku.stock || 0),
+          dailyLimit: Number(sku.dailyLimit || 0),
+          status: String(sku.status || MERCHANT_PRODUCT_STATUS.onSale),
+          isDefault: Boolean(sku.isDefault)
+        }))
+      : []
   };
-}
-
-export async function getMiniStoreDetail(detailId: string) {
-  const row = await prisma.miniStore.findUniqueOrThrow({
-    where: { detailId }
-  });
-  return mapStoreDetail(row);
-}
-
-export async function queryAdminStoreList(adminUserId: number, rawQuery: Record<string, unknown>) {
-  const { page, pageSize, skip } = parsePageParams(rawQuery);
-  const keyword = String(rawQuery.keyword || "").trim();
-  const school = String(rawQuery.school || "").trim();
-  const category = String(rawQuery.category || "").trim();
-  const scope = await getAdminSchoolScope(adminUserId);
-
-  const where = {
-    school: buildSchoolWhere(scope, school),
-    groupLabel: category || undefined,
-    OR: keyword
-      ? [
-          { name: { contains: keyword, mode: "insensitive" as const } },
-          { ownerUser: { is: { nickname: { contains: keyword, mode: "insensitive" as const } } } }
-        ]
-      : undefined
-  };
-
-  const [total, list] = await prisma.$transaction([
-    prisma.miniStore.count({ where }),
-    prisma.miniStore.findMany({
-      where,
-      include: {
-        ownerUser: {
-          select: {
-            nickname: true,
-            phone: true
-          }
-        }
-      },
-      orderBy: { id: "desc" },
-      skip,
-      take: pageSize
-    })
-  ]);
-
-  return {
-    list: list.map(mapAdminStoreItem),
-    page,
-    pageSize,
-    total
-  };
-}
-
-function formatDateTime(value: Date | null | undefined) {
-  if (!value) return "";
-  return value.toISOString().slice(0, 19).replace("T", " ");
-}
-
-function roundMoney(value: number) {
-  return Number(Number(value || 0).toFixed(2));
-}
-
-function normalizeAdminOrderStatus(status: string) {
-  return status === MINI_ORDER_STATUS.accepted ? MINI_ORDER_STATUS.processing : status;
-}
-
-function calcPercent(value: number, total: number) {
-  if (!total) return 0;
-  return Math.round((value / total) * 100);
-}
-
-function parseDateRange(rawQuery: Record<string, unknown>) {
-  const dateFrom = String(rawQuery.dateFrom || "").trim();
-  const dateTo = String(rawQuery.dateTo || "").trim();
-  const createdAt: { gte?: Date; lte?: Date } = {};
-
-  if (dateFrom) {
-    const start = new Date(`${dateFrom}T00:00:00.000Z`);
-    if (!Number.isNaN(start.getTime())) createdAt.gte = start;
-  }
-
-  if (dateTo) {
-    const end = new Date(`${dateTo}T23:59:59.999Z`);
-    if (!Number.isNaN(end.getTime())) createdAt.lte = end;
-  }
-
-  return Object.keys(createdAt).length ? createdAt : undefined;
-}
-
-function countOnSaleProducts(products: Array<{ status?: string }>) {
-  return products.filter((item) => String(item.status || MERCHANT_PRODUCT_STATUS.onSale) === MERCHANT_PRODUCT_STATUS.onSale).length;
-}
-
-async function findAdminStoreWithScope(adminUserId: number, storeId: number) {
-  const scope = await getAdminSchoolScope(adminUserId);
-
-  return prisma.miniStore.findFirst({
-    where: {
-      id: storeId,
-      school: buildSchoolWhere(scope, "")
-    },
-    include: {
-      ownerUser: {
-        select: {
-          nickname: true,
-          phone: true
-        }
-      }
-    }
-  });
-}
-
-async function saveAdminStoreProducts(storeId: number, products: any[]) {
-  return prisma.miniStore.update({
-    where: { id: storeId },
-    data: {
-      products,
-      productCount: countOnSaleProducts(products)
-    }
-  });
-}
-
-async function findAdminStoreOrder(adminUserId: number, storeId: number, orderId: number) {
-  const store = await findAdminStoreWithScope(adminUserId, storeId);
-  if (!store) {
-    throw new ApiError("店铺不存在或无权访问", ERROR_CODES.NOT_FOUND, 404);
-  }
-
-  const order = await prisma.miniOrder.findFirst({
-    where: {
-      id: orderId,
-      storeDetailId: store.detailId
-    },
-    include: {
-      user: {
-        select: {
-          nickname: true
-        }
-      },
-      refunds: {
-        orderBy: {
-          applyTime: "desc"
-        },
-        include: {
-          reviewer: {
-            select: {
-              name: true
-            }
-          }
-        }
-      }
-    }
-  });
-
-  if (!order) {
-    throw new ApiError("订单不存在或不属于当前店铺", ERROR_CODES.NOT_FOUND, 404);
-  }
-
-  return { store, order };
 }
 
 function formatRefundItem(refund: any) {
@@ -455,6 +304,349 @@ function mapAdminOrderDetail(order: any) {
   };
 }
 
+async function getAdminOperatorContext(adminUserId: number) {
+  const admin = await prisma.adminUser.findUniqueOrThrow({
+    where: { id: adminUserId },
+    include: {
+      role: {
+        select: {
+          code: true,
+          scopeType: true
+        }
+      }
+    }
+  });
+
+  return {
+    admin,
+    isSuperAdmin: admin.role.code === "super_admin" || admin.role.scopeType === "all"
+  };
+}
+
+async function findAdminStoreWithScope(adminUserId: number, storeId: number) {
+  const scope = await getAdminSchoolScope(adminUserId);
+
+  return prisma.miniStore.findFirst({
+    where: {
+      id: storeId,
+      school: buildSchoolWhere(scope, "")
+    },
+    include: {
+      ownerUser: {
+        select: {
+          nickname: true,
+          phone: true
+        }
+      }
+    }
+  });
+}
+
+async function findAdminScopedProduct(adminUserId: number, storeId: number, productId: string) {
+  const store = await findAdminStoreWithScope(adminUserId, storeId);
+  if (!store) {
+    throw new ApiError("店铺不存在或无权访问", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  const product = await prisma.miniStoreProduct.findFirst({
+    where: {
+      storeId: store.id,
+      productKey: String(productId)
+    },
+    include: {
+      skus: {
+        orderBy: [{ sortOrder: "asc" }, { id: "asc" }]
+      }
+    }
+  });
+
+  if (!product) {
+    throw new ApiError("商品不存在", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  return { store, product };
+}
+
+async function findAdminStoreOrder(adminUserId: number, storeId: number, orderId: number) {
+  const store = await findAdminStoreWithScope(adminUserId, storeId);
+  if (!store) {
+    throw new ApiError("店铺不存在或无权访问", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  const order = await prisma.miniOrder.findFirst({
+    where: {
+      id: orderId,
+      storeDetailId: store.detailId
+    },
+    include: {
+      user: {
+        select: {
+          nickname: true
+        }
+      },
+      refunds: {
+        orderBy: {
+          applyTime: "desc"
+        },
+        include: {
+          reviewer: {
+            select: {
+              name: true
+            }
+          }
+        }
+      }
+    }
+  });
+
+  if (!order) {
+    throw new ApiError("订单不存在或不属于当前店铺", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  return { store, order };
+}
+
+function conflict(message: string) {
+  throw new ApiError(message, ERROR_CODES.CONFLICT, 409);
+}
+
+function assertExpectedUpdatedAt(currentUpdatedAt: Date, expectedUpdatedAt?: string) {
+  if (!expectedUpdatedAt) return;
+  if (formatIsoTime(currentUpdatedAt) !== String(expectedUpdatedAt).trim()) {
+    conflict("商品数据已被其他管理员更新，请刷新后重试");
+  }
+}
+
+async function createStoreChangeLog(
+  tx: any,
+  params: {
+    store: any;
+    operator: Awaited<ReturnType<typeof getAdminOperatorContext>>;
+    action: string;
+    targetType: string;
+    targetId: string;
+    summary: string;
+    changeMode?: string;
+    beforeData?: unknown;
+    afterData?: unknown;
+  }
+) {
+  await tx.adminStoreChangeLog.create({
+    data: {
+      storeId: params.store.id,
+      school: params.store.school,
+      module: "store_product",
+      action: params.action,
+      targetType: params.targetType,
+      targetId: params.targetId,
+      operatorId: params.operator.admin.id,
+      operatorRoleCode: params.operator.admin.role.code,
+      operatorScopeType: params.operator.admin.role.scopeType,
+      changeMode: params.changeMode || "normal",
+      summary: params.summary,
+      beforeData: (params.beforeData ?? null) as Prisma.InputJsonValue,
+      afterData: (params.afterData ?? null) as Prisma.InputJsonValue
+    }
+  });
+}
+
+async function createStoreProductApproval(
+  tx: any,
+  params: {
+    store: any;
+    product: any;
+    operator: Awaited<ReturnType<typeof getAdminOperatorContext>>;
+    action: string;
+    payload: Record<string, unknown>;
+    reason?: string;
+    expectedUpdatedAt?: string;
+  }
+) {
+  const approval = await tx.storeProductApproval.create({
+    data: {
+      storeId: params.store.id,
+      school: params.store.school,
+      targetType: "product",
+      targetId: String(params.product.productKey),
+      action: params.action,
+      status: "pending",
+      reason: String(params.reason || "并发冲突后提交审批"),
+      payload: params.payload as Prisma.InputJsonValue,
+      expectedStoreUpdatedAt: params.expectedUpdatedAt ? new Date(params.expectedUpdatedAt) : params.product.updatedAt,
+      requestedById: params.operator.admin.id
+    }
+  });
+
+  await createStoreChangeLog(tx, {
+    store: params.store,
+    operator: params.operator,
+    action: "submit_approval",
+    targetType: "product",
+    targetId: String(params.product.productKey),
+    summary: `提交商品变更审批：${params.product.name}`,
+    changeMode: "approval",
+    beforeData: mapStoreProductForApi(params.product),
+    afterData: params.payload
+  });
+
+  return approval;
+}
+
+async function executeApprovedAction(
+  tx: any,
+  approval: any,
+  reviewer: Awaited<ReturnType<typeof getAdminOperatorContext>>,
+  reviewNote?: string
+) {
+  const store = await tx.miniStore.findUniqueOrThrow({
+    where: { id: approval.storeId },
+    include: {
+      ownerUser: {
+        select: {
+          nickname: true,
+          phone: true
+        }
+      }
+    }
+  });
+
+  const payload = approval.payload as Record<string, unknown>;
+  const product = await tx.miniStoreProduct.findFirst({
+    where: {
+      storeId: approval.storeId,
+      productKey: String(approval.targetId)
+    },
+    include: {
+      skus: {
+        orderBy: [{ sortOrder: "asc" }, { id: "asc" }]
+      }
+    }
+  });
+
+  if (!product) {
+    throw new ApiError("审批目标商品不存在", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  const beforeData = mapStoreProductForApi(product);
+  let afterData: unknown = null;
+
+  if (approval.action === "update") {
+    const updated = await updateStoreProductRecord(tx, approval.storeId, approval.targetId, payload as any);
+    afterData = mapStoreProductForApi(updated);
+  } else if (approval.action === "toggle_status") {
+    const updated = await toggleStoreProductStatusRecord(tx, approval.storeId, approval.targetId);
+    afterData = mapStoreProductForApi(updated);
+  } else if (approval.action === "delete") {
+    await deleteStoreProductRecord(tx, approval.storeId, approval.targetId);
+  } else {
+    throw new ApiError("不支持的审批动作", ERROR_CODES.BAD_REQUEST, 400);
+  }
+
+  await tx.storeProductApproval.update({
+    where: { id: approval.id },
+    data: {
+      status: "approved",
+      reviewedById: reviewer.admin.id,
+      reviewNote: reviewNote || "",
+      reviewedAt: new Date()
+    }
+  });
+
+  await createStoreChangeLog(tx, {
+    store,
+    operator: reviewer,
+    action: "approve_approval",
+    targetType: "product",
+    targetId: String(approval.targetId),
+    summary: `审批通过商品变更：${product.name}`,
+    changeMode: "approval",
+    beforeData,
+    afterData
+  });
+}
+
+export async function queryMiniStores(rawQuery: Record<string, unknown>) {
+  const school = String(rawQuery.school || "");
+  const keyword = String(rawQuery.keyword || "").trim();
+  const groupKey = String(rawQuery.groupKey || "");
+  const sectionKey = String(rawQuery.sectionKey || "");
+
+  const where = {
+    school: school || undefined,
+    groupKey: groupKey || undefined,
+    sectionKey: sectionKey || undefined,
+    status: STORE_STATUS.open,
+    OR: keyword
+      ? [
+          { name: { contains: keyword, mode: "insensitive" as const } },
+          { subtitle: { contains: keyword, mode: "insensitive" as const } },
+          { notice: { contains: keyword, mode: "insensitive" as const } }
+        ]
+      : undefined
+  };
+
+  const list = await prisma.miniStore.findMany({
+    where,
+    orderBy: [{ groupKey: "asc" }, { id: "asc" }]
+  });
+
+  return {
+    banners: buildBannerList(school || "当前高校"),
+    list: list.map(mapStoreListItem)
+  };
+}
+
+export async function getMiniStoreDetail(detailId: string) {
+  const row = await prisma.miniStore.findUniqueOrThrow({
+    where: { detailId }
+  });
+  return mapStoreDetail(row);
+}
+
+export async function queryAdminStoreList(adminUserId: number, rawQuery: Record<string, unknown>) {
+  const { page, pageSize, skip } = parsePageParams(rawQuery);
+  const keyword = String(rawQuery.keyword || "").trim();
+  const school = String(rawQuery.school || "").trim();
+  const category = String(rawQuery.category || "").trim();
+  const scope = await getAdminSchoolScope(adminUserId);
+
+  const where = {
+    school: buildSchoolWhere(scope, school),
+    groupLabel: category || undefined,
+    OR: keyword
+      ? [
+          { name: { contains: keyword, mode: "insensitive" as const } },
+          { ownerUser: { is: { nickname: { contains: keyword, mode: "insensitive" as const } } } }
+        ]
+      : undefined
+  };
+
+  const [total, list] = await prisma.$transaction([
+    prisma.miniStore.count({ where }),
+    prisma.miniStore.findMany({
+      where,
+      include: {
+        ownerUser: {
+          select: {
+            nickname: true,
+            phone: true
+          }
+        }
+      },
+      orderBy: { id: "desc" },
+      skip,
+      take: pageSize
+    })
+  ]);
+
+  return {
+    list: list.map(mapAdminStoreItem),
+    page,
+    pageSize,
+    total
+  };
+}
+
 export async function getAdminStoreDashboard(adminUserId: number, storeId: number, rawQuery: Record<string, unknown> = {}) {
   const store = await findAdminStoreWithScope(adminUserId, storeId);
   if (!store) {
@@ -464,7 +656,7 @@ export async function getAdminStoreDashboard(adminUserId: number, storeId: numbe
   const createdAt = parseDateRange(rawQuery);
   const trendDays = Math.min(90, Math.max(7, Number(rawQuery.trendDays || 7) || 7));
 
-  const [orders, merchantAccount] = await prisma.$transaction([
+  const [orders, merchantAccount, productRows] = await prisma.$transaction([
     prisma.miniOrder.findMany({
       where: { storeDetailId: store.detailId, createdAt },
       include: {
@@ -495,10 +687,20 @@ export async function getAdminStoreDashboard(adminUserId: number, storeId: numbe
         activatedAt: true,
         lastLoginAt: true
       }
+    }),
+    prisma.miniStoreProduct.findMany({
+      where: { storeId: store.id },
+      include: {
+        skus: {
+          orderBy: [{ sortOrder: "asc" }, { id: "asc" }]
+        }
+      },
+      orderBy: [{ sortOrder: "asc" }, { id: "asc" }]
     })
   ]);
 
-  const products = toMerchantProducts(store.products);
+  const products = productRows.map((item: any) => mapStoreProductForApi(item));
+  const updatedAtMap = new Map(productRows.map((item: any) => [String(item.productKey), item.updatedAt]));
   const ordersByProductId = new Map<string, number>();
   const revenueByProductId = new Map<string, number>();
 
@@ -531,6 +733,7 @@ export async function getAdminStoreDashboard(adminUserId: number, storeId: numbe
       recommended: Boolean(product.recommended),
       specMode: String(product.specMode || "single"),
       defaultSkuId: String(product.defaultSkuId || ""),
+      updatedAt: formatIsoTime(updatedAtMap.get(String(product.id || "")) as Date | undefined),
       skuCount: Array.isArray(product.skus) ? product.skus.length : 0,
       skus: Array.isArray(product.skus)
         ? product.skus.map((sku: any) => ({
@@ -694,47 +897,31 @@ export async function getAdminStoreDashboard(adminUserId: number, storeId: numbe
   };
 }
 
-function mapAdminEditableProduct(item: any) {
-  return {
-    id: String(item.id || ""),
-    name: String(item.name || ""),
-    desc: String(item.desc || ""),
-    cover: String(item.cover || ""),
-    recommended: Boolean(item.recommended),
-    status: String(item.status || MERCHANT_PRODUCT_STATUS.onSale),
-    specMode: item.specMode === "multi" ? "multi" : "single",
-    price: String(item.price || ""),
-    stock: Number(item.stock || 0),
-    dailyLimit: Number(item.dailyLimit || 0),
-    defaultSkuId: String(item.defaultSkuId || ""),
-    skus: Array.isArray(item.skus)
-      ? item.skus.map((sku: any) => ({
-          id: String(sku.id || ""),
-          name: String(sku.name || ""),
-          price: String(sku.price || ""),
-          stock: Number(sku.stock || 0),
-          dailyLimit: Number(sku.dailyLimit || 0),
-          status: String(sku.status || MERCHANT_PRODUCT_STATUS.onSale),
-          isDefault: Boolean(sku.isDefault)
-        }))
-      : []
-  };
-}
-
 export async function createAdminStoreProduct(adminUserId: number, storeId: number, payload: MiniMerchantProductPayload) {
   const store = await findAdminStoreWithScope(adminUserId, storeId);
   if (!store) {
     throw new ApiError("店铺不存在或无权访问", ERROR_CODES.NOT_FOUND, 404);
   }
 
-  const products = toMerchantProducts(store.products);
-  const productId = `p${Date.now()}`;
-  const nextProduct = normalizeMerchantProductPayload(productId, payload);
-  const row = await saveAdminStoreProducts(store.id, products.concat(nextProduct));
+  const operator = await getAdminOperatorContext(adminUserId);
+  const row = await prisma.$transaction(async (tx) => {
+    const created = await createStoreProductRecord(tx, store.id, payload, `p${Date.now()}`);
+    await createStoreChangeLog(tx, {
+      store,
+      operator,
+      action: "create",
+      targetType: "product",
+      targetId: String(created.productKey),
+      summary: `新增商品：${created.name}`,
+      beforeData: null,
+      afterData: mapStoreProductForApi(created)
+    });
+    return created;
+  });
 
   return {
-    storeId: row.id,
-    product: mapAdminEditableProduct(nextProduct)
+    storeId: store.id,
+    product: mapAdminEditableProduct(row)
   };
 }
 
@@ -742,75 +929,184 @@ export async function updateAdminStoreProduct(
   adminUserId: number,
   storeId: number,
   productId: string,
-  payload: MiniMerchantProductPayload
+  payload: MiniMerchantProductPayload & AdminProductMutationControl
 ) {
-  const store = await findAdminStoreWithScope(adminUserId, storeId);
-  if (!store) {
-    throw new ApiError("店铺不存在或无权访问", ERROR_CODES.NOT_FOUND, 404);
+  const operator = await getAdminOperatorContext(adminUserId);
+  const { store, product } = await findAdminScopedProduct(adminUserId, storeId, productId);
+  const beforeData = mapStoreProductForApi(product);
+  const strategy = payload.conflictStrategy || "reject";
+
+  try {
+    if (strategy !== "force") {
+      assertExpectedUpdatedAt(product.updatedAt, payload.expectedUpdatedAt);
+    } else if (!operator.isSuperAdmin) {
+      conflict("只有超级管理员可以强制覆盖其他人的变更");
+    }
+  } catch (error) {
+    if (!operator.isSuperAdmin) {
+      const approval = await prisma.$transaction((tx) =>
+        createStoreProductApproval(tx, {
+          store,
+          product,
+          operator,
+          action: "update",
+          payload,
+          reason: payload.conflictReason,
+          expectedUpdatedAt: payload.expectedUpdatedAt
+        })
+      );
+
+      return {
+        storeId: store.id,
+        approvalCreated: true,
+        approvalId: approval.id,
+        product: mapAdminEditableProduct(product)
+      };
+    }
+    throw error;
   }
 
-  const products = toMerchantProducts(store.products);
-  const index = products.findIndex((item) => String(item.id) === String(productId));
-  if (index === -1) {
-    throw new ApiError("商品不存在", ERROR_CODES.NOT_FOUND, 404);
-  }
-
-  const nextProduct = normalizeMerchantProductPayload(String(productId), payload);
-  const nextProducts = products.slice();
-  nextProducts[index] = nextProduct;
-  await saveAdminStoreProducts(store.id, nextProducts);
+  const row = await prisma.$transaction(async (tx) => {
+    const updated = await updateStoreProductRecord(tx, store.id, String(productId), payload);
+    await createStoreChangeLog(tx, {
+      store,
+      operator,
+      action: "update",
+      targetType: "product",
+      targetId: String(product.productKey),
+      summary: `编辑商品：${product.name}`,
+      changeMode: strategy === "force" ? "force" : "normal",
+      beforeData,
+      afterData: mapStoreProductForApi(updated)
+    });
+    return updated;
+  });
 
   return {
     storeId: store.id,
-    product: mapAdminEditableProduct(nextProduct)
+    product: mapAdminEditableProduct(row)
   };
 }
 
-export async function toggleAdminStoreProductStatus(adminUserId: number, storeId: number, productId: string) {
-  const store = await findAdminStoreWithScope(adminUserId, storeId);
-  if (!store) {
-    throw new ApiError("店铺不存在或无权访问", ERROR_CODES.NOT_FOUND, 404);
+export async function toggleAdminStoreProductStatus(
+  adminUserId: number,
+  storeId: number,
+  productId: string,
+  payload: AdminProductMutationControl = {}
+) {
+  const operator = await getAdminOperatorContext(adminUserId);
+  const { store, product } = await findAdminScopedProduct(adminUserId, storeId, productId);
+  const beforeData = mapStoreProductForApi(product);
+  const strategy = payload.conflictStrategy || "reject";
+
+  try {
+    if (strategy !== "force") {
+      assertExpectedUpdatedAt(product.updatedAt, payload.expectedUpdatedAt);
+    } else if (!operator.isSuperAdmin) {
+      conflict("只有超级管理员可以强制覆盖其他人的变更");
+    }
+  } catch (error) {
+    if (!operator.isSuperAdmin) {
+      const approval = await prisma.$transaction((tx) =>
+        createStoreProductApproval(tx, {
+          store,
+          product,
+          operator,
+          action: "toggle_status",
+          payload,
+          reason: payload.conflictReason,
+          expectedUpdatedAt: payload.expectedUpdatedAt
+        })
+      );
+
+      return {
+        storeId: store.id,
+        approvalCreated: true,
+        approvalId: approval.id,
+        product: mapAdminEditableProduct(product)
+      };
+    }
+    throw error;
   }
 
-  const products = toMerchantProducts(store.products);
-  const index = products.findIndex((item) => String(item.id) === String(productId));
-  if (index === -1) {
-    throw new ApiError("商品不存在", ERROR_CODES.NOT_FOUND, 404);
-  }
-
-  const current = products[index];
-  const nextStatus =
-    current.status === MERCHANT_PRODUCT_STATUS.onSale ? MERCHANT_PRODUCT_STATUS.offSale : MERCHANT_PRODUCT_STATUS.onSale;
-  const nextProducts = products.slice();
-  nextProducts[index] = {
-    ...current,
-    status: nextStatus,
-    skus: (current.skus || []).map((sku: any) => ({
-      ...sku,
-      status: nextStatus === MERCHANT_PRODUCT_STATUS.offSale ? MERCHANT_PRODUCT_STATUS.offSale : sku.status
-    }))
-  };
-  await saveAdminStoreProducts(store.id, nextProducts);
+  const row = await prisma.$transaction(async (tx) => {
+    const updated = await toggleStoreProductStatusRecord(tx, store.id, String(productId));
+    await createStoreChangeLog(tx, {
+      store,
+      operator,
+      action: "toggle_status",
+      targetType: "product",
+      targetId: String(product.productKey),
+      summary: `切换商品状态：${product.name}`,
+      changeMode: strategy === "force" ? "force" : "normal",
+      beforeData,
+      afterData: mapStoreProductForApi(updated)
+    });
+    return updated;
+  });
 
   return {
     storeId: store.id,
-    product: mapAdminEditableProduct(nextProducts[index])
+    product: mapAdminEditableProduct(row)
   };
 }
 
-export async function deleteAdminStoreProduct(adminUserId: number, storeId: number, productId: string) {
-  const store = await findAdminStoreWithScope(adminUserId, storeId);
-  if (!store) {
-    throw new ApiError("店铺不存在或无权访问", ERROR_CODES.NOT_FOUND, 404);
+export async function deleteAdminStoreProduct(
+  adminUserId: number,
+  storeId: number,
+  productId: string,
+  payload: AdminProductMutationControl = {}
+) {
+  const operator = await getAdminOperatorContext(adminUserId);
+  const { store, product } = await findAdminScopedProduct(adminUserId, storeId, productId);
+  const beforeData = mapStoreProductForApi(product);
+  const strategy = payload.conflictStrategy || "reject";
+
+  try {
+    if (strategy !== "force") {
+      assertExpectedUpdatedAt(product.updatedAt, payload.expectedUpdatedAt);
+    } else if (!operator.isSuperAdmin) {
+      conflict("只有超级管理员可以强制覆盖其他人的变更");
+    }
+  } catch (error) {
+    if (!operator.isSuperAdmin) {
+      const approval = await prisma.$transaction((tx) =>
+        createStoreProductApproval(tx, {
+          store,
+          product,
+          operator,
+          action: "delete",
+          payload,
+          reason: payload.conflictReason,
+          expectedUpdatedAt: payload.expectedUpdatedAt
+        })
+      );
+
+      return {
+        storeId: store.id,
+        approvalCreated: true,
+        approvalId: approval.id,
+        deletedProductId: String(productId)
+      };
+    }
+    throw error;
   }
 
-  const products = toMerchantProducts(store.products);
-  const nextProducts = products.filter((item) => String(item.id) !== String(productId));
-  if (nextProducts.length === products.length) {
-    throw new ApiError("商品不存在", ERROR_CODES.NOT_FOUND, 404);
-  }
+  await prisma.$transaction(async (tx) => {
+    await deleteStoreProductRecord(tx, store.id, String(productId));
+    await createStoreChangeLog(tx, {
+      store,
+      operator,
+      action: "delete",
+      targetType: "product",
+      targetId: String(product.productKey),
+      summary: `删除商品：${product.name}`,
+      changeMode: strategy === "force" ? "force" : "normal",
+      beforeData,
+      afterData: null
+    });
+  });
 
-  await saveAdminStoreProducts(store.id, nextProducts);
   return {
     storeId: store.id,
     deletedProductId: String(productId)
@@ -902,7 +1198,7 @@ export async function finishAdminStoreOrder(adminUserId: number, storeId: number
     throw new ApiError("当前订单状态不允许执行完成操作", ERROR_CODES.BAD_REQUEST, 400);
   }
 
-  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  await prisma.$transaction(async (tx: any) => {
     await tx.miniOrder.update({
       where: { id: orderId },
       data: {
@@ -974,7 +1270,7 @@ export async function reviewAdminStoreOrderRefund(
   }
 
   const reviewedAt = new Date();
-  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  await prisma.$transaction(async (tx: any) => {
     await tx.miniRefundRecord.update({
       where: { id: refundId },
       data: {
@@ -1013,4 +1309,158 @@ export async function reviewAdminStoreOrderRefund(
   });
 
   return getAdminStoreOrderDetail(adminUserId, storeId, orderId);
+}
+
+export async function queryStoreProductApprovals(adminUserId: number, rawQuery: Record<string, unknown>) {
+  const { page, pageSize, skip } = parsePageParams(rawQuery);
+  const operator = await getAdminOperatorContext(adminUserId);
+  const status = String(rawQuery.status || "").trim();
+  const keyword = String(rawQuery.keyword || "").trim();
+  const where = operator.isSuperAdmin
+    ? {
+        status: status || undefined,
+        OR: keyword
+          ? [
+              { school: { contains: keyword, mode: "insensitive" as const } },
+              { targetId: { contains: keyword, mode: "insensitive" as const } },
+              { reason: { contains: keyword, mode: "insensitive" as const } }
+            ]
+          : undefined
+      }
+    : {
+        requestedById: adminUserId,
+        status: status || undefined
+      };
+
+  const [total, list] = await prisma.$transaction([
+    prisma.storeProductApproval.count({ where }),
+    prisma.storeProductApproval.findMany({
+      where,
+      include: {
+        store: {
+          select: {
+            name: true
+          }
+        },
+        requestedBy: {
+          select: {
+            name: true,
+            account: true
+          }
+        },
+        reviewedBy: {
+          select: {
+            name: true
+          }
+        }
+      },
+      orderBy: [{ createdAt: "desc" }],
+      skip,
+      take: pageSize
+    })
+  ]);
+
+  return {
+    list: list.map((item: any) => ({
+      id: item.id,
+      school: item.school,
+      storeName: item.store?.name || "-",
+      targetType: item.targetType,
+      targetId: item.targetId,
+      action: item.action,
+      status: item.status,
+      reason: item.reason,
+      requestedByName: item.requestedBy?.name || "",
+      requestedByAccount: item.requestedBy?.account || "",
+      reviewedByName: item.reviewedBy?.name || "",
+      reviewNote: item.reviewNote || "",
+      createdAt: formatDateTime(item.createdAt),
+      reviewedAt: formatDateTime(item.reviewedAt),
+      payload: item.payload
+    })),
+    page,
+    pageSize,
+    total
+  };
+}
+
+export async function reviewStoreProductApproval(adminUserId: number, approvalId: number, payload: ApprovalReviewPayload) {
+  const reviewer = await getAdminOperatorContext(adminUserId);
+  if (!reviewer.isSuperAdmin) {
+    throw new ApiError("只有超级管理员可以审批商品变更", ERROR_CODES.FORBIDDEN, 403);
+  }
+
+  const approval = await prisma.storeProductApproval.findUnique({
+    where: { id: approvalId }
+  });
+
+  if (!approval) {
+    throw new ApiError("审批记录不存在", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  if (approval.status !== "pending") {
+    throw new ApiError("该审批记录已处理", ERROR_CODES.BAD_REQUEST, 400);
+  }
+
+  if (payload.status === "approved") {
+    await prisma.$transaction((tx) => executeApprovedAction(tx, approval, reviewer, payload.reviewNote));
+  } else {
+    await prisma.$transaction(async (tx) => {
+      await tx.storeProductApproval.update({
+        where: { id: approvalId },
+        data: {
+          status: "rejected",
+          reviewedById: reviewer.admin.id,
+          reviewNote: payload.reviewNote || "",
+          reviewedAt: new Date()
+        }
+      });
+
+      const store = await tx.miniStore.findUniqueOrThrow({
+        where: { id: approval.storeId },
+        include: {
+          ownerUser: {
+            select: {
+              nickname: true,
+              phone: true
+            }
+          }
+        }
+      });
+
+      await createStoreChangeLog(tx, {
+        store,
+        operator: reviewer,
+        action: "reject_approval",
+        targetType: approval.targetType,
+        targetId: approval.targetId,
+        summary: `驳回商品变更审批：${approval.targetId}`,
+        changeMode: "approval",
+        beforeData: approval.payload,
+        afterData: null
+      });
+    });
+  }
+
+  return prisma.storeProductApproval.findUniqueOrThrow({
+    where: { id: approvalId },
+    include: {
+      store: {
+        select: {
+          name: true
+        }
+      },
+      requestedBy: {
+        select: {
+          name: true,
+          account: true
+        }
+      },
+      reviewedBy: {
+        select: {
+          name: true
+        }
+      }
+    }
+  });
 }

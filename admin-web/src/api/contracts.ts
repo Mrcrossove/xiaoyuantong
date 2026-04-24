@@ -951,6 +951,7 @@ export interface AdminStoreDashboardProductItem {
   recommended: boolean;
   specMode: string;
   defaultSkuId: string;
+  updatedAt: string;
   skuCount: number;
   skus: AdminStoreProductSkuPayload[];
 }
@@ -976,6 +977,43 @@ export interface AdminStoreProductPayload {
   recommended: boolean;
   status: string;
   skus: AdminStoreProductSkuPayload[];
+}
+
+export interface AdminStoreProductMutationControl {
+  expectedUpdatedAt?: string;
+  conflictStrategy?: "reject" | "force" | "submit_for_approval";
+  conflictReason?: string;
+}
+
+export interface AdminStoreProductMutationResult {
+  storeId: number;
+  product?: AdminStoreDashboardProductItem;
+  deletedProductId?: string;
+  approvalCreated?: boolean;
+  approvalId?: number;
+}
+
+export interface StoreProductApprovalItem {
+  id: number;
+  school: string;
+  storeName: string;
+  targetType: string;
+  targetId: string;
+  action: string;
+  status: string;
+  reason: string;
+  requestedByName: string;
+  requestedByAccount: string;
+  reviewedByName: string;
+  reviewNote: string;
+  createdAt: string;
+  reviewedAt: string;
+  payload: Record<string, unknown>;
+}
+
+export interface StoreProductApprovalReviewPayload {
+  status: "approved" | "rejected";
+  reviewNote?: string;
 }
 
 export interface AdminStoreDashboardOrderItem {

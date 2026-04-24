@@ -105,6 +105,7 @@ export const adminMenus: AdminMenuItem[] = [
     children: [
       { key: "system-basic", title: "基础配置", path: "/system/basic" },
       { key: "system-dict", title: "字典配置", path: "/system/dict" },
+      { key: "system-store-approval", title: "商品变更审批", path: "/system/store-approval" },
       { key: "system-log", title: "操作日志", path: "/system/log" },
       { key: "system-version", title: "版本信息", path: "/system/version" }
     ]

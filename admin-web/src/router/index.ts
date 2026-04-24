@@ -51,6 +51,7 @@ const router = createRouter({
         { path: "stat/order", component: () => import("../views/stat/OrderStatView.vue"), meta: { title: "订单统计", menuPath: "/stat/order" } },
         { path: "system/basic", component: () => import("../views/system/BasicConfigView.vue"), meta: { title: "基础配置", menuPath: "/system/basic" } },
         { path: "system/dict", component: () => import("../views/system/DictConfigView.vue"), meta: { title: "字典配置", menuPath: "/system/dict" } },
+        { path: "system/store-approval", component: () => import("../views/system/StoreProductApprovalView.vue"), meta: { title: "商品变更审批", menuPath: "/system/store-approval" } },
         { path: "system/log", component: () => import("../views/system/OperationLogView.vue"), meta: { title: "操作日志", menuPath: "/system/log" } },
         { path: "system/version", component: () => import("../views/system/VersionInfoView.vue"), meta: { title: "版本信息", menuPath: "/system/version" } },
         { path: "auth/admin", component: () => import("../views/auth/AdminListView.vue"), meta: { title: "管理员列表", menuPath: "/auth/admin" } },

@@ -40,9 +40,10 @@ import {
 } from "./mini-order.service";
 import { createWechatRefund } from "./wechat-pay.service";
 import { createMiniWithdraw, queryMiniWalletSummary } from "./mini-wallet.service";
-import { buildProductDisplayPrice, parseMoneyNumber, toMerchantProducts } from "../utils/merchant-product";
+import { buildProductDisplayPrice, parseMoneyNumber } from "../utils/merchant-product";
 import { env } from "../config/env";
 import { hashPassword, verifyPassword } from "../utils/password";
+import { listStoreProductsByStoreId } from "./store-product.service";
 
 const REFUND_STATUS = {
   pending: "待审核",
@@ -362,7 +363,7 @@ export async function queryMerchantDashboard(accountId: number) {
 
 export async function queryMerchantProductList(accountId: number) {
   const context = await getMerchantContext(accountId);
-  const products = toMerchantProducts(context.store.products).map(mapMerchantProduct);
+  const products = (await listStoreProductsByStoreId(prisma, context.store.id)).map(mapMerchantProduct);
 
   return {
     list: products,

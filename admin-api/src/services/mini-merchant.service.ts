@@ -3,14 +3,18 @@ import type { MiniMerchantProductPayload, MiniMerchantStoreUpdatePayload } from 
 import { ERROR_CODES } from "../constants/error-codes";
 import { prisma } from "../lib/prisma";
 import { ApiError } from "../utils/api-error";
-import {
-  buildProductDisplayPrice,
-  MERCHANT_PRODUCT_STATUS,
-  normalizeMerchantProductPayload,
-  parseMoneyNumber,
-  toMerchantProducts
-} from "../utils/merchant-product";
+import { buildProductDisplayPrice, MERCHANT_PRODUCT_STATUS, parseMoneyNumber, toMerchantProducts } from "../utils/merchant-product";
 import { assertRiskPassed } from "./risk-control.service";
+import {
+  batchDeleteStoreProducts,
+  batchDownStoreProducts,
+  createStoreProductRecord,
+  mapStoreProductForApi,
+  moveStoreProductRecord,
+  toggleStoreProductStatusRecord,
+  updateStoreProductRecord,
+  deleteStoreProductRecord
+} from "./store-product.service";
 
 type MerchantOrderTone = "new" | "pending" | "finished";
 
@@ -28,10 +32,6 @@ function toArray(value: Prisma.JsonValue | null | undefined) {
 function formatTime(value: Date | null | undefined) {
   if (!value) return "";
   return value.toISOString().slice(0, 16).replace("T", " ");
-}
-
-function countOnSaleProducts(products: Array<{ status?: string }>) {
-  return products.filter((item) => String(item.status || MERCHANT_PRODUCT_STATUS.onSale) === MERCHANT_PRODUCT_STATUS.onSale).length;
 }
 
 function mapProduct(item: any) {
@@ -103,26 +103,6 @@ function mapMerchantOrder(item: any, tone: MerchantOrderTone) {
   };
 }
 
-async function saveStoreProducts(storeId: number, products: any[]) {
-  return prisma.miniStore.update({
-    where: { id: storeId },
-    data: {
-      products,
-      productCount: countOnSaleProducts(products)
-    }
-  });
-}
-
-async function loadStoreProducts(storeId: number) {
-  const store = await prisma.miniStore.findUniqueOrThrow({
-    where: { id: storeId }
-  });
-  return {
-    store,
-    products: toMerchantProducts(store.products)
-  };
-}
-
 async function findOwnedStore(userId: number) {
   const store = await prisma.miniStore.findFirst({
     where: {
@@ -191,15 +171,20 @@ export async function createMerchantProduct(userId: number, payload: MiniMerchan
   });
 
   const store = await findOwnedStore(userId);
-  const { products } = await loadStoreProducts(store.id);
-  const nextId = `p${Date.now()}`;
-  const nextProduct = normalizeMerchantProductPayload(nextId, payload);
-  const nextProducts = products.concat(nextProduct);
-  const row = await saveStoreProducts(store.id, nextProducts);
+  const result = await prisma.$transaction(async (tx: any) => {
+    const productRow = await createStoreProductRecord(tx, store.id, payload, `p${Date.now()}`);
+    const refreshedStore = await tx.miniStore.findUniqueOrThrow({
+      where: { id: store.id }
+    });
+    return {
+      store: refreshedStore,
+      product: mapStoreProductForApi(productRow)
+    };
+  });
 
   return {
-    store: mapStore(row),
-    product: mapProduct(nextProduct)
+    store: mapStore(result.store),
+    product: mapProduct(result.product)
   };
 }
 
@@ -216,116 +201,83 @@ export async function updateMerchantProduct(userId: number, productId: string, p
   });
 
   const store = await findOwnedStore(userId);
-  const { products } = await loadStoreProducts(store.id);
-  const index = products.findIndex((item) => String(item.id) === String(productId));
-
-  if (index === -1) {
-    throw new ApiError("商品不存在", ERROR_CODES.NOT_FOUND, 404);
-  }
-
-  const nextProduct = normalizeMerchantProductPayload(String(productId), payload);
-  const nextProducts = products.slice();
-  nextProducts[index] = nextProduct;
-  const row = await saveStoreProducts(store.id, nextProducts);
+  const result = await prisma.$transaction(async (tx: any) => {
+    const productRow = await updateStoreProductRecord(tx, store.id, String(productId), payload);
+    const refreshedStore = await tx.miniStore.findUniqueOrThrow({
+      where: { id: store.id }
+    });
+    return {
+      store: refreshedStore,
+      product: mapStoreProductForApi(productRow)
+    };
+  });
 
   return {
-    store: mapStore(row),
-    product: mapProduct(nextProduct)
+    store: mapStore(result.store),
+    product: mapProduct(result.product)
   };
 }
 
 export async function toggleMerchantProductStatus(userId: number, productId: string) {
   const store = await findOwnedStore(userId);
-  const { products } = await loadStoreProducts(store.id);
-  const index = products.findIndex((item) => String(item.id) === String(productId));
+  const result = await prisma.$transaction(async (tx: any) => {
+    const productRow = await toggleStoreProductStatusRecord(tx, store.id, String(productId));
+    const refreshedStore = await tx.miniStore.findUniqueOrThrow({
+      where: { id: store.id }
+    });
+    return {
+      store: refreshedStore,
+      product: mapStoreProductForApi(productRow)
+    };
+  });
 
-  if (index === -1) {
-    throw new ApiError("商品不存在", ERROR_CODES.NOT_FOUND, 404);
-  }
-
-  const target = products[index];
-  const nextStatus =
-    target.status === MERCHANT_PRODUCT_STATUS.onSale ? MERCHANT_PRODUCT_STATUS.offSale : MERCHANT_PRODUCT_STATUS.onSale;
-  const nextProducts = products.slice();
-  nextProducts[index] = {
-    ...target,
-    status: nextStatus,
-    skus: (target.skus || []).map((sku) => ({
-      ...sku,
-      status: nextStatus === MERCHANT_PRODUCT_STATUS.offSale ? MERCHANT_PRODUCT_STATUS.offSale : sku.status
-    }))
-  };
-
-  const row = await saveStoreProducts(store.id, nextProducts);
   return {
-    store: mapStore(row),
-    product: mapProduct(nextProducts[index])
+    store: mapStore(result.store),
+    product: mapProduct(result.product)
   };
 }
 
 export async function deleteMerchantProduct(userId: number, productId: string) {
   const store = await findOwnedStore(userId);
-  const { products } = await loadStoreProducts(store.id);
-  const nextProducts = products.filter((item) => String(item.id) !== String(productId));
-
-  if (nextProducts.length === products.length) {
-    throw new ApiError("商品不存在", ERROR_CODES.NOT_FOUND, 404);
-  }
-
-  const row = await saveStoreProducts(store.id, nextProducts);
+  const row = await prisma.$transaction(async (tx: any) => {
+    await deleteStoreProductRecord(tx, store.id, String(productId));
+    return tx.miniStore.findUniqueOrThrow({
+      where: { id: store.id }
+    });
+  });
   return mapStore(row);
 }
 
 export async function moveMerchantProduct(userId: number, productId: string, direction: "up" | "down") {
   const store = await findOwnedStore(userId);
-  const { products } = await loadStoreProducts(store.id);
-  const index = products.findIndex((item) => String(item.id) === String(productId));
-
-  if (index === -1) {
-    throw new ApiError("商品不存在", ERROR_CODES.NOT_FOUND, 404);
-  }
-
-  const targetIndex = direction === "up" ? index - 1 : index + 1;
-  if (targetIndex < 0 || targetIndex >= products.length) {
-    return mapStore(store);
-  }
-
-  const nextProducts = products.slice();
-  const temp = nextProducts[index];
-  nextProducts[index] = nextProducts[targetIndex];
-  nextProducts[targetIndex] = temp;
-
-  const row = await saveStoreProducts(store.id, nextProducts);
+  const row = await prisma.$transaction(async (tx: any) => {
+    await moveStoreProductRecord(tx, store.id, String(productId), direction);
+    return tx.miniStore.findUniqueOrThrow({
+      where: { id: store.id }
+    });
+  });
   return mapStore(row);
 }
 
 export async function batchDownMerchantProducts(userId: number, productIds: string[]) {
-  const idSet = new Set(productIds.map((item) => String(item)));
   const store = await findOwnedStore(userId);
-  const { products } = await loadStoreProducts(store.id);
-  const nextProducts = products.map((item) =>
-    idSet.has(String(item.id))
-      ? {
-          ...item,
-          status: MERCHANT_PRODUCT_STATUS.offSale,
-          skus: (item.skus || []).map((sku) => ({
-            ...sku,
-            status: MERCHANT_PRODUCT_STATUS.offSale
-          }))
-        }
-      : item
-  );
-
-  const row = await saveStoreProducts(store.id, nextProducts);
+  const row = await prisma.$transaction(async (tx: any) => {
+    await batchDownStoreProducts(tx, store.id, productIds);
+    return tx.miniStore.findUniqueOrThrow({
+      where: { id: store.id }
+    });
+  });
   return mapStore(row);
 }
 
 export async function batchDeleteMerchantProducts(userId: number, productIds: string[]) {
-  const idSet = new Set(productIds.map((item) => String(item)));
   const store = await findOwnedStore(userId);
-  const { products } = await loadStoreProducts(store.id);
-  const nextProducts = products.filter((item) => !idSet.has(String(item.id)));
-  const row = await saveStoreProducts(store.id, nextProducts);
+  const row = await prisma.$transaction(async (tx: any) => {
+    await batchDeleteStoreProducts(tx, store.id, productIds);
+    return tx.miniStore.findUniqueOrThrow({
+      where: { id: store.id }
+    });
+  });
   return mapStore(row);
 }
 

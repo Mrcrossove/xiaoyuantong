@@ -34,7 +34,7 @@ export async function queryOperationLogs(adminUserId: number, rawQuery: Record<s
   const scope = await getAdminSchoolScope(adminUserId);
   const schoolWhere = scope.isAll ? undefined : { in: scope.schools };
 
-  const [adminUsers, verifications, storeApplies, withdraws] = await Promise.all([
+  const [adminUsers, verifications, storeApplies, withdraws, storeChangeLogs] = await Promise.all([
     prisma.adminUser.findMany({
       include: {
         role: {
@@ -80,10 +80,35 @@ export async function queryOperationLogs(adminUserId: number, rawQuery: Record<s
       orderBy: {
         reviewedAt: "desc"
       }
+    }),
+    prisma.adminStoreChangeLog.findMany({
+      where: {
+        school: schoolWhere
+      },
+      include: {
+        operator: {
+          select: {
+            name: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: "desc"
+      }
     })
   ]);
 
   const logs = [
+    ...storeChangeLogs.map((item: any) => ({
+      id: `store-change-${item.id}`,
+      school: item.school,
+      module: "店铺商品",
+      action: item.action,
+      operator: item.operator?.name || "管理员",
+      ip: "-",
+      createdAt: formatDateTime(item.createdAt),
+      content: item.summary
+    })),
     ...adminUsers
       .filter((item: any) => !!item.lastLoginAt)
       .filter((item: any) =>

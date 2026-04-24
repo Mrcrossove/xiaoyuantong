@@ -3,10 +3,14 @@ import type {
   AdminStoreOrderDetailResult,
   AdminStoreOrderQuery,
   AdminStoreItem,
+  AdminStoreProductMutationControl,
+  AdminStoreProductMutationResult,
   AdminStoreProductPayload,
   AdminStoreQuery,
   PageResult,
   RefundReviewPayload,
+  StoreProductApprovalItem,
+  StoreProductApprovalReviewPayload,
   StoreApplyItem,
   StoreApplyQuery,
   StoreReviewPayload
@@ -53,32 +57,62 @@ export function getAdminStoreDashboardWithQueryApi(id: number, params: Record<st
 }
 
 export function createAdminStoreProductApi(storeId: number, payload: AdminStoreProductPayload) {
-  return request({
+  return request<AdminStoreProductMutationResult>({
     url: `/mini/store/admin/detail/${storeId}/product`,
     method: "POST",
     body: JSON.stringify(payload)
   });
 }
 
-export function updateAdminStoreProductApi(storeId: number, productId: string, payload: AdminStoreProductPayload) {
-  return request({
+export function updateAdminStoreProductApi(
+  storeId: number,
+  productId: string,
+  payload: AdminStoreProductPayload & AdminStoreProductMutationControl
+) {
+  return request<AdminStoreProductMutationResult>({
     url: `/mini/store/admin/detail/${storeId}/product/${productId}`,
     method: "PUT",
     body: JSON.stringify(payload)
   });
 }
 
-export function toggleAdminStoreProductStatusApi(storeId: number, productId: string) {
-  return request({
+export function toggleAdminStoreProductStatusApi(
+  storeId: number,
+  productId: string,
+  payload: AdminStoreProductMutationControl = {}
+) {
+  return request<AdminStoreProductMutationResult>({
     url: `/mini/store/admin/detail/${storeId}/product/${productId}/status`,
-    method: "POST"
+    method: "POST",
+    body: JSON.stringify(payload)
   });
 }
 
-export function deleteAdminStoreProductApi(storeId: number, productId: string) {
-  return request({
+export function deleteAdminStoreProductApi(
+  storeId: number,
+  productId: string,
+  payload: AdminStoreProductMutationControl = {}
+) {
+  return request<AdminStoreProductMutationResult>({
     url: `/mini/store/admin/detail/${storeId}/product/${productId}`,
-    method: "DELETE"
+    method: "DELETE",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function getStoreProductApprovalListApi(query: { page?: number; pageSize?: number; status?: string; keyword?: string }) {
+  return request<PageResult<StoreProductApprovalItem>>({
+    url: "/mini/store/admin/approval/list",
+    method: "GET",
+    params: query
+  });
+}
+
+export function reviewStoreProductApprovalApi(approvalId: number, payload: StoreProductApprovalReviewPayload) {
+  return request<StoreProductApprovalItem>({
+    url: `/mini/store/admin/approval/${approvalId}/review`,
+    method: "POST",
+    body: JSON.stringify(payload)
   });
 }
 

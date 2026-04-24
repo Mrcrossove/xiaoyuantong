@@ -41,11 +41,16 @@ export async function request<T>(config: RequestConfig): Promise<T> {
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
   const response = await fetch(joinQuery(buildUrl(config.url), config.params), { ...config, headers });
+  const result = (await response.json()) as ApiResponse<T> | T;
+
   if (!response.ok) {
+    if (typeof result === "object" && result !== null && "message" in result) {
+      const payload = result as ApiResponse<T>;
+      throw new ApiRequestError(payload.message || `请求失败：${response.status}`, response.status, payload.traceId);
+    }
     throw new ApiRequestError(`请求失败：${response.status}`, response.status);
   }
 
-  const result = (await response.json()) as ApiResponse<T> | T;
   if (typeof result === "object" && result !== null && "code" in result) {
     if (result.code !== 0) {
       throw new ApiRequestError(result.message || "请求失败", result.code, result.traceId);
