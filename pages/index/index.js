@@ -1,12 +1,23 @@
 const { services, fabOptions } = require("../../utils/home-config");
+const { fetchHomeBanners } = require("../../utils/banner-api");
 const { fetchPostList } = require("../../utils/posts-api");
 const schools = require("../../utils/schools");
 const { DEFAULT_SCHOOL, getSelectedSchool, setSelectedSchool } = require("../../utils/school-state");
+
+const DEFAULT_HOME_BANNER = {
+  id: "default-recruit",
+  title: "校园管理员招募中",
+  imageUrl: "",
+  linkUrl: "",
+  isDefault: true
+};
 
 Page({
   data: {
     services,
     fabOptions,
+    banners: [],
+    displayBanners: [DEFAULT_HOME_BANNER],
     posts: [],
     searchKeyword: "",
     schools,
@@ -17,7 +28,8 @@ Page({
     fabOpen: false,
     statusBarHeight: 20,
     postsLoading: false,
-    postsErrorText: ""
+    postsErrorText: "",
+    bannerCurrent: 0
   },
 
   onLoad() {
@@ -35,6 +47,9 @@ Page({
     const schoolKeyword = "";
     this.setData({
       selectedSchool,
+      banners: [],
+      displayBanners: [DEFAULT_HOME_BANNER],
+      bannerCurrent: 0,
       schoolKeyword,
       filteredSchools: this.filterSchools(schoolKeyword),
       postsLoading: true,
@@ -42,14 +57,19 @@ Page({
     });
 
     try {
-      const result = await fetchPostList({
-        page: 1,
-        pageSize: 20,
-        school: selectedSchool
-      });
+      const [postResult, bannerResult] = await Promise.all([
+        fetchPostList({
+          page: 1,
+          pageSize: 20,
+          school: selectedSchool
+        }),
+        fetchHomeBanners(selectedSchool).catch(() => ({ list: [] }))
+      ]);
 
       this.setData({
-        posts: result.list || [],
+        posts: postResult.list || [],
+        banners: bannerResult.list || [],
+        displayBanners: (bannerResult.list || []).length ? bannerResult.list : [DEFAULT_HOME_BANNER],
         postsErrorText: ""
       });
     } catch (error) {
@@ -124,6 +144,36 @@ Page({
   openSchoolAdminApply() {
     wx.navigateTo({
       url: "/pages/school-admin-apply/school-admin-apply"
+    });
+  },
+
+  onBannerChange(event) {
+    this.setData({
+      bannerCurrent: Number(event.detail.current || 0)
+    });
+  },
+
+  openHomeBanner(event) {
+    const { link, isDefault } = event.currentTarget.dataset;
+    if (isDefault) {
+      this.openSchoolAdminApply();
+      return;
+    }
+
+    if (!link) {
+      return;
+    }
+
+    if (String(link).startsWith("/pages/")) {
+      wx.navigateTo({
+        url: link
+      });
+      return;
+    }
+
+    wx.showToast({
+      title: "暂不支持该跳转地址",
+      icon: "none"
     });
   },
 

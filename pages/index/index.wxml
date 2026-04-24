@@ -29,20 +29,33 @@
     <view class="primary-btn" bindtap="openSearchPage">搜索</view>
   </view>
 
-  <view class="banner card" bindtap="openSchoolAdminApply">
-    <view class="banner-art">
-      <view class="banner-copy">
-        <text class="banner-tag">校园通后台招募</text>
-        <view class="banner-title">校园管理员招募中</view>
-        <view class="banner-desc">点击提交学校、团队人数和联系方式，平台审核后为你开通学校专属管理后台</view>
-      </view>
-      <view class="banner-badge">立即申请</view>
-    </view>
-    <view class="banner-dots">
-      <view></view>
-      <view class="active"></view>
-      <view></view>
-    </view>
+  <view class="banner card">
+    <swiper
+      class="banner-swiper"
+      indicator-dots="{{displayBanners.length > 1}}"
+      indicator-color="rgba(255,255,255,0.45)"
+      indicator-active-color="#ffffff"
+      circular="{{displayBanners.length > 1}}"
+      autoplay="{{displayBanners.length > 1}}"
+      interval="3500"
+      duration="350"
+      current="{{bannerCurrent}}"
+      bindchange="onBannerChange"
+    >
+      <swiper-item wx:for="{{displayBanners}}" wx:key="id">
+        <view class="banner-slide" data-link="{{item.linkUrl}}" data-is-default="{{item.isDefault}}" bindtap="openHomeBanner">
+          <view wx:if="{{item.isDefault}}" class="banner-art">
+            <view class="banner-copy">
+              <text class="banner-tag">校园通后台招募</text>
+              <view class="banner-title">校园管理员招募中</view>
+              <view class="banner-desc">点击提交学校、团队人数和联系方式，平台审核后为你开通学校专属管理后台</view>
+            </view>
+            <view class="banner-badge">立即申请</view>
+          </view>
+          <image wx:else class="banner-image" src="{{item.imageUrl}}" mode="aspectFill"></image>
+        </view>
+      </swiper-item>
+    </swiper>
   </view>
 
   <view class="services card">
