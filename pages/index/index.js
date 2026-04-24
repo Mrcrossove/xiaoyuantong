@@ -1,8 +1,9 @@
 const { services, fabOptions } = require("../../utils/home-config");
 const { fetchHomeBanners } = require("../../utils/banner-api");
 const { fetchPostList } = require("../../utils/posts-api");
-const schools = require("../../utils/schools");
-const { DEFAULT_SCHOOL, getSelectedSchool, setSelectedSchool } = require("../../utils/school-state");
+const { DEFAULT_SCHOOL, getSelectedSchool } = require("../../utils/school-state");
+const { HOME_FEED_ALL, getHomeFeedScope, setHomeFeedScope } = require("../../utils/home-feed-state");
+const { getProvinceSchoolGroups, filterProvinceSchoolGroups } = require("../../utils/school-catalog");
 
 const DEFAULT_HOME_BANNER = {
   id: "default-recruit",
@@ -20,9 +21,12 @@ Page({
     displayBanners: [DEFAULT_HOME_BANNER],
     posts: [],
     searchKeyword: "",
-    schools,
-    filteredSchools: [],
-    selectedSchool: DEFAULT_SCHOOL,
+    provinceSchoolGroups: [],
+    filteredProvinceSchoolGroups: [],
+    selectedFeedMode: "school",
+    selectedFeedSchool: DEFAULT_SCHOOL,
+    selectedFeedLabel: DEFAULT_SCHOOL,
+    businessSchool: DEFAULT_SCHOOL,
     schoolKeyword: "",
     schoolPickerOpen: false,
     fabOpen: false,
@@ -34,36 +38,58 @@ Page({
 
   onLoad() {
     const systemInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
+    const provinceSchoolGroups = getProvinceSchoolGroups();
     this.setData({
-      statusBarHeight: systemInfo.statusBarHeight || 20
+      statusBarHeight: systemInfo.statusBarHeight || 20,
+      provinceSchoolGroups,
+      filteredProvinceSchoolGroups: provinceSchoolGroups
     });
   },
 
   onShow() {
-    this.applySelectedSchool(getSelectedSchool());
+    const businessSchool = getSelectedSchool();
+    this.applyFeedScope(getHomeFeedScope(businessSchool), businessSchool);
   },
 
-  async applySelectedSchool(selectedSchool) {
+  async applyFeedScope(feedScope, businessSchool = getSelectedSchool()) {
+    const selectedFeedMode = feedScope.mode || "school";
+    const selectedFeedSchool = feedScope.school || "";
+    const selectedFeedLabel = feedScope.label || (selectedFeedMode === "all" ? "全网" : businessSchool);
     const schoolKeyword = "";
     this.setData({
-      selectedSchool,
+      businessSchool,
+      selectedFeedMode,
+      selectedFeedSchool,
+      selectedFeedLabel,
       banners: [],
       displayBanners: [DEFAULT_HOME_BANNER],
       bannerCurrent: 0,
       schoolKeyword,
-      filteredSchools: this.filterSchools(schoolKeyword),
+      filteredProvinceSchoolGroups: this.filterSchoolGroups(schoolKeyword),
       postsLoading: true,
       postsErrorText: ""
     });
 
     try {
+      const bannerSchool = selectedFeedMode === "all" ? businessSchool : selectedFeedSchool;
+      const postQuery =
+        selectedFeedMode === "all"
+          ? {
+              page: 1,
+              pageSize: 20,
+              scope: "all",
+              excludeSchool: businessSchool
+            }
+          : {
+              page: 1,
+              pageSize: 20,
+              scope: "school",
+              school: selectedFeedSchool
+            };
+
       const [postResult, bannerResult] = await Promise.all([
-        fetchPostList({
-          page: 1,
-          pageSize: 20,
-          school: selectedSchool
-        }),
-        fetchHomeBanners(selectedSchool).catch(() => ({ list: [] }))
+        fetchPostList(postQuery),
+        fetchHomeBanners(bannerSchool).catch(() => ({ list: [] }))
       ]);
 
       this.setData({
@@ -84,16 +110,14 @@ Page({
     }
   },
 
-  filterSchools(keyword) {
-    const trimmed = (keyword || "").trim();
-    const list = trimmed ? schools.filter((school) => school.includes(trimmed)) : schools;
-    return list.slice(0, 120);
+  filterSchoolGroups(keyword) {
+    return filterProvinceSchoolGroups(keyword);
   },
 
   openSchoolPicker() {
     this.setData({
       schoolPickerOpen: true,
-      filteredSchools: this.filterSchools(this.data.schoolKeyword)
+      filteredProvinceSchoolGroups: this.filterSchoolGroups(this.data.schoolKeyword)
     });
   },
 
@@ -104,7 +128,7 @@ Page({
     this.setData({
       schoolPickerOpen: false,
       schoolKeyword: "",
-      filteredSchools: this.filterSchools("")
+      filteredProvinceSchoolGroups: this.filterSchoolGroups("")
     });
   },
 
@@ -112,7 +136,7 @@ Page({
     const schoolKeyword = event.detail.value;
     this.setData({
       schoolKeyword,
-      filteredSchools: this.filterSchools(schoolKeyword)
+      filteredProvinceSchoolGroups: this.filterSchoolGroups(schoolKeyword)
     });
   },
 
@@ -121,11 +145,19 @@ Page({
     if (!school) {
       return;
     }
-    const selectedSchool = setSelectedSchool(school);
+    const nextFeedScope = setHomeFeedScope(school, this.data.businessSchool || DEFAULT_SCHOOL);
     this.setData({
       schoolPickerOpen: false
     });
-    this.applySelectedSchool(selectedSchool);
+    this.applyFeedScope(nextFeedScope, this.data.businessSchool || DEFAULT_SCHOOL);
+  },
+
+  selectAllNetwork() {
+    const nextFeedScope = setHomeFeedScope(HOME_FEED_ALL, this.data.businessSchool || DEFAULT_SCHOOL);
+    this.setData({
+      schoolPickerOpen: false
+    });
+    this.applyFeedScope(nextFeedScope, this.data.businessSchool || DEFAULT_SCHOOL);
   },
 
   onSearchKeywordInput(event) {

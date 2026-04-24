@@ -15,6 +15,9 @@ const LABELS = {
   published: "\u5df2\u53d1\u5e03"
 };
 
+const HOT_POST_FETCH_LIMIT = 240;
+const HOT_POST_POOL_LIMIT = 120;
+
 function toLikeText(value?: string) {
   if (!value) return undefined;
   return { contains: value, mode: "insensitive" as const };
@@ -61,6 +64,96 @@ function mapPost(item: any, options?: { liked?: boolean; comments?: any[] }) {
   };
 }
 
+function calcHeatScore(item: any) {
+  const likeCount = Number(item.likeCount || 0);
+  const commentCount = Number(item.commentCount || 0);
+  const viewCount = Number(item.viewCount || 0);
+  const createdAt = item.createdAt instanceof Date ? item.createdAt : new Date(item.createdAt || Date.now());
+  const ageHours = Math.max(0, (Date.now() - createdAt.getTime()) / 36e5);
+  const freshnessWeight = Math.max(0.35, 1.2 - ageHours / (24 * 21));
+  const baseScore = likeCount * 4 + commentCount * 6 + viewCount * 0.08;
+  return Number((baseScore * freshnessWeight + Math.max(0, 24 - ageHours) * 0.6).toFixed(4));
+}
+
+function shuffleArray<T>(list: T[]) {
+  const next = list.slice();
+  for (let index = next.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [next[index], next[randomIndex]] = [next[randomIndex], next[index]];
+  }
+  return next;
+}
+
+async function queryAllNetworkHotPosts(rawQuery: Record<string, unknown>, page: number, pageSize: number, skip: number) {
+  const keyword = String(rawQuery.keyword || "").trim();
+  const excludeSchool = String(rawQuery.excludeSchool || "").trim();
+  const keywordWhere = keyword
+    ? [{ title: toLikeText(keyword) }, { content: toLikeText(keyword) }, { category: toLikeText(keyword) }]
+    : undefined;
+  const baseWhere = {
+    status: {
+      in: [LABELS.published]
+    },
+    OR: keywordWhere
+  };
+  const primaryWhere = excludeSchool
+    ? {
+        ...baseWhere,
+        school: {
+          not: excludeSchool
+        }
+      }
+    : baseWhere;
+
+  const [primaryTotal, primaryList] = await prisma.$transaction([
+    prisma.miniPost.count({ where: primaryWhere }),
+    prisma.miniPost.findMany({
+      where: primaryWhere,
+      orderBy: [{ likeCount: "desc" }, { commentCount: "desc" }, { viewCount: "desc" }, { createdAt: "desc" }],
+      take: HOT_POST_FETCH_LIMIT
+    })
+  ]);
+
+  let candidates = primaryList;
+  let total = primaryTotal;
+
+  if (excludeSchool && primaryList.length < pageSize) {
+    const fallbackList = await prisma.miniPost.findMany({
+      where: baseWhere,
+      orderBy: [{ likeCount: "desc" }, { commentCount: "desc" }, { viewCount: "desc" }, { createdAt: "desc" }],
+      take: HOT_POST_FETCH_LIMIT
+    });
+    const mergedMap = new Map<number, any>();
+    primaryList.forEach((item: any) => mergedMap.set(item.id, item));
+    fallbackList.forEach((item: any) => {
+      if (!mergedMap.has(item.id)) {
+        mergedMap.set(item.id, item);
+      }
+    });
+    candidates = Array.from(mergedMap.values());
+    total = mergedMap.size;
+  }
+
+  const rankedPool = candidates
+    .map((item: any) => ({
+      item,
+      score: calcHeatScore(item)
+    }))
+    .sort((left, right) => {
+      if (right.score !== left.score) return right.score - left.score;
+      return right.item.id - left.item.id;
+    })
+    .slice(0, HOT_POST_POOL_LIMIT)
+    .map((entry) => entry.item);
+
+  return {
+    list: shuffleArray(rankedPool).slice(skip, skip + pageSize).map((item: any) => mapPost(item)),
+    page,
+    pageSize,
+    total
+  };
+}
+
 async function findPostOrThrow(id: number) {
   const row = await prisma.miniPost.findUnique({
     where: { id }
@@ -73,8 +166,13 @@ async function findPostOrThrow(id: number) {
 
 export async function queryMiniPosts(rawQuery: Record<string, unknown>) {
   const { page, pageSize, skip } = parsePageParams(rawQuery);
+  const scope = String(rawQuery.scope || "school").trim() === "all" ? "all" : "school";
   const school = String(rawQuery.school || "");
   const keyword = String(rawQuery.keyword || "");
+
+  if (scope === "all") {
+    return queryAllNetworkHotPosts(rawQuery, page, pageSize, skip);
+  }
 
   const where = {
     school: school || undefined,

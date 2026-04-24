@@ -471,6 +471,21 @@
   max-height: 52vh;
 }
 
+.school-group {
+  margin-top: 22rpx;
+}
+
+.school-group:first-child {
+  margin-top: 0;
+}
+
+.school-group-title {
+  margin-bottom: 12rpx;
+  padding: 0 8rpx;
+  color: #8d98ac;
+  font-size: 22rpx;
+}
+
 .school-item {
   min-height: 88rpx;
   padding: 0 8rpx;
@@ -481,6 +496,10 @@
   border-bottom: 2rpx solid #eff3f8;
   color: #33405c;
   font-size: 28rpx;
+}
+
+.school-item-all {
+  margin-bottom: 8rpx;
 }
 
 .school-item.active {
