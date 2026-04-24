@@ -22,6 +22,53 @@ type CreateWechatRefundParams = {
   subMchId: string;
 };
 
+type CreateWechatProfitSharingOrderParams = {
+  outTradeNo: string;
+  outOrderNo?: string;
+  transactionId?: string;
+  amount: number;
+  receiverName: string;
+  receiverAccount: string;
+  subMchId: string;
+};
+
+type CreateWechatProfitSharingReturnOrderParams = {
+  outOrderNo: string;
+  outReturnNo: string;
+  amount: number;
+  description: string;
+  subMchId: string;
+  returnMchId?: string;
+};
+
+type CreateWechatTransferBillParams = {
+  outBillNo: string;
+  subMchId: string;
+  openid: string;
+  amount: number;
+  remark: string;
+  sceneId: string;
+  userRecvPerception?: string;
+  userName?: string;
+};
+
+type WechatPayNotifyHeaders = {
+  timestamp: string;
+  nonce: string;
+  signature: string;
+};
+
+type WechatPayNotifyResource = {
+  algorithm: string;
+  ciphertext: string;
+  associated_data?: string;
+  nonce: string;
+};
+
+type WechatRequestOptions = {
+  headers?: Record<string, string>;
+};
+
 function normalizePem(value: string) {
   return String(value || "").replace(/\\n/g, "\n").trim();
 }
@@ -42,9 +89,28 @@ function ensureWechatPayReady() {
 function ensureSubMchId(subMchId?: string) {
   const value = String(subMchId || env.wechatPaySubMchIdFallback || "").trim();
   if (!value) {
-    throw new ApiError("商家子商户号未配置", ERROR_CODES.BAD_REQUEST, 400);
+    throw new ApiError("子商户号未配置", ERROR_CODES.BAD_REQUEST, 400);
   }
   return value;
+}
+
+function ensurePlatformPublicKeyReady() {
+  if (!String(env.wechatPayPlatformPublicKey || "").trim()) {
+    throw new ApiError("微信支付平台公钥未配置", ERROR_CODES.BAD_REQUEST, 400);
+  }
+}
+
+function ensureApiV3KeyReady() {
+  if (String(env.wechatPayApiV3Key || "").trim().length !== 32) {
+    throw new ApiError("微信支付 APIv3 Key 未正确配置", ERROR_CODES.BAD_REQUEST, 400);
+  }
+}
+
+function ensureTransferEncryptReady() {
+  ensurePlatformPublicKeyReady();
+  if (!String(env.wechatPayPublicKeyId || "").trim()) {
+    throw new ApiError("微信提现公钥ID未配置", ERROR_CODES.BAD_REQUEST, 400);
+  }
 }
 
 function buildNonceStr() {
@@ -70,7 +136,12 @@ function buildAuthorization(method: RequestMethod, urlPath: string, body: string
   };
 }
 
-async function requestWechatPay<T>(method: RequestMethod, urlPath: string, body?: Record<string, unknown>) {
+async function requestWechatPay<T>(
+  method: RequestMethod,
+  urlPath: string,
+  body?: Record<string, unknown>,
+  options?: WechatRequestOptions
+) {
   const rawBody = body ? JSON.stringify(body) : "";
   const auth = buildAuthorization(method, urlPath, rawBody);
   const response = await fetch(`https://api.mch.weixin.qq.com${urlPath}`, {
@@ -79,7 +150,8 @@ async function requestWechatPay<T>(method: RequestMethod, urlPath: string, body?
       Accept: "application/json",
       Authorization: auth.header,
       "Content-Type": "application/json",
-      "User-Agent": "campus-admin-api"
+      "User-Agent": "campus-admin-api",
+      ...(options?.headers || {})
     },
     body: method === "GET" ? undefined : rawBody
   });
@@ -106,6 +178,25 @@ function buildMiniProgramPaySign(appId: string, timeStamp: string, nonceStr: str
     paySign: signMessage(message),
     prepayId
   };
+}
+
+function getTransferHeaders() {
+  ensureTransferEncryptReady();
+  return {
+    "Wechatpay-Serial": env.wechatPayPublicKeyId
+  };
+}
+
+export function encryptWechatPaySensitiveField(value: string) {
+  ensureTransferEncryptReady();
+  return crypto.publicEncrypt(
+    {
+      key: normalizePem(env.wechatPayPlatformPublicKey),
+      padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+      oaepHash: "sha1"
+    },
+    Buffer.from(String(value || ""), "utf8")
+  ).toString("base64");
 }
 
 export async function createWechatJsapiOrder(params: CreateWechatJsapiOrderParams) {
@@ -160,14 +251,7 @@ export async function createWechatRefund(params: CreateWechatRefundParams) {
   });
 }
 
-export async function createWechatProfitSharingOrder(params: {
-  outTradeNo: string;
-  transactionId?: string;
-  amount: number;
-  receiverName: string;
-  receiverAccount: string;
-  subMchId: string;
-}) {
+export async function createWechatProfitSharingOrder(params: CreateWechatProfitSharingOrderParams) {
   if (!env.wechatPayProfitSharing) {
     return {
       skipped: true,
@@ -180,15 +264,133 @@ export async function createWechatProfitSharingOrder(params: {
     appid: env.wechatPaySpAppId,
     sub_mchid: subMchId,
     transaction_id: params.transactionId || undefined,
-    out_order_no: `share_${params.outTradeNo}`,
+    out_order_no: params.outOrderNo || `share_${params.outTradeNo}`,
     receivers: [
       {
         type: "MERCHANT_ID",
-        account: subMchId,
+        account: params.receiverAccount || subMchId,
         amount: Math.round(Number(params.amount || 0) * 100),
-        description: params.receiverName || "商家收入"
+        description: params.receiverName || "merchant_income"
       }
     ],
     unfreeze_unsplit: true
   });
+}
+
+export async function queryWechatProfitSharingOrder(params: {
+  outOrderNo: string;
+  subMchId: string;
+  transactionId?: string;
+}) {
+  const subMchId = ensureSubMchId(params.subMchId);
+  const search = new URLSearchParams({
+    sub_mchid: subMchId
+  });
+  if (params.transactionId) {
+    search.set("transaction_id", params.transactionId);
+  }
+  return requestWechatPay<any>("GET", `/v3/profitsharing/orders/${encodeURIComponent(params.outOrderNo)}?${search.toString()}`);
+}
+
+export async function createWechatProfitSharingReturnOrder(params: CreateWechatProfitSharingReturnOrderParams) {
+  const subMchId = ensureSubMchId(params.subMchId);
+  return requestWechatPay<any>("POST", "/v3/profitsharing/return-orders", {
+    sub_mchid: subMchId,
+    out_order_no: params.outOrderNo,
+    out_return_no: params.outReturnNo,
+    return_mchid: params.returnMchId || subMchId,
+    amount: Math.round(Number(params.amount || 0) * 100),
+    description: params.description
+  });
+}
+
+export async function queryWechatProfitSharingReturnOrder(params: {
+  outReturnNo: string;
+  subMchId: string;
+}) {
+  const subMchId = ensureSubMchId(params.subMchId);
+  const search = new URLSearchParams({
+    sub_mchid: subMchId
+  });
+  return requestWechatPay<any>(
+    "GET",
+    `/v3/profitsharing/return-orders/${encodeURIComponent(params.outReturnNo)}?${search.toString()}`
+  );
+}
+
+export async function createWechatTransferBill(params: CreateWechatTransferBillParams) {
+  const subMchId = ensureSubMchId(params.subMchId);
+  const body: Record<string, unknown> = {
+    sp_appid: env.wechatPaySpAppId,
+    sp_mchid: env.wechatPaySpMchId,
+    sub_mchid: subMchId,
+    out_bill_no: params.outBillNo,
+    transfer_scene_id: params.sceneId,
+    openid: params.openid,
+    transfer_amount: Math.round(Number(params.amount || 0) * 100),
+    transfer_remark: params.remark,
+    notify_url: env.wechatPayTransferNotifyUrl || undefined,
+    user_recv_perception: params.userRecvPerception || env.wechatPayTransferUserRecvPerception
+  };
+
+  if (params.userName) {
+    body.user_name = encryptWechatPaySensitiveField(params.userName);
+  }
+
+  return requestWechatPay<any>(
+    "POST",
+    "/v3/fund-app/mch-transfer/partner/transfer-bills",
+    body,
+    {
+      headers: getTransferHeaders()
+    }
+  );
+}
+
+export async function queryWechatTransferBill(params: { outBillNo: string; subMchId: string }) {
+  const subMchId = ensureSubMchId(params.subMchId);
+  const search = new URLSearchParams({
+    sp_mchid: env.wechatPaySpMchId,
+    sub_mchid: subMchId
+  });
+  return requestWechatPay<any>(
+    "GET",
+    `/v3/fund-app/mch-transfer/partner/transfer-bills/out-bill-no/${encodeURIComponent(params.outBillNo)}?${search.toString()}`,
+    undefined,
+    {
+      headers: getTransferHeaders()
+    }
+  );
+}
+
+export function verifyWechatPaySignature(rawBody: string, headers: WechatPayNotifyHeaders) {
+  ensurePlatformPublicKeyReady();
+  const message = `${headers.timestamp}\n${headers.nonce}\n${rawBody}\n`;
+  const verifier = crypto.createVerify("RSA-SHA256");
+  verifier.update(message);
+  verifier.end();
+  return verifier.verify(normalizePem(env.wechatPayPlatformPublicKey), headers.signature, "base64");
+}
+
+export function decryptWechatPayResource<T = Record<string, unknown>>(resource: WechatPayNotifyResource): T {
+  ensureApiV3KeyReady();
+
+  if (resource.algorithm !== "AEAD_AES_256_GCM") {
+    throw new ApiError(`unsupported wechat pay algorithm: ${resource.algorithm}`, ERROR_CODES.BAD_REQUEST, 400);
+  }
+
+  const key = Buffer.from(env.wechatPayApiV3Key, "utf8");
+  const nonce = Buffer.from(resource.nonce, "utf8");
+  const cipherText = Buffer.from(resource.ciphertext, "base64");
+  const authTag = cipherText.subarray(cipherText.length - 16);
+  const encrypted = cipherText.subarray(0, cipherText.length - 16);
+  const decipher = crypto.createDecipheriv("aes-256-gcm", key, nonce);
+
+  if (resource.associated_data) {
+    decipher.setAAD(Buffer.from(resource.associated_data, "utf8"));
+  }
+
+  decipher.setAuthTag(authTag);
+  const plain = Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
+  return JSON.parse(plain) as T;
 }

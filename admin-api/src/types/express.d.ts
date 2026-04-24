@@ -1,6 +1,7 @@
 declare namespace Express {
   interface Request {
     traceId: string;
+    rawBody?: string;
     adminAuth?: {
       userId: number;
       roleCode: string;

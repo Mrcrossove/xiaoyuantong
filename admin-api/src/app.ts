@@ -23,7 +23,14 @@ app.use(
     }
   })
 );
-app.use(express.json({ limit: "12mb" }));
+app.use(
+  express.json({
+    limit: "12mb",
+    verify(req, _res, buf) {
+      (req as any).rawBody = buf.toString("utf8");
+    }
+  })
+);
 app.use(morgan("dev"));
 app.use(traceIdMiddleware);
 app.use(

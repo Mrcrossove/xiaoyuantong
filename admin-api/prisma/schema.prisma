@@ -336,6 +336,13 @@ model MerchantAccount {
   store         MiniStore @relation(fields: [storeId], references: [id])
   phone         String   @unique
   name          String
+  withdrawChannel String  @default("微信零钱")
+  withdrawRealName String?
+  withdrawProfileStatus String @default("未建档")
+  withdrawBlockedReason String?
+  withdrawAgreementAcceptedAt DateTime?
+  withdrawOpenidBoundAt DateTime?
+  withdrawProfileCompletedAt DateTime?
   password      String?
   status        String
   mustChangePassword Boolean  @default(false)
@@ -470,7 +477,12 @@ model MiniOrder {
   platformCommissionAmount Float   @default(0)
   merchantIncomeAmount    Float    @default(0)
   settledAt              DateTime?
+  profitSharingStatus    String   @default("未分账")
+  profitSharingAmount    Float    @default(0)
+  profitSharedAt         DateTime?
   refunds         MiniRefundRecord[]
+  profitSharingOrders MiniProfitSharingOrder[]
+  profitSharingReturnOrders MiniProfitSharingReturnOrder[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -520,12 +532,74 @@ model MiniRefundRecord {
   reviewer   AdminUser? @relation("RefundReviewer", fields: [reviewerId], references: [id])
   applyTime  DateTime  @default(now())
   reviewedAt DateTime?
+  refundSuccessAt DateTime?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
   @@index([school, status])
   @@index([orderId])
   @@index([userId, status])
+}
+
+model MiniProfitSharingOrder {
+  id              Int       @id @default(autoincrement())
+  outOrderNo      String    @unique
+  orderId         Int
+  order           MiniOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  school          String
+  amount          Float
+  status          String
+  wechatStatus    String?
+  receiverType    String
+  receiverAccount String
+  receiverName    String
+  subMchId        String
+  transactionId   String?
+  responseCode    String?
+  failureCode     String?
+  failureReason   String?
+  requestPayload  Json?
+  responsePayload Json?
+  returnOrders    MiniProfitSharingReturnOrder[]
+  syncAttempts    Int       @default(0)
+  lastSyncAt      DateTime?
+  finishedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([orderId, status])
+  @@index([status, createdAt])
+}
+
+model MiniProfitSharingReturnOrder {
+  id                    Int                    @id @default(autoincrement())
+  outReturnNo           String                 @unique
+  orderId               Int
+  order                 MiniOrder              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  profitSharingOrderId  Int?
+  profitSharingOrder    MiniProfitSharingOrder? @relation(fields: [profitSharingOrderId], references: [id], onDelete: SetNull)
+  school                String
+  amount                Float
+  status                String
+  wechatStatus          String?
+  description           String?
+  subMchId              String
+  outOrderNo            String
+  transactionId         String?
+  responseCode          String?
+  failureCode           String?
+  failureReason         String?
+  requestPayload        Json?
+  responsePayload       Json?
+  syncAttempts          Int                    @default(0)
+  lastSyncAt            DateTime?
+  finishedAt            DateTime?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  @@index([orderId, status])
+  @@index([status, createdAt])
+  @@index([profitSharingOrderId])
 }
 
 model MiniWalletAccount {
@@ -555,14 +629,53 @@ model MiniWithdrawRecord {
   accountType String
   accountNo   String
   status      String
+  transferStatus        String?
+  transferOutBillNo     String?  @unique
+  transferBillNo        String?
+  transferFailReason    String?
+  transferAppliedAt     DateTime?
+  transferSuccessAt     DateTime?
   reviewNote  String?
   applyTime   DateTime @default(now())
   reviewedAt  DateTime?
+  transferBills MiniWithdrawTransferBill[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([userId, status])
   @@index([userId, applyTime])
+  @@index([status, transferStatus])
+}
+
+model MiniWithdrawTransferBill {
+  id               Int                @id @default(autoincrement())
+  withdrawRecordId Int
+  withdrawRecord   MiniWithdrawRecord @relation(fields: [withdrawRecordId], references: [id], onDelete: Cascade)
+  school           String
+  userId           Int
+  outBillNo        String             @unique
+  transferBillNo   String?
+  subMchId         String
+  openid           String
+  amount           Float
+  status           String
+  wechatStatus     String?
+  sceneId          String?
+  userName         String?
+  failReason       String?
+  packageInfo      String?
+  requestPayload   Json?
+  responsePayload  Json?
+  syncAttempts     Int                @default(0)
+  lastSyncAt       DateTime?
+  acceptedAt       DateTime?
+  successAt        DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@index([withdrawRecordId, status])
+  @@index([status, createdAt])
+  @@index([userId, status])
 }
 
 model UserPublishRecord {

@@ -38,12 +38,17 @@ import {
   reverseMiniOrderSettlement,
   settleMiniOrderIncome
 } from "./mini-order.service";
-import { createWechatRefund } from "./wechat-pay.service";
 import { createMiniWithdraw, queryMiniWalletSummary } from "./mini-wallet.service";
+import { reviewMiniRefundRequest } from "./mini-refund.service";
 import { buildProductDisplayPrice, parseMoneyNumber } from "../utils/merchant-product";
 import { env } from "../config/env";
 import { hashPassword, verifyPassword } from "../utils/password";
 import { listStoreProductsByStoreId } from "./store-product.service";
+import {
+  ensureMerchantWithdrawProfileReady,
+  getMerchantWithdrawProfile,
+  updateMerchantWithdrawProfile
+} from "./merchant-withdraw-profile.service";
 
 const REFUND_STATUS = {
   pending: "待审核",
@@ -63,7 +68,12 @@ async function getMerchantContext(accountId: number) {
   const account = await prisma.merchantAccount.findUnique({
     where: { id: accountId },
     include: {
-      store: true
+      store: true,
+      miniUser: {
+        select: {
+          openid: true
+        }
+      }
     }
   });
 
@@ -499,28 +509,26 @@ export async function merchantFinishOrder(accountId: number, orderId: number) {
     (order.status !== MINI_ORDER_STATUS.processing && order.status !== MINI_ORDER_STATUS.accepted) ||
     order.payStatus !== MINI_PAY_STATUS.paid
   ) {
-    throw new ApiError("当前订单不能执行完成", ERROR_CODES.BAD_REQUEST, 400);
+    throw new ApiError("\u5f53\u524d\u8ba2\u5355\u4e0d\u80fd\u6267\u884c\u5b8c\u6210", ERROR_CODES.BAD_REQUEST, 400);
   }
 
-  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    await tx.miniOrder.update({
-      where: { id: orderId },
-      data: {
-        status: MINI_ORDER_STATUS.finished,
-        finishedAt: order.finishedAt || new Date()
-      }
-    });
-
-    await settleMiniOrderIncome(orderId, tx);
+  await prisma.miniOrder.update({
+    where: { id: orderId },
+    data: {
+      status: MINI_ORDER_STATUS.finished,
+      finishedAt: order.finishedAt || new Date()
+    }
   });
+
+  await settleMiniOrderIncome(orderId);
 
   const latest = await findMiniOrderById(orderId);
 
   await createMiniMessage({
     school: latest.school,
     type: "system",
-    category: "订单通知",
-    content: `商家已完成订单 ${latest.orderNo}，请留意收货状态。`,
+    category: "\u8ba2\u5355\u901a\u77e5",
+    content: `\u5546\u5bb6\u5df2\u5b8c\u6210\u8ba2\u5355 ${latest.orderNo}\uff0c\u8bf7\u7559\u610f\u6536\u8d27\u72b6\u6001\u3002`,
     receiverUserId: latest.userId,
     targetType: "order",
     targetId: String(latest.id)
@@ -608,81 +616,22 @@ export async function queryMerchantRefundDetail(accountId: number, refundId: num
 }
 
 export async function merchantReviewRefund(accountId: number, refundId: number, payload: RefundReviewPayload) {
-  const { context, refund } = await findMerchantRefund(accountId, refundId);
+  const { refund } = await findMerchantRefund(accountId, refundId);
 
   if (refund.status !== REFUND_STATUS.pending) {
-    throw new ApiError("当前退款记录不可重复处理", ERROR_CODES.BAD_REQUEST, 400);
+    throw new ApiError("\u5f53\u524d\u9000\u6b3e\u8bb0\u5f55\u4e0d\u53ef\u91cd\u590d\u5904\u7406", ERROR_CODES.BAD_REQUEST, 400);
   }
 
-  let refundMeta: Record<string, unknown> | null = null;
-  let refundChannel = env.payUseMock ? "模拟退款" : "微信退款";
-  const refundRequestNo = buildRefundRequestNo();
-
-  if (
-    payload.status === REFUND_STATUS.approved &&
-    !env.payUseMock &&
-    refund.order.payStatus === MINI_PAY_STATUS.paid &&
-    refund.order.paymentMode !== "模拟支付"
-  ) {
-    refundMeta = await createWechatRefund({
-      outTradeNo: refund.order.orderNo,
-      outRefundNo: refundRequestNo,
-      totalAmount: Number(refund.order.amount || 0),
-      refundAmount: Number(refund.amount || 0),
-      reason: refund.reason,
-      subMchId: context.store.wechatSubMchId || env.wechatPaySubMchIdFallback
-    });
-    refundChannel = "微信退款";
-  }
-
-  const reviewedAt = new Date();
-  const updated = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    const nextRefund = await tx.miniRefundRecord.update({
-      where: { id: refundId },
-      data: {
-        status: payload.status,
-        reviewNote: payload.reviewNote || "",
-        reviewedAt,
-        refundRequestNo: payload.status === REFUND_STATUS.approved ? refundRequestNo : refund.refundRequestNo,
-        refundChannel: payload.status === REFUND_STATUS.approved ? refundChannel : refund.refundChannel,
-        refundMeta: payload.status === REFUND_STATUS.approved ? (refundMeta as Prisma.InputJsonValue | null) : refund.refundMeta
-      },
-      include: {
-        order: {
-          select: {
-            orderNo: true,
-            productName: true,
-            skuName: true
-          }
-        }
-      }
-    });
-
-    if (payload.status === REFUND_STATUS.approved) {
-      await reverseMiniOrderSettlement(refund.orderId, tx);
-
-      await tx.miniOrder.update({
-        where: { id: refund.orderId },
-        data: {
-          payStatus: MINI_PAY_STATUS.refunded,
-          status: refund.order.status === MINI_ORDER_STATUS.finished ? MINI_ORDER_STATUS.finished : MINI_ORDER_STATUS.canceled,
-          canceledAt: refund.order.status === MINI_ORDER_STATUS.finished ? refund.order.canceledAt : reviewedAt,
-          settlementStatus: "已退款"
-        }
-      });
-    }
-
-    return nextRefund;
-  });
+  const updated = await reviewMiniRefundRequest(refundId, null, payload);
 
   await createMiniMessage({
     school: refund.school,
     type: "system",
-    category: "退款通知",
+    category: "\u9000\u6b3e\u901a\u77e5",
     content:
       payload.status === REFUND_STATUS.approved
-        ? `商家已同意退款，退款申请 ${refund.refundNo} 将按原路返回。`
-        : `商家已驳回退款申请 ${refund.refundNo}，原因：${payload.reviewNote || "请联系商家了解详情"}`,
+        ? `\u5546\u5bb6\u5df2\u540c\u610f\u9000\u6b3e\uff0c\u9000\u6b3e\u7533\u8bf7 ${refund.refundNo} \u7684\u7ed3\u679c\u5c06\u6309\u7cfb\u7edf\u5904\u7406\u7ed3\u679c\u66f4\u65b0\u3002`
+        : `\u5546\u5bb6\u5df2\u9a73\u56de\u9000\u6b3e\u7533\u8bf7 ${refund.refundNo}\uff0c\u539f\u56e0\uff1a${payload.reviewNote || "\u8bf7\u8054\u7cfb\u5546\u5bb6\u4e86\u89e3\u8be6\u60c5"}`,
     receiverUserId: refund.userId,
     targetType: "refund",
     targetId: String(refund.id)
@@ -693,7 +642,10 @@ export async function merchantReviewRefund(accountId: number, refundId: number, 
 
 export async function queryMerchantWallet(accountId: number) {
   const context = await getMerchantContext(accountId);
-  const data = await queryMiniWalletSummary(context.miniUserId);
+  const [data, withdrawProfile] = await Promise.all([
+    queryMiniWalletSummary(context.miniUserId),
+    getMerchantWithdrawProfile(accountId)
+  ]);
 
   return {
     summary: {
@@ -704,13 +656,19 @@ export async function queryMerchantWallet(accountId: number) {
       totalWithdrawn: Number(data.wallet.totalWithdrawn || 0),
       status: data.wallet.status
     },
+    withdrawProfile,
     withdraws: data.withdrawRecords
   };
 }
 
 export async function merchantCreateWithdraw(accountId: number, payload: MiniWithdrawCreatePayload) {
   const context = await getMerchantContext(accountId);
-  return createMiniWithdraw(context.miniUserId, payload);
+  await ensureMerchantWithdrawProfileReady(accountId);
+  return createMiniWithdraw(context.miniUserId, {
+    ...payload,
+    accountType: "微信零钱",
+    accountNo: `微信零钱账户(${context.phone.slice(-4)})`
+  });
 }
 
 export async function queryMerchantMessageList(accountId: number, rawQuery: Record<string, unknown>) {
@@ -820,6 +778,7 @@ export async function queryMerchantStat(accountId: number) {
 
 export async function getMerchantAccountProfile(accountId: number) {
   const context = await getMerchantContext(accountId);
+  const withdrawProfile = await getMerchantWithdrawProfile(accountId);
   return {
     id: context.id,
     phone: context.phone,
@@ -829,7 +788,8 @@ export async function getMerchantAccountProfile(accountId: number) {
     mustChangePassword: Boolean(context.mustChangePassword),
     lastLoginAt: context.lastLoginAt ? formatDateTime(context.lastLoginAt) : "",
     storeName: context.store.name,
-    school: context.store.school
+    school: context.store.school,
+    withdrawProfile
   };
 }
 
@@ -840,6 +800,10 @@ export async function updateMerchantAccountProfile(accountId: number, payload: M
       name: payload.name
     }
   });
+  const withdrawProfile = await updateMerchantWithdrawProfile(accountId, {
+    withdrawRealName: payload.withdrawRealName,
+    acceptWithdrawAgreement: payload.acceptWithdrawAgreement
+  });
 
   return {
     id: row.id,
@@ -848,7 +812,8 @@ export async function updateMerchantAccountProfile(accountId: number, payload: M
     status: row.status,
     isActivated: Boolean(row.activatedAt),
     mustChangePassword: Boolean(row.mustChangePassword),
-    lastLoginAt: row.lastLoginAt ? formatDateTime(row.lastLoginAt) : ""
+    lastLoginAt: row.lastLoginAt ? formatDateTime(row.lastLoginAt) : "",
+    withdrawProfile
   };
 }
 

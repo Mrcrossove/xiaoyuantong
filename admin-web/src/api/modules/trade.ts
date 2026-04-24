@@ -61,3 +61,10 @@ export function reviewWithdrawApi(id: number, payload: WithdrawReviewPayload) {
     body: JSON.stringify(payload)
   });
 }
+
+export function syncWithdrawTransferApi(id: number) {
+  return request<WithdrawItem>({
+    url: `/mini/wallet/admin/withdraw/${id}/sync`,
+    method: "POST"
+  });
+}

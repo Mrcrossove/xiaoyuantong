@@ -4,7 +4,8 @@ import {
   getMiniWalletSummaryAction,
   listAdminWalletAccountAction,
   listAdminWithdrawAction,
-  reviewMiniWithdrawAction
+  reviewMiniWithdrawAction,
+  syncAdminWithdrawTransferAction
 } from "../controllers/mini-wallet.controller";
 import { miniWithdrawCreateSchema, miniWithdrawReviewSchema } from "../controllers/schemas";
 import { asyncHandler } from "../middlewares/async-handler";
@@ -30,6 +31,13 @@ router.post(
   requireAdminPermission("withdraw:review"),
   validateBody(miniWithdrawReviewSchema),
   asyncHandler(reviewMiniWithdrawAction)
+);
+router.post(
+  "/admin/withdraw/:id/sync",
+  requireAdminAuth,
+  requireAdminMenuAccess("/trade/withdraw"),
+  requireAdminPermission("withdraw:review"),
+  asyncHandler(syncAdminWithdrawTransferAction)
 );
 
 export default router;

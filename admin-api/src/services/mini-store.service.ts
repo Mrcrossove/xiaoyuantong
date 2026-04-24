@@ -19,9 +19,9 @@ import {
   MINI_PAY_STATUS,
   MINI_REFUND_STATUS,
   MINI_SETTLEMENT_STATUS,
-  reverseMiniOrderSettlement,
   settleMiniOrderIncome
 } from "./mini-order.service";
+import { reviewMiniRefundRequest } from "./mini-refund.service";
 import {
   createStoreProductRecord,
   deleteStoreProductRecord,
@@ -1188,32 +1188,31 @@ export async function finishAdminStoreOrder(adminUserId: number, storeId: number
   const latestRefund = Array.isArray(order.refunds) && order.refunds.length ? order.refunds[0] : null;
 
   if (latestRefund && latestRefund.status !== MINI_REFUND_STATUS.rejected) {
-    throw new ApiError("当前订单存在退款申请，暂时不能直接完成", ERROR_CODES.BAD_REQUEST, 400);
+    throw new ApiError("\u5f53\u524d\u8ba2\u5355\u5b58\u5728\u9000\u6b3e\u7533\u8bf7\uff0c\u6682\u65f6\u4e0d\u80fd\u76f4\u63a5\u5b8c\u6210", ERROR_CODES.BAD_REQUEST, 400);
   }
 
   if (
     (order.status !== MINI_ORDER_STATUS.processing && order.status !== MINI_ORDER_STATUS.accepted) ||
     order.payStatus !== MINI_PAY_STATUS.paid
   ) {
-    throw new ApiError("当前订单状态不允许执行完成操作", ERROR_CODES.BAD_REQUEST, 400);
+    throw new ApiError("\u5f53\u524d\u8ba2\u5355\u72b6\u6001\u4e0d\u5141\u8bb8\u6267\u884c\u5b8c\u6210\u64cd\u4f5c", ERROR_CODES.BAD_REQUEST, 400);
   }
 
-  await prisma.$transaction(async (tx: any) => {
-    await tx.miniOrder.update({
-      where: { id: orderId },
-      data: {
-        status: MINI_ORDER_STATUS.finished,
-        finishedAt: order.finishedAt || new Date()
-      }
-    });
-    await settleMiniOrderIncome(orderId, tx);
+  await prisma.miniOrder.update({
+    where: { id: orderId },
+    data: {
+      status: MINI_ORDER_STATUS.finished,
+      finishedAt: order.finishedAt || new Date()
+    }
   });
+
+  await settleMiniOrderIncome(orderId);
 
   await createMiniMessage({
     school: order.school,
     type: "system",
-    category: "订单通知",
-    content: `管理员已将订单 ${order.orderNo} 标记为已完成。`,
+    category: "\u8ba2\u5355\u901a\u77e5",
+    content: `\u7ba1\u7406\u5458\u5df2\u5c06\u8ba2\u5355 ${order.orderNo} \u6807\u8bb0\u4e3a\u5df2\u5b8c\u6210\u3002`,
     receiverUserId: order.userId,
     targetType: "order",
     targetId: String(order.id)
@@ -1262,47 +1261,23 @@ export async function reviewAdminStoreOrderRefund(
   const refund = Array.isArray(order.refunds) ? order.refunds.find((item: any) => item.id === refundId) : null;
 
   if (!refund) {
-    throw new ApiError("退款记录不存在", ERROR_CODES.NOT_FOUND, 404);
+    throw new ApiError("\u9000\u6b3e\u8bb0\u5f55\u4e0d\u5b58\u5728", ERROR_CODES.NOT_FOUND, 404);
   }
 
   if (refund.status !== MINI_REFUND_STATUS.pending) {
-    throw new ApiError("当前退款记录不可重复审核", ERROR_CODES.BAD_REQUEST, 400);
+    throw new ApiError("\u5f53\u524d\u9000\u6b3e\u8bb0\u5f55\u4e0d\u53ef\u91cd\u590d\u5ba1\u6838", ERROR_CODES.BAD_REQUEST, 400);
   }
 
-  const reviewedAt = new Date();
-  await prisma.$transaction(async (tx: any) => {
-    await tx.miniRefundRecord.update({
-      where: { id: refundId },
-      data: {
-        status: payload.status,
-        reviewNote: payload.reviewNote || "",
-        reviewerId: adminUserId,
-        reviewedAt
-      }
-    });
-
-    if (payload.status === MINI_REFUND_STATUS.approved) {
-      await reverseMiniOrderSettlement(order.id, tx);
-      await tx.miniOrder.update({
-        where: { id: order.id },
-        data: {
-          payStatus: MINI_PAY_STATUS.refunded,
-          status: order.status === MINI_ORDER_STATUS.finished ? MINI_ORDER_STATUS.finished : MINI_ORDER_STATUS.canceled,
-          canceledAt: order.status === MINI_ORDER_STATUS.finished ? order.canceledAt : reviewedAt,
-          settlementStatus: MINI_SETTLEMENT_STATUS.refunded
-        }
-      });
-    }
-  });
+  await reviewMiniRefundRequest(refundId, adminUserId, payload);
 
   await createMiniMessage({
     school: order.school,
     type: "system",
-    category: "退款通知",
+    category: "\u9000\u6b3e\u901a\u77e5",
     content:
       payload.status === MINI_REFUND_STATUS.approved
-        ? `管理员已通过退款申请 ${refund.refundNo}，退款将按原路返回。`
-        : `管理员已驳回退款申请 ${refund.refundNo}，原因：${payload.reviewNote || "请联系平台管理员了解详情"}`,
+        ? `\u7ba1\u7406\u5458\u5df2\u901a\u8fc7\u9000\u6b3e\u7533\u8bf7 ${refund.refundNo}\uff0c\u9000\u6b3e\u7ed3\u679c\u5c06\u6309\u7cfb\u7edf\u5904\u7406\u7ed3\u679c\u66f4\u65b0\u3002`
+        : `\u7ba1\u7406\u5458\u5df2\u9a73\u56de\u9000\u6b3e\u7533\u8bf7 ${refund.refundNo}\uff0c\u539f\u56e0\uff1a${payload.reviewNote || "\u8bf7\u8054\u7cfb\u5e73\u53f0\u7ba1\u7406\u5458\u4e86\u89e3\u8be6\u60c5"}`,
     receiverUserId: order.userId,
     targetType: "refund",
     targetId: String(refund.id)

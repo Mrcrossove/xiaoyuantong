@@ -6,6 +6,7 @@ import { ApiError } from "../utils/api-error";
 import { ERROR_CODES } from "../constants/error-codes";
 import { getAdminSchoolScope } from "./admin-scope.service";
 import { createMiniMessage } from "./mini-message.service";
+import { reviewMiniRefundRequest } from "./mini-refund.service";
 import type { RefundReviewPayload } from "../controllers/schemas";
 
 function buildSchoolWhere(scope: Awaited<ReturnType<typeof getAdminSchoolScope>>, school: string) {
@@ -160,64 +161,23 @@ export async function reviewRefund(id: number, reviewerId: number, payload: Refu
   });
 
   if (!row) {
-    throw new ApiError("退款记录不存在", ERROR_CODES.NOT_FOUND, 404);
+    throw new ApiError("\u9000\u6b3e\u8bb0\u5f55\u4e0d\u5b58\u5728", ERROR_CODES.NOT_FOUND, 404);
   }
 
-  if (row.status !== "待审核") {
-    throw new ApiError("当前退款记录不可重复审核", ERROR_CODES.BAD_REQUEST, 400);
+  if (row.status !== "\u5f85\u5ba1\u6838") {
+    throw new ApiError("\u5f53\u524d\u9000\u6b3e\u8bb0\u5f55\u4e0d\u53ef\u91cd\u590d\u5ba1\u6838", ERROR_CODES.BAD_REQUEST, 400);
   }
 
-  const reviewedAt = new Date();
-  const updated = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    const nextRefund = await tx.miniRefundRecord.update({
-      where: { id },
-      data: {
-        status: payload.status,
-        reviewNote: payload.reviewNote || "",
-        reviewerId,
-        reviewedAt
-      },
-      include: {
-        order: {
-          select: {
-            orderNo: true
-          }
-        },
-        user: {
-          select: {
-            nickname: true
-          }
-        },
-        reviewer: {
-          select: {
-            name: true
-          }
-        }
-      }
-    });
-
-    if (payload.status === "已通过") {
-      await tx.miniOrder.update({
-        where: { id: row.orderId },
-        data: {
-          payStatus: "已退款",
-          status: row.order.status === "已完成" ? "已完成" : "已取消",
-          canceledAt: row.order.status === "已完成" ? row.order.canceledAt : reviewedAt
-        }
-      });
-    }
-
-    return nextRefund;
-  });
+  const updated = await reviewMiniRefundRequest(id, reviewerId, payload);
 
   await createMiniMessage({
     school: row.school,
     type: "system",
-    category: "退款通知",
+    category: "\u9000\u6b3e\u901a\u77e5",
     content:
-      payload.status === "已通过"
-        ? `退款申请 ${row.refundNo} 已审核通过，退款金额将按原路返回。`
-        : `退款申请 ${row.refundNo} 未通过审核，原因：${payload.reviewNote || "请联系平台客服了解详情"}`,
+      payload.status === "\u5df2\u901a\u8fc7"
+        ? `\u9000\u6b3e\u7533\u8bf7 ${row.refundNo} \u5df2\u5ba1\u6838\u901a\u8fc7\uff0c\u9000\u6b3e\u7ed3\u679c\u5c06\u6309\u5fae\u4fe1\u5b9e\u9645\u5904\u7406\u7ed3\u679c\u56de\u5199\u3002`
+        : `\u9000\u6b3e\u7533\u8bf7 ${row.refundNo} \u672a\u901a\u8fc7\u5ba1\u6838\uff0c\u539f\u56e0\uff1a${payload.reviewNote || "\u8bf7\u8054\u7cfb\u5e73\u53f0\u5ba2\u670d\u4e86\u89e3\u8be6\u60c5"}`,
     receiverUserId: row.userId,
     targetType: "refund",
     targetId: String(row.id)
@@ -228,12 +188,12 @@ export async function reviewRefund(id: number, reviewerId: number, payload: Refu
     refundNo: updated.refundNo,
     orderNo: updated.order?.orderNo || "",
     school: updated.school,
-    buyer: updated.user?.nickname || "",
+    buyer: row.user?.nickname || "",
     amount: Number(updated.amount || 0),
     reason: updated.reason,
     status: updated.status,
     reviewNote: updated.reviewNote || "",
-    reviewerName: updated.reviewer?.name || "",
+    reviewerName: row.reviewer?.name || "",
     applyTime: formatDateTime(updated.applyTime),
     reviewedAt: updated.reviewedAt ? formatDateTime(updated.reviewedAt) : ""
   };

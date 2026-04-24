@@ -5,6 +5,12 @@ import type { MiniWithdrawCreatePayload, MiniWithdrawReviewPayload } from "../co
 import { ApiError } from "../utils/api-error";
 import { ERROR_CODES } from "../constants/error-codes";
 import { createMiniMessage } from "./mini-message.service";
+import {
+  createOrSyncMiniWithdrawTransferBill,
+  MINI_WITHDRAW_TRANSFER_STATUS,
+  syncMiniWithdrawTransferBill,
+  validateMiniWithdrawTransferReady
+} from "./mini-withdraw-transfer.service";
 
 const WITHDRAW_STATUS = {
   pending: "待审核",
@@ -31,6 +37,22 @@ function maskAccountNo(value: string) {
     return text;
   }
   return `${text.slice(0, 3)}****${text.slice(-4)}`;
+}
+
+function getDisplayWithdrawStatus(item: {
+  status: string;
+  transferStatus?: string | null;
+}) {
+  if (item.transferStatus === MINI_WITHDRAW_TRANSFER_STATUS.processing) {
+    return MINI_WITHDRAW_TRANSFER_STATUS.processing;
+  }
+  if (item.transferStatus === MINI_WITHDRAW_TRANSFER_STATUS.success) {
+    return MINI_WITHDRAW_TRANSFER_STATUS.success;
+  }
+  if (item.transferStatus === MINI_WITHDRAW_TRANSFER_STATUS.failed) {
+    return MINI_WITHDRAW_TRANSFER_STATUS.failed;
+  }
+  return item.status;
 }
 
 export async function ensureWalletAccount(userId: number) {
@@ -72,9 +94,15 @@ function mapRecord(item: any) {
     amount: formatMoney(item.amount),
     accountType: item.accountType,
     accountNo: maskAccountNo(item.accountNo),
-    status: item.status,
+    status: getDisplayWithdrawStatus(item),
+    reviewStatus: item.status,
+    transferStatus: item.transferStatus || "",
     reviewNote: item.reviewNote || "",
-    applyTime: formatTime(item.applyTime)
+    transferFailReason: item.transferFailReason || "",
+    applyTime: formatTime(item.applyTime),
+    reviewedAt: formatTime(item.reviewedAt),
+    transferAppliedAt: formatTime(item.transferAppliedAt),
+    transferSuccessAt: formatTime(item.transferSuccessAt)
   };
 }
 
@@ -86,9 +114,15 @@ function mapAdminWithdraw(item: any) {
     accountName: item.accountName,
     amount: Number(item.amount || 0),
     bankName: item.accountType,
-    status: item.status,
+    status: getDisplayWithdrawStatus(item),
+    reviewStatus: item.status,
+    transferStatus: item.transferStatus || "",
     applyTime: formatTime(item.applyTime),
-    reviewNote: item.reviewNote || ""
+    reviewedAt: formatTime(item.reviewedAt),
+    transferAppliedAt: formatTime(item.transferAppliedAt),
+    transferSuccessAt: formatTime(item.transferSuccessAt),
+    reviewNote: item.reviewNote || "",
+    transferFailReason: item.transferFailReason || ""
   };
 }
 
@@ -175,11 +209,13 @@ export async function queryAdminWithdrawList(rawQuery: Record<string, unknown>) 
   const { page, pageSize, skip } = parsePageParams(rawQuery);
   const school = String(rawQuery.school || "").trim();
   const status = String(rawQuery.status || "").trim();
+  const transferStatus = String(rawQuery.transferStatus || "").trim();
   const keyword = String(rawQuery.keyword || "").trim();
 
   const where = {
     school: school || undefined,
     status: status || undefined,
+    transferStatus: transferStatus || undefined,
     OR: keyword
       ? [
           { withdrawNo: { contains: keyword, mode: "insensitive" as const } },
@@ -268,60 +304,87 @@ export async function reviewMiniWithdraw(id: number, payload: MiniWithdrawReview
 
   const reviewedAt = new Date();
 
-  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    await tx.miniWithdrawRecord.update({
-      where: { id },
-      data: {
-        status: payload.status,
-        reviewNote: payload.reviewNote || "",
-        reviewedAt
-      }
-    });
+  if (payload.status !== WITHDRAW_STATUS.approved) {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await tx.miniWithdrawRecord.update({
+        where: { id },
+        data: {
+          status: payload.status,
+          reviewNote: payload.reviewNote || "",
+          reviewedAt
+        }
+      });
 
-    if (payload.status === WITHDRAW_STATUS.approved) {
       await tx.miniWalletAccount.update({
         where: { userId: record.userId },
         data: {
-          balance: {
-            decrement: record.amount
-          },
           frozenAmount: {
             decrement: record.amount
           },
-          totalWithdrawn: {
+          withdrawableAmount: {
             increment: record.amount
           }
         }
       });
-      return;
-    }
-
-    await tx.miniWalletAccount.update({
-      where: { userId: record.userId },
-      data: {
-        frozenAmount: {
-          decrement: record.amount
-        },
-        withdrawableAmount: {
-          increment: record.amount
-        }
-      }
     });
+
+    await createMiniMessage({
+      school: record.school,
+      type: "system",
+      category: "提现通知",
+      content: `提现申请 ${record.withdrawNo} 未通过审核，原因：${payload.reviewNote || "请联系管理员"}`,
+      receiverUserId: record.userId,
+      targetType: "withdraw",
+      targetId: String(record.id)
+    });
+
+    const nextRejected = await findWithdrawOrThrow(id);
+    return mapAdminWithdraw(nextRejected);
+  }
+
+  await validateMiniWithdrawTransferReady(id);
+
+  await prisma.miniWithdrawRecord.update({
+    where: { id },
+    data: {
+      status: WITHDRAW_STATUS.approved,
+      reviewNote: payload.reviewNote || "",
+      reviewedAt,
+      transferStatus: MINI_WITHDRAW_TRANSFER_STATUS.pending,
+      transferFailReason: null
+    }
   });
 
-  await createMiniMessage({
-    school: record.school,
-    type: "system",
-    category: "提现通知",
-    content:
-      payload.status === WITHDRAW_STATUS.approved
-        ? `提现申请 ${record.withdrawNo} 已审核通过，请留意到账通知`
-        : `提现申请 ${record.withdrawNo} 未通过审核，原因：${payload.reviewNote || "请联系管理员"}`,
-    receiverUserId: record.userId,
-    targetType: "withdraw",
-    targetId: String(record.id)
-  });
-
+  await createOrSyncMiniWithdrawTransferBill(id);
   const next = await findWithdrawOrThrow(id);
   return mapAdminWithdraw(next);
+}
+
+export async function syncAdminWithdrawTransfer(id: number) {
+  const record = await findWithdrawOrThrow(id);
+
+  if (record.status !== WITHDRAW_STATUS.approved) {
+    throw new ApiError("仅已审核通过的提现记录可查单", ERROR_CODES.BAD_REQUEST, 400);
+  }
+
+  if (record.transferStatus === MINI_WITHDRAW_TRANSFER_STATUS.success) {
+    return mapAdminWithdraw(record);
+  }
+
+  if (record.transferOutBillNo) {
+    const bill = await prisma.miniWithdrawTransferBill.findFirst({
+      where: {
+        outBillNo: record.transferOutBillNo
+      }
+    });
+    if (bill) {
+      await syncMiniWithdrawTransferBill(bill.id);
+      const latest = await findWithdrawOrThrow(id);
+      return mapAdminWithdraw(latest);
+    }
+  }
+
+  await createOrSyncMiniWithdrawTransferBill(id);
+  const latest = await findWithdrawOrThrow(id);
+  return mapAdminWithdraw(latest);
 }

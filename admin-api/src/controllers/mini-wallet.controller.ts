@@ -6,7 +6,8 @@ import {
   queryAdminWalletAccountList,
   queryAdminWithdrawList,
   queryMiniWalletSummary,
-  reviewMiniWithdraw
+  reviewMiniWithdraw,
+  syncAdminWithdrawTransfer
 } from "../services/mini-wallet.service";
 import type { MiniWithdrawCreatePayload, MiniWithdrawReviewPayload } from "./schemas";
 
@@ -34,4 +35,10 @@ export async function reviewMiniWithdrawAction(req: Request, res: Response) {
   const { id } = idParamSchema.parse(req.params);
   const data = await reviewMiniWithdraw(id, req.body as MiniWithdrawReviewPayload);
   return ok(res, data, req.traceId, "提现审核完成");
+}
+
+export async function syncAdminWithdrawTransferAction(req: Request, res: Response) {
+  const { id } = idParamSchema.parse(req.params);
+  const data = await syncAdminWithdrawTransfer(id);
+  return ok(res, data, req.traceId, "提现打款状态已同步");
 }

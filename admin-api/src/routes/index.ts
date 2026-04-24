@@ -30,6 +30,7 @@ import systemRoutes from "./system.routes";
 import tradeAdminRoutes from "./trade-admin.routes";
 import userPublishRoutes from "./user-publish.routes";
 import verificationRoutes from "./verification.routes";
+import wechatPayRoutes from "./wechat-pay.routes";
 
 const router = Router();
 
@@ -66,5 +67,6 @@ router.use("/product/admin", productAdminRoutes);
 router.use("/stat/admin", statAdminRoutes);
 router.use("/system", systemRoutes);
 router.use("/trade/admin", tradeAdminRoutes);
+router.use("/wechat/pay", wechatPayRoutes);
 
 export default router;

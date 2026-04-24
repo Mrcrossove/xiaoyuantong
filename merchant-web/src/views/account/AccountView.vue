@@ -12,7 +12,9 @@ const activating = ref(false);
 const profile = ref<any>(null);
 
 const profileForm = reactive({
-  name: ""
+  name: "",
+  withdrawRealName: "",
+  acceptWithdrawAgreement: false
 });
 
 const passwordForm = reactive({
@@ -25,6 +27,7 @@ const activateForm = reactive({
 });
 
 const mustChangePassword = computed(() => Boolean(profile.value?.mustChangePassword || authStore.mustChangePassword));
+const withdrawProfile = computed(() => profile.value?.withdrawProfile || {});
 
 async function loadData() {
   loading.value = true;
@@ -32,6 +35,8 @@ async function loadData() {
     const result = await getAccountProfileApi();
     profile.value = result;
     profileForm.name = result.name || "";
+    profileForm.withdrawRealName = result.withdrawProfile?.realName || "";
+    profileForm.acceptWithdrawAgreement = Boolean(result.withdrawProfile?.agreementAccepted);
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : "账号信息加载失败");
   } finally {
@@ -42,7 +47,11 @@ async function loadData() {
 async function handleUpdateProfile() {
   savingProfile.value = true;
   try {
-    await updateAccountProfileApi({ name: profileForm.name });
+    await updateAccountProfileApi({
+      name: profileForm.name,
+      withdrawRealName: profileForm.withdrawRealName,
+      acceptWithdrawAgreement: profileForm.acceptWithdrawAgreement
+    });
     await authStore.refreshSession();
     ElMessage.success("账号信息已更新");
     await loadData();
@@ -91,7 +100,7 @@ onMounted(loadData);
         <div class="section-title">首次登录请先修改密码</div>
       </template>
       <p class="activate-desc">
-        当前账号正在使用系统下发的初始密码。为了保证商家后台安全，首次登录后必须先设置一个新的登录密码。
+        当前账号仍在使用系统下发的初始密码。为了保证商家后台安全，首次登录后必须先设置一个新的登录密码。
       </p>
       <div class="activate-row">
         <el-input v-model.trim="activateForm.password" show-password placeholder="请设置 6-30 位新密码" />
@@ -124,6 +133,44 @@ onMounted(loadData);
       </el-form>
     </el-card>
 
+    <el-card>
+      <template #header>
+        <div class="section-title">微信提现建档</div>
+      </template>
+      <el-alert
+        :type="withdrawProfile.status === '已建档' ? 'success' : 'warning'"
+        :closable="false"
+        show-icon
+        style="margin-bottom: 16px"
+      >
+        {{ withdrawProfile.blockedReason || "微信提现收款资料已完成建档" }}
+      </el-alert>
+
+      <el-descriptions :column="2" border>
+        <el-descriptions-item label="收款方式">{{ withdrawProfile.channel || "微信零钱" }}</el-descriptions-item>
+        <el-descriptions-item label="建档状态">{{ withdrawProfile.status || "未建档" }}</el-descriptions-item>
+        <el-descriptions-item label="微信身份绑定">{{ withdrawProfile.openidBound ? "已绑定" : "未绑定" }}</el-descriptions-item>
+        <el-descriptions-item label="绑定时间">{{ withdrawProfile.openidBoundAt || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="协议确认">{{ withdrawProfile.agreementAccepted ? "已确认" : "未确认" }}</el-descriptions-item>
+        <el-descriptions-item label="完成时间">{{ withdrawProfile.completedAt || "-" }}</el-descriptions-item>
+      </el-descriptions>
+
+      <el-divider />
+
+      <el-form label-position="top">
+        <el-form-item label="收款人真实姓名">
+          <el-input v-model.trim="profileForm.withdrawRealName" maxlength="20" placeholder="用于后续补齐大额提现实名能力，当前可先选填" />
+        </el-form-item>
+        <el-form-item>
+          <el-checkbox v-model="profileForm.acceptWithdrawAgreement">
+            我已确认提现资金打入当前微信绑定的零钱账户，并接受平台审核、查单与打款结果同步机制
+          </el-checkbox>
+        </el-form-item>
+        <div class="hint">{{ withdrawProfile.amountLimitNote || "" }}</div>
+        <el-button type="primary" :loading="savingProfile" @click="handleUpdateProfile">保存提现建档</el-button>
+      </el-form>
+    </el-card>
+
     <el-card v-if="!mustChangePassword">
       <template #header>
         <div class="section-title">修改密码</div>
@@ -142,6 +189,11 @@ onMounted(loadData);
 </template>
 
 <style scoped>
+.page {
+  display: grid;
+  gap: 16px;
+}
+
 .section-title {
   font-size: 16px;
   font-weight: 700;
@@ -160,5 +212,11 @@ onMounted(loadData);
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 12px;
+}
+
+.hint {
+  margin: -8px 0 16px;
+  color: #667085;
+  font-size: 13px;
 }
 </style>

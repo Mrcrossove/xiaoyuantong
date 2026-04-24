@@ -29,6 +29,8 @@ export const env = {
   wechatPayMerchantSerialNo: process.env.WECHAT_PAY_MERCHANT_SERIAL_NO || process.env.WECHAT_PAY_SERIAL_NO || "",
   wechatPayPrivateKey: process.env.WECHAT_PAY_PRIVATE_KEY || "",
   wechatPayPlatformPublicKey: process.env.WECHAT_PAY_PLATFORM_PUBLIC_KEY || "",
+  wechatPayPlatformSerialNo: process.env.WECHAT_PAY_PLATFORM_SERIAL_NO || "",
+  wechatPayPublicKeyId: process.env.WECHAT_PAY_PUBLIC_KEY_ID || process.env.WECHAT_PAY_PLATFORM_SERIAL_NO || "",
   wechatPayApiV3Key: process.env.WECHAT_PAY_API_V3_KEY || "",
   wechatPayUseServiceProvider: process.env.WECHAT_PAY_USE_SERVICE_PROVIDER !== "false",
   wechatPaySpAppId: process.env.WECHAT_PAY_SP_APP_ID || process.env.WECHAT_APP_ID || "",
@@ -36,6 +38,9 @@ export const env = {
   wechatPaySubMchIdFallback: process.env.WECHAT_PAY_SUB_MCH_ID || "",
   wechatPayCommissionRate: Number(process.env.WECHAT_PAY_COMMISSION_RATE || 0.05),
   wechatPayProfitSharing: process.env.WECHAT_PAY_PROFIT_SHARING !== "false",
+  wechatPayTransferNotifyUrl: process.env.WECHAT_PAY_TRANSFER_NOTIFY_URL || "",
+  wechatPayTransferSceneId: process.env.WECHAT_PAY_TRANSFER_SCENE_ID || "",
+  wechatPayTransferUserRecvPerception: process.env.WECHAT_PAY_TRANSFER_USER_RECV_PERCEPTION || "校园通商家提现",
 
   smsProvider: (process.env.SMS_PROVIDER || "mock").trim().toLowerCase(),
   smsCodeExpireMinutes: Number(process.env.SMS_CODE_EXPIRE_MINUTES || 10),

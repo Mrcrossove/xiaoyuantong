@@ -83,7 +83,7 @@ export const reviewRefundApi = (id: number, payload: { status: "已通过" | "�
   request<any>({ url: `/merchant/refund/${id}/review`, method: "POST", body: JSON.stringify(payload) });
 
 export const getWalletApi = () => request<any>({ url: "/merchant/wallet/overview", method: "GET" });
-export const createWithdrawApi = (payload: { amount: number; accountType?: string; accountNo: string; remark?: string }) =>
+export const createWithdrawApi = (payload: { amount: number; accountType?: string; accountNo?: string; remark?: string }) =>
   request<any>({ url: "/merchant/wallet/withdraw", method: "POST", body: JSON.stringify(payload) });
 
 export const getMessageListApi = (params?: { keyword?: string; type?: string }) =>
@@ -94,7 +94,7 @@ export const readAllMessagesApi = (payload?: { type?: "system" | "interactive" }
 
 export const getStatApi = () => request<any>({ url: "/merchant/stat/overview", method: "GET" });
 export const getAccountProfileApi = () => request<any>({ url: "/merchant/account/profile", method: "GET" });
-export const updateAccountProfileApi = (payload: { name: string }) =>
+export const updateAccountProfileApi = (payload: { name: string; withdrawRealName?: string; acceptWithdrawAgreement?: boolean }) =>
   request<any>({ url: "/merchant/account/profile", method: "PUT", body: JSON.stringify(payload) });
 export const updateAccountPasswordApi = (payload: { oldPassword?: string; newPassword: string }) =>
   request<any>({ url: "/merchant/account/password", method: "PUT", body: JSON.stringify(payload) });

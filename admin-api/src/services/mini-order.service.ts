@@ -6,35 +6,38 @@ import { prisma } from "../lib/prisma";
 import { ApiError } from "../utils/api-error";
 import { parsePageParams } from "../utils/pagination";
 import { createMiniMessage } from "./mini-message.service";
+import { createOrSyncMiniOrderProfitSharing, MINI_PROFIT_SHARING_STATUS } from "./mini-profit-sharing.service";
 import { getDefaultSku, parseMoneyNumber } from "../utils/merchant-product";
 import { listStoreProductsByDetailId } from "./store-product.service";
 
 export const MINI_ORDER_STATUS = {
-  pending: "待支付",
-  processing: "进行中",
-  accepted: "待处理",
-  finished: "已完成",
-  canceled: "已取消"
+  pending: "\u5f85\u652f\u4ed8",
+  processing: "\u8fdb\u884c\u4e2d",
+  accepted: "\u5f85\u5904\u7406",
+  finished: "\u5df2\u5b8c\u6210",
+  canceled: "\u5df2\u53d6\u6d88"
 } as const;
 
 export const MINI_PAY_STATUS = {
-  pending: "待支付",
-  paid: "已支付",
-  refunded: "已退款"
+  pending: "\u5f85\u652f\u4ed8",
+  paid: "\u5df2\u652f\u4ed8",
+  refunding: "\u9000\u6b3e\u4e2d",
+  refunded: "\u5df2\u9000\u6b3e"
 } as const;
 
 export const MINI_SETTLEMENT_STATUS = {
-  pending: "未结算",
-  waiting: "待结算",
-  settled: "已结算",
-  refunded: "已退款",
-  closed: "已关闭"
+  pending: "\u672a\u7ed3\u7b97",
+  waiting: "\u5f85\u7ed3\u7b97",
+  settled: "\u5df2\u7ed3\u7b97",
+  refundPending: "\u9000\u6b3e\u5904\u7406\u4e2d",
+  refunded: "\u5df2\u9000\u6b3e",
+  closed: "\u5df2\u5173\u95ed"
 } as const;
 
 export const MINI_REFUND_STATUS = {
-  pending: "待审核",
-  approved: "已通过",
-  rejected: "已驳回"
+  pending: "\u5f85\u5ba1\u6838",
+  approved: "\u5df2\u901a\u8fc7",
+  rejected: "\u5df2\u9a73\u56de"
 } as const;
 
 type StoreProductMatch = {
@@ -106,6 +109,7 @@ function deriveSettlementStatus(item: any) {
   }
 
   if (item.payStatus === MINI_PAY_STATUS.refunded) return MINI_SETTLEMENT_STATUS.refunded;
+  if (item.payStatus === MINI_PAY_STATUS.refunding) return MINI_SETTLEMENT_STATUS.refundPending;
   if (item.status === MINI_ORDER_STATUS.finished) return MINI_SETTLEMENT_STATUS.settled;
   if (item.status === MINI_ORDER_STATUS.processing || item.status === MINI_ORDER_STATUS.accepted) {
     return MINI_SETTLEMENT_STATUS.waiting;
@@ -525,6 +529,29 @@ export async function settleMiniOrderIncome(orderId: number, txClient?: Prisma.T
   const merchantIncomeAmount = roundMoney(order.amount * (1 - env.wechatPayCommissionRate));
   const platformCommissionAmount = roundMoney(order.amount - merchantIncomeAmount);
 
+  const shouldUseWechatProfitSharing =
+    !env.payUseMock &&
+    env.wechatPayUseServiceProvider &&
+    env.wechatPayProfitSharing &&
+    order.paymentMode !== "模拟支付" &&
+    Boolean(order.transactionId) &&
+    Boolean(storeContext.store.wechatSubMchId || env.wechatPaySubMchIdFallback);
+
+  if (shouldUseWechatProfitSharing) {
+    await prisma.miniOrder.update({
+      where: { id: order.id },
+      data: {
+        settlementStatus: MINI_SETTLEMENT_STATUS.waiting,
+        profitSharingAmount: merchantIncomeAmount
+      }
+    });
+
+    await createOrSyncMiniOrderProfitSharing(order.id);
+    return prisma.miniOrder.findUniqueOrThrow({
+      where: { id: order.id }
+    });
+  }
+
   await ensureWalletAccountInDb(db, storeContext.ownerUserId, storeContext.school);
 
   await db.miniWalletAccount.update({
@@ -549,7 +576,9 @@ export async function settleMiniOrderIncome(orderId: number, txClient?: Prisma.T
       settlementAmount: roundMoney(order.amount),
       platformCommissionAmount,
       merchantIncomeAmount,
-      settledAt: order.settledAt || new Date()
+      settledAt: order.settledAt || new Date(),
+      profitSharingStatus: MINI_PROFIT_SHARING_STATUS.skipped,
+      profitSharingAmount: merchantIncomeAmount
     }
   });
 }
@@ -562,6 +591,13 @@ export async function reverseMiniOrderSettlement(orderId: number, txClient?: Pri
 
   if (!order) {
     throw new ApiError("订单不存在", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  if (
+    order.profitSharingStatus === MINI_PROFIT_SHARING_STATUS.success ||
+    order.profitSharingStatus === MINI_PROFIT_SHARING_STATUS.processing
+  ) {
+    throw new ApiError("订单已进入分账流程，退款前需要先完成反分账处理", ERROR_CODES.BAD_REQUEST, 400);
   }
 
   if (order.settlementStatus !== MINI_SETTLEMENT_STATUS.settled || Number(order.merchantIncomeAmount || 0) <= 0) {
@@ -747,8 +783,12 @@ export async function markMiniOrderPaid(
 ) {
   const order = await findMiniOrderForUser(userId, id);
 
+  if (order.payStatus === MINI_PAY_STATUS.paid || order.payStatus === MINI_PAY_STATUS.refunded) {
+    return getMiniOrderDetail(userId, id);
+  }
+
   if (order.status !== MINI_ORDER_STATUS.pending) {
-    throw new ApiError("当前订单不能支付", ERROR_CODES.BAD_REQUEST, 400);
+    throw new ApiError("\u5f53\u524d\u8ba2\u5355\u4e0d\u80fd\u652f\u4ed8", ERROR_CODES.BAD_REQUEST, 400);
   }
 
   const paidAt = options?.paidAt || new Date();
@@ -758,8 +798,8 @@ export async function markMiniOrderPaid(
       status: MINI_ORDER_STATUS.processing,
       payStatus: MINI_PAY_STATUS.paid,
       paidAt,
-      paymentChannel: options?.paymentChannel || "微信支付",
-      paymentMode: options?.paymentMode || "小程序支付",
+      paymentChannel: options?.paymentChannel || "\u5fae\u4fe1\u652f\u4ed8",
+      paymentMode: options?.paymentMode || "\u5c0f\u7a0b\u5e8f\u652f\u4ed8",
       transactionId: options?.transactionId || order.transactionId,
       paymentMeta: options?.paymentMeta || order.paymentMeta,
       settlementStatus: MINI_SETTLEMENT_STATUS.waiting
@@ -769,8 +809,8 @@ export async function markMiniOrderPaid(
   await createMiniMessage({
     school: row.school,
     type: "system",
-    category: "订单通知",
-    content: `订单 ${row.orderNo} 支付成功，商家正在处理中。`,
+    category: "\u8ba2\u5355\u901a\u77e5",
+    content: `\u8ba2\u5355 ${row.orderNo} \u652f\u4ed8\u6210\u529f\uff0c\u5546\u5bb6\u6b63\u5728\u5904\u7406\u4e2d\u3002`,
     receiverUserId: userId,
     targetType: "order",
     targetId: String(row.id)
@@ -784,8 +824,8 @@ export async function markMiniOrderPaid(
     await createMiniMessage({
       school: row.school,
       type: "system",
-      category: "订单通知",
-      content: `你有一笔新订单 ${row.orderNo} 已支付，请尽快接单处理。`,
+      category: "\u8ba2\u5355\u901a\u77e5",
+      content: `\u4f60\u6709\u4e00\u7b14\u65b0\u8ba2\u5355 ${row.orderNo} \u5df2\u652f\u4ed8\uff0c\u8bf7\u5c3d\u5feb\u63a5\u5355\u5904\u7406\u3002`,
       receiverUserId: store.ownerUserId,
       targetType: "order",
       targetId: String(row.id)
@@ -793,6 +833,78 @@ export async function markMiniOrderPaid(
   }
 
   return getMiniOrderDetail(userId, id);
+}
+
+export async function markMiniOrderPaidByOutTradeNo(
+  outTradeNo: string,
+  options?: {
+    paymentChannel?: string;
+    paymentMode?: string;
+    transactionId?: string;
+    paymentMeta?: Prisma.InputJsonValue;
+    paidAt?: Date;
+  }
+) {
+  const order = await prisma.miniOrder.findUnique({
+    where: {
+      orderNo: outTradeNo
+    }
+  });
+
+  if (!order) {
+    throw new ApiError("\u8ba2\u5355\u4e0d\u5b58\u5728", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  if (order.payStatus === MINI_PAY_STATUS.paid || order.payStatus === MINI_PAY_STATUS.refunded) {
+    return order;
+  }
+
+  if (order.status !== MINI_ORDER_STATUS.pending) {
+    return order;
+  }
+
+  const paidAt = options?.paidAt || new Date();
+  const row = await prisma.miniOrder.update({
+    where: { id: order.id },
+    data: {
+      status: MINI_ORDER_STATUS.processing,
+      payStatus: MINI_PAY_STATUS.paid,
+      paidAt,
+      paymentChannel: options?.paymentChannel || "\u5fae\u4fe1\u652f\u4ed8",
+      paymentMode: options?.paymentMode || "\u5c0f\u7a0b\u5e8f\u652f\u4ed8",
+      transactionId: options?.transactionId || order.transactionId,
+      paymentMeta: options?.paymentMeta || order.paymentMeta,
+      settlementStatus: MINI_SETTLEMENT_STATUS.waiting
+    }
+  });
+
+  await createMiniMessage({
+    school: row.school,
+    type: "system",
+    category: "\u8ba2\u5355\u901a\u77e5",
+    content: `\u8ba2\u5355 ${row.orderNo} \u652f\u4ed8\u6210\u529f\uff0c\u5546\u5bb6\u6b63\u5728\u5904\u7406\u4e2d\u3002`,
+    receiverUserId: row.userId,
+    targetType: "order",
+    targetId: String(row.id)
+  });
+
+  const store = await prisma.miniStore.findUnique({
+    where: { detailId: row.storeDetailId }
+  });
+
+  if (store?.ownerUserId) {
+    await createMiniMessage({
+      school: row.school,
+      type: "system",
+      category: "\u8ba2\u5355\u901a\u77e5",
+      content: `\u4f60\u6709\u4e00\u7b14\u65b0\u8ba2\u5355 ${row.orderNo} \u5df2\u652f\u4ed8\uff0c\u8bf7\u5c3d\u5feb\u63a5\u5355\u5904\u7406\u3002`,
+      receiverUserId: store.ownerUserId,
+      targetType: "order",
+      targetId: String(row.id)
+    });
+  }
+
+  return row;
 }
 
 export async function payMiniOrder(userId: number, id: number) {
@@ -837,31 +949,28 @@ export async function finishMiniOrder(userId: number, id: number) {
   const latestRefund = getLatestRefund(order);
 
   if (latestRefund && latestRefund.status !== MINI_REFUND_STATUS.rejected) {
-    throw new ApiError("当前订单存在退款申请，暂时无法确认完成", ERROR_CODES.BAD_REQUEST, 400);
+    throw new ApiError("\u5f53\u524d\u8ba2\u5355\u5b58\u5728\u9000\u6b3e\u7533\u8bf7\uff0c\u6682\u65f6\u65e0\u6cd5\u786e\u8ba4\u5b8c\u6210", ERROR_CODES.BAD_REQUEST, 400);
   }
 
   if (order.status !== MINI_ORDER_STATUS.processing && order.status !== MINI_ORDER_STATUS.accepted) {
-    throw new ApiError("只有进行中的订单可以确认完成", ERROR_CODES.BAD_REQUEST, 400);
+    throw new ApiError("\u53ea\u6709\u8fdb\u884c\u4e2d\u7684\u8ba2\u5355\u53ef\u4ee5\u786e\u8ba4\u5b8c\u6210", ERROR_CODES.BAD_REQUEST, 400);
   }
 
-  const row = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    const updated = await tx.miniOrder.update({
-      where: { id },
-      data: {
-        status: MINI_ORDER_STATUS.finished,
-        finishedAt: new Date()
-      }
-    });
-
-    await settleMiniOrderIncome(id, tx);
-    return updated;
+  const row = await prisma.miniOrder.update({
+    where: { id },
+    data: {
+      status: MINI_ORDER_STATUS.finished,
+      finishedAt: new Date()
+    }
   });
+
+  await settleMiniOrderIncome(id);
 
   await createMiniMessage({
     school: row.school,
     type: "system",
-    category: "订单通知",
-    content: `订单 ${row.orderNo} 已完成，感谢你的使用。`,
+    category: "\u8ba2\u5355\u901a\u77e5",
+    content: `\u8ba2\u5355 ${row.orderNo} \u5df2\u5b8c\u6210\uff0c\u611f\u8c22\u4f60\u7684\u4f7f\u7528\u3002`,
     receiverUserId: userId,
     targetType: "order",
     targetId: String(row.id)
@@ -875,8 +984,8 @@ export async function finishMiniOrder(userId: number, id: number) {
     await createMiniMessage({
       school: row.school,
       type: "system",
-      category: "订单通知",
-      content: `订单 ${row.orderNo} 已由用户确认完成，收入已进入结算。`,
+      category: "\u8ba2\u5355\u901a\u77e5",
+      content: `\u8ba2\u5355 ${row.orderNo} \u5df2\u7531\u7528\u6237\u786e\u8ba4\u5b8c\u6210\uff0c\u6536\u5165\u5df2\u8fdb\u5165\u7ed3\u7b97\u6d41\u7a0b\u3002`,
       receiverUserId: store.ownerUserId,
       targetType: "order",
       targetId: String(row.id)

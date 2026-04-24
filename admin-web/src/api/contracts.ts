@@ -1220,11 +1220,21 @@ export interface WithdrawItem {
   amount: number;
   bankName: string;
   status: string;
+  reviewStatus?: string;
+  transferStatus?: string;
+  reviewedAt?: string;
+  transferAppliedAt?: string;
+  transferSuccessAt?: string;
+  transferOutBillNo?: string;
+  transferBillNo?: string;
+  transferFailReason?: string;
   applyTime: string;
   reviewNote?: string;
 }
 
-export interface WithdrawQuery extends PageQuery {}
+export interface WithdrawQuery extends PageQuery {
+  transferStatus?: string;
+}
 
 export interface WithdrawReviewPayload {
   status: string;
