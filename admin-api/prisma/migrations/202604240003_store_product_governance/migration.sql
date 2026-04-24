@@ -223,14 +223,16 @@ SELECT * FROM (
 ) AS final_skus;
 
 UPDATE "MiniStoreProduct" p
-SET "defaultSkuKey" = COALESCE(default_sku."skuKey", p."defaultSkuKey")
-FROM LATERAL (
-  SELECT s."skuKey"
-  FROM "MiniStoreProductSku" s
-  WHERE s."productId" = p."id"
-  ORDER BY s."isDefault" DESC, s."sortOrder" ASC, s."id" ASC
-  LIMIT 1
-) AS default_sku;
+SET "defaultSkuKey" = COALESCE(
+  (
+    SELECT s."skuKey"
+    FROM "MiniStoreProductSku" s
+    WHERE s."productId" = p."id"
+    ORDER BY s."isDefault" DESC, s."sortOrder" ASC, s."id" ASC
+    LIMIT 1
+  ),
+  p."defaultSkuKey"
+);
 
 UPDATE "MiniStore" s
 SET "productCount" = COALESCE(src.on_sale_count, 0)
