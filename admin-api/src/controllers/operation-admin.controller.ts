@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { ok } from "../utils/response";
 import { idParamSchema } from "./schemas";
+import { uploadMiniImage } from "../services/mini-upload.service";
 import {
   createBannerConfig,
   createHelpCenter,
@@ -88,6 +89,11 @@ export async function listBannerConfigAction(req: Request, res: Response) {
 export async function createBannerConfigAction(req: Request, res: Response) {
   const data = await createBannerConfig(req.adminAuth!.userId, req.body);
   return ok(res, data, req.traceId, "轮播图创建成功");
+}
+
+export async function uploadBannerImageAction(req: Request, res: Response) {
+  const data = await uploadMiniImage(req.body);
+  return ok(res, data, req.traceId, "轮播图上传成功");
 }
 
 export async function updateBannerConfigAction(req: Request, res: Response) {

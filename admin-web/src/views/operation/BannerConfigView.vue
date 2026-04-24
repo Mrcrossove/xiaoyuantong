@@ -1,33 +1,48 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from "element-plus";
+import { computed, onMounted, reactive, ref } from "vue";
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules, type UploadRequestOptions } from "element-plus";
 import type { BannerConfigItem, BannerConfigPayload } from "../../api/contracts";
 import { ApiRequestError } from "../../api/request";
-import { createBannerConfigApi, deleteBannerConfigApi, getBannerConfigListApi, toggleBannerConfigStatusApi, updateBannerConfigApi } from "../../api/modules/operation";
+import {
+  createBannerConfigApi,
+  deleteBannerConfigApi,
+  getBannerConfigListApi,
+  toggleBannerConfigStatusApi,
+  updateBannerConfigApi,
+  uploadBannerImageApi
+} from "../../api/modules/operation";
+import { useAuthStore } from "../../stores/auth";
 
+const FIXED_POSITION = "mini_home_top";
+const FIXED_POSITION_LABEL = "小程序首页顶部";
+
+const authStore = useAuthStore();
 const loading = ref(false);
 const submitting = ref(false);
+const uploading = ref(false);
 const dialogVisible = ref(false);
 const editingId = ref<number | null>(null);
 const formRef = ref<FormInstance>();
 const list = ref<BannerConfigItem[]>([]);
 const total = ref(0);
 const enabledCount = ref(0);
-const positionOptions = ref<string[]>([]);
 const schoolOptions = ref<string[]>([]);
+
+const scopedSchools = computed(() => authStore.profile?.schools || []);
+const isAssignedSchoolAdmin = computed(() => authStore.profile?.scopeType === "assigned");
+const lockedSchool = computed(() => (isAssignedSchoolAdmin.value ? scopedSchools.value[0] || "" : ""));
 
 const query = reactive({
   page: 1,
   pageSize: 10,
   keyword: "",
   school: "",
-  position: "",
   status: ""
 });
 
 const form = reactive<BannerConfigPayload>({
   title: "",
-  position: "",
+  position: FIXED_POSITION,
   school: "",
   imageUrl: "",
   linkUrl: "",
@@ -38,8 +53,8 @@ const form = reactive<BannerConfigPayload>({
 
 const rules: FormRules<typeof form> = {
   title: [{ required: true, message: "请输入标题", trigger: "blur" }],
-  position: [{ required: true, message: "请输入投放位置", trigger: "blur" }],
   school: [{ required: true, message: "请选择所属高校", trigger: "change" }],
+  imageUrl: [{ required: true, message: "请先上传轮播图", trigger: "change" }],
   sort: [{ required: true, message: "请输入排序", trigger: "blur" }],
   status: [{ required: true, message: "请选择状态", trigger: "change" }]
 };
@@ -49,20 +64,41 @@ function showApiError(error: unknown, fallback: string) {
     ElMessage.error(error.traceId ? `${error.message}（追踪号: ${error.traceId}）` : error.message);
     return;
   }
-  if (error instanceof Error) ElMessage.error(error.message);
-  else ElMessage.error(fallback);
+  if (error instanceof Error) {
+    ElMessage.error(error.message);
+    return;
+  }
+  ElMessage.error(fallback);
+}
+
+function resolveSchoolOptions(options: string[]) {
+  if (isAssignedSchoolAdmin.value) {
+    return scopedSchools.value.length ? scopedSchools.value : options;
+  }
+  return options;
+}
+
+function ensureFormSchool() {
+  const currentOptions = resolveSchoolOptions(schoolOptions.value);
+  if (lockedSchool.value) {
+    form.school = lockedSchool.value;
+    return;
+  }
+  if (!currentOptions.includes(form.school)) {
+    form.school = currentOptions[0] || "";
+  }
 }
 
 function resetForm() {
   editingId.value = null;
   form.title = "";
-  form.position = "";
-  form.school = schoolOptions.value[0] || "";
+  form.position = FIXED_POSITION;
   form.imageUrl = "";
   form.linkUrl = "";
   form.sort = 1;
   form.status = "启用";
   form.remark = "";
+  ensureFormSchool();
 }
 
 function openCreateDialog() {
@@ -73,8 +109,8 @@ function openCreateDialog() {
 function openEditDialog(row: BannerConfigItem) {
   editingId.value = row.id;
   form.title = row.title;
-  form.position = row.position;
-  form.school = row.school;
+  form.position = FIXED_POSITION;
+  form.school = lockedSchool.value || row.school;
   form.imageUrl = row.imageUrl;
   form.linkUrl = row.linkUrl;
   form.sort = row.sort;
@@ -90,8 +126,8 @@ async function loadData() {
     list.value = result.list;
     total.value = result.total;
     enabledCount.value = result.summary.enabledCount;
-    positionOptions.value = result.summary.positionOptions;
-    schoolOptions.value = result.summary.schoolOptions;
+    schoolOptions.value = resolveSchoolOptions(result.summary.schoolOptions);
+    ensureFormSchool();
   } catch (error) {
     showApiError(error, "轮播图配置加载失败");
   } finally {
@@ -107,8 +143,7 @@ function handleSearch() {
 function handleReset() {
   query.page = 1;
   query.keyword = "";
-  query.school = "";
-  query.position = "";
+  query.school = lockedSchool.value || "";
   query.status = "";
   loadData();
 }
@@ -118,21 +153,67 @@ function handlePageChange(page: number) {
   loadData();
 }
 
+function fileToBase64(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("图片读取失败"));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadBannerImage(options: UploadRequestOptions) {
+  const rawFile = options.file as File;
+  if (!rawFile.type.startsWith("image/")) {
+    ElMessage.error("只能上传图片文件");
+    return;
+  }
+  if (rawFile.size > 8 * 1024 * 1024) {
+    ElMessage.error("单张图片不能超过 8MB");
+    return;
+  }
+
+  uploading.value = true;
+  try {
+    const base64 = await fileToBase64(rawFile);
+    const result = await uploadBannerImageApi({
+      fileName: rawFile.name,
+      base64,
+      scene: "banner"
+    });
+    form.imageUrl = result.url;
+    await formRef.value?.validateField("imageUrl");
+    ElMessage.success("图片上传成功");
+    options.onSuccess?.(result);
+  } catch (error) {
+    showApiError(error, "图片上传失败");
+    options.onError?.(error as Error);
+  } finally {
+    uploading.value = false;
+  }
+}
+
+function clearImage() {
+  form.imageUrl = "";
+}
+
 async function submitForm() {
   if (!formRef.value) return;
+  ensureFormSchool();
   await formRef.value.validate();
   submitting.value = true;
   try {
     const payload: BannerConfigPayload = {
       title: form.title.trim(),
-      position: form.position.trim(),
-      school: form.school,
-      imageUrl: form.imageUrl?.trim() || "",
+      position: FIXED_POSITION,
+      school: lockedSchool.value || form.school,
+      imageUrl: form.imageUrl.trim(),
       linkUrl: form.linkUrl?.trim() || "",
       sort: Number(form.sort),
       status: form.status,
       remark: form.remark?.trim() || ""
     };
+
     if (editingId.value) {
       await updateBannerConfigApi(editingId.value, payload);
       ElMessage.success("轮播图已更新");
@@ -140,6 +221,7 @@ async function submitForm() {
       await createBannerConfigApi(payload);
       ElMessage.success("轮播图已创建");
     }
+
     dialogVisible.value = false;
     loadData();
   } catch (error) {
@@ -172,25 +254,40 @@ async function removeRow(row: BannerConfigItem) {
   }
 }
 
-onMounted(loadData);
+onMounted(() => {
+  query.school = lockedSchool.value || "";
+  loadData();
+});
 </script>
 
 <template>
   <div class="page">
     <el-row :gutter="16">
-      <el-col :span="8"><el-card shadow="never"><div class="metric-label">轮播图数量</div><div class="metric-value">{{ total }}</div></el-card></el-col>
-      <el-col :span="8"><el-card shadow="never"><div class="metric-label">启用中</div><div class="metric-value success">{{ enabledCount }}</div></el-card></el-col>
-      <el-col :span="8"><el-card shadow="never"><div class="metric-label">投放位置</div><div class="metric-value">{{ positionOptions.length }}</div></el-card></el-col>
+      <el-col :span="8">
+        <el-card shadow="never">
+          <div class="metric-label">轮播图数量</div>
+          <div class="metric-value">{{ total }}</div>
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card shadow="never">
+          <div class="metric-label">启用中</div>
+          <div class="metric-value success">{{ enabledCount }}</div>
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card shadow="never">
+          <div class="metric-label">投放位置</div>
+          <div class="metric-value">{{ FIXED_POSITION_LABEL }}</div>
+        </el-card>
+      </el-col>
     </el-row>
 
     <el-card shadow="never">
       <template #header>筛选条件</template>
       <div class="toolbar">
         <el-input v-model="query.keyword" placeholder="搜索标题或备注" clearable class="input" @keyup.enter="handleSearch" />
-        <el-select v-model="query.position" placeholder="全部位置" clearable class="select">
-          <el-option v-for="item in positionOptions" :key="item" :label="item" :value="item" />
-        </el-select>
-        <el-select v-model="query.school" placeholder="全部高校" clearable class="select">
+        <el-select v-if="!isAssignedSchoolAdmin" v-model="query.school" placeholder="全部高校" clearable class="select">
           <el-option v-for="item in schoolOptions" :key="item" :label="item" :value="item" />
         </el-select>
         <el-select v-model="query.status" placeholder="全部状态" clearable class="select">
@@ -207,9 +304,19 @@ onMounted(loadData);
       <template #header>轮播图配置</template>
       <el-table :data="list" stripe v-loading="loading">
         <el-table-column prop="title" label="标题" min-width="220" />
-        <el-table-column prop="position" label="投放位置" width="140" />
+        <el-table-column label="投放位置" width="160">
+          <template #default>
+            {{ FIXED_POSITION_LABEL }}
+          </template>
+        </el-table-column>
         <el-table-column prop="school" label="所属高校" min-width="160" />
         <el-table-column prop="sort" label="排序" width="100" />
+        <el-table-column label="图片" width="120">
+          <template #default="{ row }">
+            <el-image v-if="row.imageUrl" :src="row.imageUrl" fit="cover" class="table-image" :preview-src-list="[row.imageUrl]" preview-teleported />
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="updatedAt" label="更新时间" width="180" />
         <el-table-column label="状态" width="120">
           <template #default="{ row }">
@@ -238,21 +345,61 @@ onMounted(loadData);
       </div>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑轮播图' : '新增轮播图'" width="720px">
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
+    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑轮播图' : '新增轮播图'" width="760px">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-row :gutter="16">
-          <el-col :span="12"><el-form-item label="标题" prop="title"><el-input v-model="form.title" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="投放位置" prop="position"><el-input v-model="form.position" /></el-form-item></el-col>
+          <el-col :span="12">
+            <el-form-item label="标题" prop="title">
+              <el-input v-model="form.title" maxlength="50" show-word-limit />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="投放位置">
+              <el-input :model-value="FIXED_POSITION_LABEL" disabled />
+            </el-form-item>
+          </el-col>
+
           <el-col :span="12">
             <el-form-item label="所属高校" prop="school">
-              <el-select v-model="form.school" class="full-width" filterable allow-create default-first-option>
+              <el-input v-if="isAssignedSchoolAdmin" :model-value="lockedSchool" disabled />
+              <el-select v-else v-model="form.school" class="full-width" filterable>
                 <el-option v-for="item in schoolOptions" :key="item" :label="item" :value="item" />
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="12"><el-form-item label="排序" prop="sort"><el-input-number v-model="form.sort" :min="0" class="full-width" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="图片地址"><el-input v-model="form.imageUrl" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="跳转地址"><el-input v-model="form.linkUrl" /></el-form-item></el-col>
+          <el-col :span="12">
+            <el-form-item label="排序" prop="sort">
+              <el-input-number v-model="form.sort" :min="0" class="full-width" />
+            </el-form-item>
+          </el-col>
+
+          <el-col :span="24">
+            <el-form-item label="轮播图" prop="imageUrl">
+              <div class="image-upload-block">
+                <el-upload
+                  accept="image/*"
+                  :show-file-list="false"
+                  :http-request="uploadBannerImage"
+                  :disabled="uploading"
+                >
+                  <el-button type="primary" plain :loading="uploading">上传图片</el-button>
+                </el-upload>
+                <span class="upload-tip">支持 jpg/png/webp/gif，单张不超过 8MB</span>
+              </div>
+              <div v-if="form.imageUrl" class="image-preview">
+                <el-image :src="form.imageUrl" fit="cover" class="preview-image" :preview-src-list="[form.imageUrl]" preview-teleported />
+                <div class="preview-actions">
+                  <el-button link type="danger" @click="clearImage">移除</el-button>
+                </div>
+              </div>
+            </el-form-item>
+          </el-col>
+
+          <el-col :span="12">
+            <el-form-item label="跳转地址">
+              <el-input v-model="form.linkUrl" placeholder="可选，点击轮播图后跳转" />
+            </el-form-item>
+          </el-col>
           <el-col :span="12">
             <el-form-item label="状态" prop="status">
               <el-select v-model="form.status" class="full-width">
@@ -261,7 +408,12 @@ onMounted(loadData);
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="24"><el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="3" /></el-form-item></el-col>
+
+          <el-col :span="24">
+            <el-form-item label="备注">
+              <el-input v-model="form.remark" type="textarea" :rows="3" maxlength="100" show-word-limit />
+            </el-form-item>
+          </el-col>
         </el-row>
       </el-form>
       <template #footer>
@@ -282,4 +434,10 @@ onMounted(loadData);
 .select { width: 180px; }
 .full-width { width: 100%; }
 .pagination { margin-top: 16px; display: flex; justify-content: flex-end; }
+.table-image { width: 60px; height: 40px; border-radius: 8px; display: block; }
+.image-upload-block { display: flex; align-items: center; gap: 12px; }
+.upload-tip { color: #667085; font-size: 13px; }
+.image-preview { margin-top: 12px; display: flex; align-items: center; gap: 12px; }
+.preview-image { width: 220px; height: 120px; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; }
+.preview-actions { display: flex; align-items: center; }
 </style>

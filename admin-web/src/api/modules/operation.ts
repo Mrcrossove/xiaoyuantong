@@ -18,6 +18,18 @@ import type {
 } from "../contracts";
 import { request } from "../request";
 
+interface UploadImagePayload {
+  fileName: string;
+  base64: string;
+  scene: "banner";
+}
+
+interface UploadImageResult {
+  fileName: string;
+  url: string;
+  size: number;
+}
+
 export function getBannerConfigListApi(query: BannerConfigQuery) {
   return request<BannerConfigListResult>({
     url: "/operation/banner/list",
@@ -53,6 +65,14 @@ export function deleteBannerConfigApi(id: number) {
   return request<{ success: boolean }>({
     url: `/operation/banner/${id}`,
     method: "DELETE"
+  });
+}
+
+export function uploadBannerImageApi(payload: UploadImagePayload) {
+  return request<UploadImageResult>({
+    url: "/operation/banner/upload-image",
+    method: "POST",
+    body: JSON.stringify(payload)
   });
 }
 

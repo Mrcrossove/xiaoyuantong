@@ -16,13 +16,15 @@ import {
   toggleHelpCenterStatusAction,
   toggleRecommendConfigStatusAction,
   toggleSearchWordStatusAction,
+  uploadBannerImageAction,
   updateBannerConfigAction,
   updateHelpCenterAction,
   updateRecommendConfigAction,
   updateSearchWordAction
 } from "../controllers/operation-admin.controller";
 import {
-  bannerConfigPayloadSchema,
+  adminBannerImageUploadSchema,
+  fixedBannerConfigPayloadSchema,
   helpCenterPayloadSchema,
   recommendConfigPayloadSchema,
   searchWordPayloadSchema
@@ -39,15 +41,23 @@ router.post(
   requireAdminAuth,
   requireAdminMenuAccess("/operation/banner"),
   requireAdminPermission("operation:banner:add"),
-  validateBody(bannerConfigPayloadSchema),
+  validateBody(fixedBannerConfigPayloadSchema),
   asyncHandler(createBannerConfigAction)
+);
+router.post(
+  "/banner/upload-image",
+  requireAdminAuth,
+  requireAdminMenuAccess("/operation/banner"),
+  requireAdminPermission("operation:banner:add", "operation:banner:edit"),
+  validateBody(adminBannerImageUploadSchema),
+  asyncHandler(uploadBannerImageAction)
 );
 router.put(
   "/banner/:id",
   requireAdminAuth,
   requireAdminMenuAccess("/operation/banner"),
   requireAdminPermission("operation:banner:edit"),
-  validateBody(bannerConfigPayloadSchema),
+  validateBody(fixedBannerConfigPayloadSchema),
   asyncHandler(updateBannerConfigAction)
 );
 router.patch(

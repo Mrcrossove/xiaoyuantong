@@ -427,3 +427,23 @@ export type AdminManagerCreatePayload = z.infer<typeof adminManagerCreateSchema>
 export type AdminManagerUpdatePayload = z.infer<typeof adminManagerUpdateSchema>;
 export type AdminRolePayload = z.infer<typeof adminRolePayloadSchema>;
 export type RolePermissionAssignPayload = z.infer<typeof rolePermissionAssignSchema>;
+
+export const fixedBannerConfigPayloadSchema = z.object({
+  title: z.string().trim().min(2, "标题至少 2 个字符").max(50, "标题最多 50 个字符"),
+  position: z.literal("mini_home_top"),
+  school: z.string().trim().min(1, "请选择所属高校").max(30, "所属高校最多 30 个字符"),
+  imageUrl: z.string().trim().min(1, "请先上传轮播图").max(255, "图片地址最多 255 个字符"),
+  linkUrl: z.string().trim().max(255, "跳转地址最多 255 个字符").optional().default(""),
+  sort: z.number().int().min(0, "排序不能小于 0"),
+  status: z.enum(["启用", "停用"]),
+  remark: z.string().trim().max(100, "备注最多 100 个字符").optional().default("")
+});
+
+export const adminBannerImageUploadSchema = z.object({
+  fileName: requiredText("文件名"),
+  base64: requiredText("图片内容"),
+  scene: z.literal("banner").optional().default("banner")
+});
+
+export type FixedBannerConfigPayload = z.infer<typeof fixedBannerConfigPayloadSchema>;
+export type AdminBannerImageUploadPayload = z.infer<typeof adminBannerImageUploadSchema>;
