@@ -14,6 +14,14 @@ export const env = {
     .map((item) => item.trim())
     .filter(Boolean),
   uploadsDir: process.env.UPLOADS_DIR || path.resolve(process.cwd(), "uploads"),
+  uploadStorageProvider: (process.env.UPLOAD_STORAGE_PROVIDER || "local").trim().toLowerCase() as "local" | "tencent_cos",
+  uploadPublicBaseUrl: (process.env.UPLOAD_PUBLIC_BASE_URL || "").trim(),
+  tencentCosSecretId: process.env.TENCENT_COS_SECRET_ID || "",
+  tencentCosSecretKey: process.env.TENCENT_COS_SECRET_KEY || "",
+  tencentCosBucket: process.env.TENCENT_COS_BUCKET || "",
+  tencentCosRegion: process.env.TENCENT_COS_REGION || "",
+  tencentCosPathPrefix: process.env.TENCENT_COS_PATH_PREFIX || "uploads",
+  tencentCosPublicBaseUrl: (process.env.TENCENT_COS_PUBLIC_BASE_URL || "").trim(),
   appSecret: process.env.APP_SECRET || "campus-admin-secret",
 
   wechatAppId: process.env.WECHAT_APP_ID || "",

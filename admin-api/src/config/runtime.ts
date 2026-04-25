@@ -32,6 +32,28 @@ export function validateRuntimeConfig() {
     errors.push("生产环境 PUBLIC_BASE_URL 必须使用 https");
   }
 
+  if (!["local", "tencent_cos"].includes(env.uploadStorageProvider)) {
+    errors.push("UPLOAD_STORAGE_PROVIDER 仅支持 local 或 tencent_cos");
+  }
+
+  if (env.uploadStorageProvider === "local") {
+    const uploadBaseUrl = env.uploadPublicBaseUrl || `${env.publicBaseUrl}/uploads`;
+    if (!uploadBaseUrl.startsWith("https://")) {
+      errors.push("生产环境本地上传模式的图片访问地址必须使用 https");
+    }
+  }
+
+  if (env.uploadStorageProvider === "tencent_cos") {
+    if (!env.tencentCosSecretId || !env.tencentCosSecretKey || !env.tencentCosBucket || !env.tencentCosRegion) {
+      errors.push("UPLOAD_STORAGE_PROVIDER=tencent_cos 时必须完整配置腾讯云 COS 参数");
+    }
+
+    const publicAssetBase = env.tencentCosPublicBaseUrl || `https://${env.tencentCosBucket}.cos.${env.tencentCosRegion}.myqcloud.com`;
+    if (!publicAssetBase.startsWith("https://")) {
+      errors.push("腾讯云 COS 图片访问地址必须使用 https");
+    }
+  }
+
   if (errors.length) {
     throw new Error(`runtime config invalid: ${errors.join("；")}`);
   }
