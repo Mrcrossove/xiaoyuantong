@@ -1,7 +1,7 @@
 const DEFAULT_API_BASE_BY_ENV = {
-  develop: "http://118.24.104.69:3001",
-  trial: "http://118.24.104.69:3001",
-  release: "http://118.24.104.69:3001"
+  develop: "https://xy-api.jpwlkj.com",
+  trial: "https://xy-api.jpwlkj.com",
+  release: "https://xy-api.jpwlkj.com"
 };
 
 const API_BASE_OVERRIDE_KEY = "apiBaseUrlOverride";
