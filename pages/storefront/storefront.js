@@ -64,6 +64,12 @@ Page({
     });
   },
 
+  openRecommendStores() {
+    wx.navigateTo({
+      url: "/pages/store-category/store-category?key=student"
+    });
+  },
+
   openStoreDetail(event) {
     const { id } = event.currentTarget.dataset;
     if (!id) return;

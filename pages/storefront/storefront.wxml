@@ -29,7 +29,7 @@
       </view>
     </view>
 
-    <view class="banner-card" wx:for="{{banners}}" wx:key="id">
+    <view class="banner-card" wx:for="{{banners}}" wx:key="id" bindtap="openRecommendStores">
       <view class="banner-copy">
         <text class="banner-tag">{{item.tag}}</text>
         <view class="banner-title">{{item.title}}</view>
