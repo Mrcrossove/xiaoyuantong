@@ -32,6 +32,7 @@ Page({
     banners: [],
     displayBanners: [DEFAULT_HOME_BANNER],
     posts: [],
+    activeServiceCategory: "",
     searchKeyword: "",
     provinceSchoolGroups: [],
     filteredProvinceSchoolGroups: [],
@@ -140,6 +141,10 @@ Page({
               scope: "school",
               school: selectedFeedSchool
             };
+      const activeServiceCategory = String(this.data.activeServiceCategory || "").trim();
+      if (activeServiceCategory) {
+        postQuery.category = activeServiceCategory;
+      }
 
       const [postResult, bannerResult] = await Promise.all([
         fetchPostList(postQuery),
@@ -245,6 +250,15 @@ Page({
     wx.navigateTo({
       url: `/pages/search/search?keyword=${keyword}`
     });
+  },
+
+  selectServiceCategory(event) {
+    const { category } = event.currentTarget.dataset;
+    const nextCategory = category === this.data.activeServiceCategory ? "" : String(category || "");
+    this.setData({
+      activeServiceCategory: nextCategory
+    });
+    this.applyFeedScope(getHomeFeedScope(this.data.businessSchool || DEFAULT_SCHOOL), this.data.businessSchool || DEFAULT_SCHOOL);
   },
 
   openSchoolAdminApply() {

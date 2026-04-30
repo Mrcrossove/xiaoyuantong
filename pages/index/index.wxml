@@ -62,7 +62,13 @@
   </view>
 
   <view class="services card">
-    <view class="service-item" wx:for="{{services}}" wx:key="label">
+    <view
+      class="service-item {{activeServiceCategory === item.category ? 'active' : ''}}"
+      wx:for="{{services}}"
+      wx:key="label"
+      data-category="{{item.category}}"
+      bindtap="selectServiceCategory"
+    >
       <view class="service-icon service-{{item.icon}}"></view>
       <text>{{item.label}}</text>
     </view>

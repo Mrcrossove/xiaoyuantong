@@ -17,10 +17,73 @@ const LABELS = {
 
 const HOT_POST_FETCH_LIMIT = 240;
 const HOT_POST_POOL_LIMIT = 120;
+const POST_CATEGORY_GROUPS: Record<string, string[]> = {
+  "\u6811\u6d1e": [
+    "\u6811\u6d1e",
+    "\u60c5\u611f\u6811\u6d1e",
+    "\u60c5\u611f\u503e\u8bc9",
+    "\u533f\u540d\u8868\u767d",
+    "\u6c42\u52a9\u54a8\u8be2",
+    "\u907f\u96f7\u63d0\u9192",
+    "\u6821\u56ed\u516b\u5366",
+    "\u5b66\u4e1a\u5410\u69fd",
+    "\u65e5\u5e38\u788e\u788e\u5ff5",
+    "\u597d\u7269\u5b89\u5229",
+    "\u5176\u4ed6\u7c7b\u578b"
+  ],
+  "\u623f\u5c4b\u79df\u552e": ["\u623f\u5c4b\u79df\u552e", "\u6c42\u79df\u4fe1\u606f", "\u53d1\u5e03\u623f\u6e90", "\u5176\u4ed6\u623f\u5c4b\u79df\u552e"],
+  "\u517c\u804c\u4fe1\u606f": [
+    "\u517c\u804c\u4fe1\u606f",
+    "\u517c\u804c\u53d1\u5e03",
+    "\u6821\u5185\u5c97\u4f4d",
+    "\u5b9e\u4e60\u5c97\u4f4d",
+    "\u517c\u804c\u62db\u8058",
+    "\u6c42\u804c\u54a8\u8be2",
+    "\u5bb6\u6559\u8f85\u5bfc",
+    "\u5176\u4ed6\u517c\u804c"
+  ],
+  "\u627e\u642d\u5b50": [
+    "\u627e\u642d\u5b50",
+    "\u65c5\u6e38\u642d\u5b50",
+    "\u5b66\u4e60\u642d\u5b50",
+    "\u8d5b\u4e8b\u642d\u5b50",
+    "\u8fd0\u52a8\u642d\u5b50",
+    "\u7f8e\u98df\u642d\u5b50",
+    "\u6e38\u620f\u642d\u5b50",
+    "\u51fa\u884c\u642d\u5b50",
+    "\u5176\u4ed6\u642d\u5b50"
+  ],
+  "\u8dd1\u817f\u4ee3\u529e": [
+    "\u8dd1\u817f\u4ee3\u529e",
+    "\u5feb\u9012\u4ee3\u53d6",
+    "\u5916\u5356\u4ee3\u53d6",
+    "\u98df\u5802\u4ee3\u4e70",
+    "\u8d85\u5e02\u4ee3\u8d2d",
+    "\u6821\u56ed\u8dd1\u817f",
+    "\u5176\u4ed6\u4ee3\u529e"
+  ],
+  "\u8df3\u86a4\u5e02\u573a": [
+    "\u8df3\u86a4\u5e02\u573a",
+    "\u56fe\u4e66\u8d44\u6599",
+    "\u7535\u5b50\u6570\u7801",
+    "\u751f\u6d3b\u7528\u54c1",
+    "\u670d\u9970\u978b\u5e3d",
+    "\u7f8e\u5986\u62a4\u80a4",
+    "\u8fd0\u52a8\u5668\u6750",
+    "\u5174\u8da3\u597d\u7269",
+    "\u5176\u4ed6\u95f2\u7f6e"
+  ]
+};
 
 function toLikeText(value?: string) {
   if (!value) return undefined;
   return { contains: value, mode: "insensitive" as const };
+}
+
+function buildCategoryWhere(category: string) {
+  if (!category) return undefined;
+  const categoryGroup = POST_CATEGORY_GROUPS[category];
+  return categoryGroup ? { in: categoryGroup } : category;
 }
 
 function toArray(value: Prisma.JsonValue | null | undefined) {
@@ -89,6 +152,7 @@ function shuffleArray<T>(list: T[]) {
 async function queryAllNetworkHotPosts(rawQuery: Record<string, unknown>, page: number, pageSize: number, skip: number) {
   const keyword = String(rawQuery.keyword || "").trim();
   const excludeSchool = String(rawQuery.excludeSchool || "").trim();
+  const category = String(rawQuery.category || "").trim();
   const keywordWhere = keyword
     ? [{ title: toLikeText(keyword) }, { content: toLikeText(keyword) }, { category: toLikeText(keyword) }]
     : undefined;
@@ -96,6 +160,7 @@ async function queryAllNetworkHotPosts(rawQuery: Record<string, unknown>, page: 
     status: {
       in: [LABELS.published]
     },
+    category: buildCategoryWhere(category),
     OR: keywordWhere
   };
   const primaryWhere = excludeSchool
@@ -173,6 +238,7 @@ export async function queryMiniPosts(rawQuery: Record<string, unknown>) {
   const scope = String(rawQuery.scope || "school").trim() === "all" ? "all" : "school";
   const school = String(rawQuery.school || "");
   const keyword = String(rawQuery.keyword || "");
+  const category = String(rawQuery.category || "").trim();
 
   if (scope === "all") {
     return queryAllNetworkHotPosts(rawQuery, page, pageSize, skip);
@@ -180,6 +246,7 @@ export async function queryMiniPosts(rawQuery: Record<string, unknown>) {
 
   const where = {
     school: school || undefined,
+    category: buildCategoryWhere(category),
     status: {
       in: [LABELS.published]
     },

@@ -297,6 +297,13 @@
   gap: 10rpx;
   color: #51607b;
   font-size: 22rpx;
+  transition: color 0.18s ease, transform 0.18s ease;
+}
+
+.service-item.active {
+  color: #1f64e7;
+  font-weight: 700;
+  transform: translateY(-2rpx);
 }
 
 .service-icon {
@@ -305,6 +312,13 @@
   border-radius: 50%;
   background: linear-gradient(180deg, #f0f6ff, #dce8ff);
   position: relative;
+  transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.service-item.active .service-icon {
+  background: linear-gradient(180deg, #3f83ff, #1f64e7);
+  box-shadow: 0 14rpx 28rpx rgba(63, 131, 255, 0.32);
+  transform: scale(1.04);
 }
 
 .service-market::before {
@@ -343,6 +357,19 @@
   background: #3f83ff;
 }
 
+.service-item.active .service-market::before {
+  border-color: #ffffff;
+}
+
+.service-item.active .service-market::after,
+.service-item.active .service-job::before,
+.service-item.active .service-rent::before,
+.service-item.active .service-chat::before,
+.service-item.active .service-group::before,
+.service-item.active .service-run::before {
+  background: #ffffff;
+}
+
 .service-job::after {
   content: "";
   position: absolute;
@@ -354,6 +381,11 @@
   box-shadow: 0 14rpx 0 #dce8ff;
 }
 
+.service-item.active .service-job::after {
+  background: #3f83ff;
+  box-shadow: 0 14rpx 0 #3f83ff;
+}
+
 .service-rent::after {
   content: "";
   position: absolute;
@@ -363,6 +395,13 @@
   height: 32rpx;
   background: #dce8ff;
   clip-path: polygon(50% 0, 100% 40%, 100% 100%, 0 100%, 0 40%);
+}
+
+.service-item.active .service-rent::after,
+.service-item.active .service-chat::after,
+.service-item.active .service-group::after,
+.service-item.active .service-run::after {
+  background: #3f83ff;
 }
 
 .service-chat::after {
