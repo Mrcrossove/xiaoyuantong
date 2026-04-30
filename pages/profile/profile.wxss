@@ -302,6 +302,23 @@
   justify-content: space-between;
 }
 
+.contact-service-btn {
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: inherit;
+  font: inherit;
+  line-height: normal;
+  text-align: left;
+}
+
+.contact-service-btn::after {
+  border: 0;
+}
+
 .setting-right {
   display: flex;
   align-items: center;
