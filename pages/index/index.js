@@ -17,6 +17,16 @@ const DEFAULT_HOME_BANNER = {
 };
 
 const DEFAULT_EXPANDED_PROVINCES = [];
+const FLOATING_CATEGORY_SHOW_TOP = 520;
+const BACK_TO_FEED_SHOW_TOP = 760;
+
+const floatingCategories = [
+  { label: "全部", category: "" },
+  ...services.map((item) => ({
+    label: item.label,
+    category: item.category
+  }))
+];
 
 function mapPostView(post) {
   return {
@@ -28,6 +38,7 @@ function mapPostView(post) {
 Page({
   data: {
     services,
+    floatingCategories,
     fabOptions,
     banners: [],
     displayBanners: [DEFAULT_HOME_BANNER],
@@ -48,6 +59,8 @@ Page({
     postsLoading: false,
     postsErrorText: "",
     bannerCurrent: 0,
+    showFloatingCategories: false,
+    showBackToFeed: false,
     userAvatar: buildAvatarView("")
   },
 
@@ -65,6 +78,22 @@ Page({
     const businessSchool = getSelectedSchool();
     this.syncProfile();
     this.applyFeedScope(getHomeFeedScope(businessSchool), businessSchool);
+  },
+
+  onPageScroll(event) {
+    const scrollTop = Number((event && event.scrollTop) || 0);
+    const showFloatingCategories = scrollTop > FLOATING_CATEGORY_SHOW_TOP;
+    const showBackToFeed = scrollTop > BACK_TO_FEED_SHOW_TOP;
+
+    if (
+      showFloatingCategories !== this.data.showFloatingCategories ||
+      showBackToFeed !== this.data.showBackToFeed
+    ) {
+      this.setData({
+        showFloatingCategories,
+        showBackToFeed
+      });
+    }
   },
 
   async syncProfile() {
@@ -259,6 +288,19 @@ Page({
       activeServiceCategory: nextCategory
     });
     this.applyFeedScope(getHomeFeedScope(this.data.businessSchool || DEFAULT_SCHOOL), this.data.businessSchool || DEFAULT_SCHOOL);
+  },
+
+  scrollToFeedTop() {
+    wx.pageScrollTo({
+      selector: ".feed",
+      duration: 280,
+      fail() {
+        wx.pageScrollTo({
+          scrollTop: 0,
+          duration: 280
+        });
+      }
+    });
   },
 
   openSchoolAdminApply() {

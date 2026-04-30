@@ -12,6 +12,22 @@
     <view class="topbar-right"></view>
   </view>
 
+  <view wx:if="{{showFloatingCategories}}" class="floating-category-bar" style="top: calc({{statusBarHeight}}px + 88rpx);" catchtap="noop">
+    <scroll-view scroll-x class="floating-category-scroll" enhanced show-scrollbar="{{false}}">
+      <view class="floating-category-inner">
+        <view
+          class="floating-category-item {{activeServiceCategory === item.category ? 'active' : ''}}"
+          wx:for="{{floatingCategories}}"
+          wx:key="label"
+          data-category="{{item.category}}"
+          catchtap="selectServiceCategory"
+        >
+          {{item.label}}
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
   <view class="search-row card">
     <view class="campus-pill" bindtap="openSchoolPicker">
       <view class="pin"></view>
@@ -144,6 +160,10 @@
 
   <view class="fab" catchtap="toggleFabMenu">
     <text>+</text>
+  </view>
+
+  <view wx:if="{{showBackToFeed}}" class="back-to-feed" catchtap="scrollToFeedTop">
+    <view class="back-to-feed-arrow"></view>
   </view>
 
   <view wx:if="{{schoolPickerOpen}}" class="overlay school-overlay" bindtap="closeSchoolPicker">
