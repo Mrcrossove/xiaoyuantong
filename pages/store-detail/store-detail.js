@@ -96,6 +96,7 @@ function buildAddressSummary(address) {
 Page({
   data: {
     statusBarHeight: 20,
+    navRightSafeRpx: 24,
     selectedSchool: "",
     detail: null,
     activeTab: "goods",
@@ -116,14 +117,27 @@ Page({
 
   async onLoad(options) {
     const systemInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
+    const menuButton = wx.getMenuButtonBoundingClientRect ? wx.getMenuButtonBoundingClientRect() : null;
     this.storeId = String(options.id || "");
 
     this.setData({
-      statusBarHeight: systemInfo.statusBarHeight || 20
+      statusBarHeight: systemInfo.statusBarHeight || 20,
+      navRightSafeRpx: this.getNavRightSafeRpx(systemInfo, menuButton)
     });
 
     await this.loadStoreDetail(this.storeId);
     await Promise.all([this.loadFavoriteStatus(this.storeId), this.loadDefaultAddress()]);
+  },
+
+  getNavRightSafeRpx(systemInfo, menuButton) {
+    const windowWidth = Number(systemInfo && systemInfo.windowWidth) || 375;
+    if (!menuButton || !menuButton.left || !windowWidth) {
+      return 24;
+    }
+
+    // Reserve the native capsule area on the right, then keep a small visual gap.
+    const capsuleAreaRpx = ((windowWidth - Number(menuButton.left)) / windowWidth) * 750;
+    return Math.ceil(capsuleAreaRpx + 24);
   },
 
   async onShow() {

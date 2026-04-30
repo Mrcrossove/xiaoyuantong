@@ -7,9 +7,10 @@
   height: 88rpx;
   padding: 0 24rpx;
   display: grid;
-  grid-template-columns: 64rpx 1fr auto;
+  grid-template-columns: 64rpx 1fr 128rpx;
   align-items: center;
   background: #ffffff;
+  box-sizing: border-box;
 }
 
 .detail-title {
@@ -23,14 +24,23 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  min-width: 0;
 }
 
 .action-chip {
-  height: 42rpx;
-  min-width: 42rpx;
+  height: 56rpx;
+  min-width: 104rpx;
+  padding: 0 18rpx;
   border-radius: 999rpx;
   background: #ffffff;
   box-shadow: 0 10rpx 24rpx rgba(50, 77, 132, 0.1);
+  color: #2f68e3;
+  font-size: 24rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 

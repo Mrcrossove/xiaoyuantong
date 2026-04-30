@@ -1,5 +1,5 @@
 <view class="detail-page" style="padding-top: {{statusBarHeight}}px;" wx:if="{{detail}}">
-  <view class="detail-nav">
+  <view class="detail-nav" style="padding-right: {{navRightSafeRpx}}rpx;">
     <view class="back-btn" bindtap="goBack"></view>
     <view class="detail-title">{{detail.title}}</view>
     <view class="detail-actions">

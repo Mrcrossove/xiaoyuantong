@@ -1,0 +1,42 @@
+<view class="edit-page" style="padding-top: {{statusBarHeight}}px;">
+  <view class="edit-nav">
+    <view class="back-btn" bindtap="goBack"></view>
+    <view class="edit-title">编辑资料</view>
+    <view class="nav-spacer"></view>
+  </view>
+
+  <view class="brand-block">
+    <view class="brand-logo"></view>
+    <view class="brand-title">校园通</view>
+    <view class="brand-subtitle">连接校园，分享生活</view>
+  </view>
+
+  <view class="edit-card">
+    <view class="avatar-wrap">
+      <image wx:if="{{!avatarView.isDefaultAvatar}}" class="avatar-image" src="{{avatarView.avatarUrl}}" mode="aspectFill"></image>
+      <view wx:else class="avatar-default {{avatarView.defaultAvatarClass}}"></view>
+    </view>
+
+    <input
+      class="profile-input"
+      type="nickname"
+      value="{{nickname}}"
+      maxlength="20"
+      placeholder="请输入昵称"
+      placeholder-class="placeholder"
+      bindinput="onNicknameInput"
+    />
+
+    <view class="avatar-actions">
+      <button class="avatar-btn wechat-btn" open-type="chooseAvatar" bindchooseavatar="onChooseWechatAvatar">
+        使用微信头像
+      </button>
+      <view class="avatar-btn upload-btn" bindtap="chooseAvatarFromAlbum">上传图片</view>
+    </view>
+
+    <view class="action-row">
+      <view class="cancel-btn" bindtap="goBack">取消</view>
+      <view class="save-btn {{saving ? 'disabled' : ''}}" bindtap="saveProfile">{{saving ? "保存中" : "更新"}}</view>
+    </view>
+  </view>
+</view>

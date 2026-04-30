@@ -1,7 +1,12 @@
-const { getSelectedSchool } = require("../../utils/school-state");
-const { getVerificationInfo } = require("../../utils/verification-state");
+const {
+  getCampusSchool,
+  getVerificationInfo,
+  getVerifiedSchool,
+  setVerificationInfo
+} = require("../../utils/verification-state");
 const { ensureMiniSession } = require("../../utils/mini-auth");
 const { uploadImage } = require("../../utils/upload-api");
+const { fetchCurrentVerification } = require("../../utils/verification-api");
 const {
   batchDeleteMerchantProducts,
   batchDownMerchantProducts,
@@ -205,8 +210,18 @@ Page({
   },
 
   async onShow() {
-    const selectedSchool = getSelectedSchool();
-    const verification = getVerificationInfo();
+    let verification = getVerificationInfo();
+
+    try {
+      await ensureMiniSession();
+      const remoteInfo = await fetchCurrentVerification();
+      verification = setVerificationInfo({
+        ...remoteInfo,
+        verified: !!remoteInfo.verified
+      });
+    } catch (error) {}
+
+    const selectedSchool = getCampusSchool();
 
     this.setData({
       selectedSchool,
@@ -253,7 +268,7 @@ Page({
       if (currentApply && currentApply.status === LABELS.rejected) {
         this.setData({
           form: {
-            school: currentApply.school || this.data.selectedSchool,
+            school: this.data.selectedSchool,
             storeName: currentApply.storeName || "",
             category: currentApply.category || "学生商家",
             contactName: currentApply.contactName || "",
@@ -288,14 +303,44 @@ Page({
   },
 
   async submitApply() {
+    try {
+      await ensureMiniSession();
+      const remoteInfo = await fetchCurrentVerification();
+      setVerificationInfo({
+        ...remoteInfo,
+        verified: !!remoteInfo.verified
+      });
+    } catch (error) {}
+
+    const verifiedSchool = getVerifiedSchool();
+    if (!verifiedSchool) {
+      wx.showModal({
+        title: "需要校园认证",
+        content: "开店申请需要先完成校园认证，学校将按认证学校固定。",
+        confirmText: "去认证",
+        success: (res) => {
+          if (!res.confirm) return;
+          wx.navigateTo({
+            url: "/pages/campus-verify/campus-verify"
+          });
+        }
+      });
+      return;
+    }
+
     const payload = {
-      school: String(this.data.form.school || "").trim(),
+      school: verifiedSchool,
       storeName: String(this.data.form.storeName || "").trim(),
       category: String(this.data.form.category || "").trim(),
       contactName: String(this.data.form.contactName || "").trim(),
       contactPhone: String(this.data.form.contactPhone || "").trim(),
       description: String(this.data.form.description || "").trim()
     };
+
+    this.setData({
+      selectedSchool: verifiedSchool,
+      "form.school": verifiedSchool
+    });
 
     if (payload.storeName.length < 2) return wx.showToast({ title: "请填写店铺名称", icon: "none" });
     if (!payload.category) return wx.showToast({ title: "请填写经营分类", icon: "none" });
@@ -305,7 +350,6 @@ Page({
 
     this.setData({ submitting: true });
     try {
-      await ensureMiniSession();
       const currentApply = await submitShopApply(payload);
       this.setData({ currentApply });
       wx.showToast({ title: "开店申请已提交", icon: "success" });

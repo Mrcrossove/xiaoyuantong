@@ -5,8 +5,10 @@
     <view class="profile-nav-spacer"></view>
   </view>
 
-  <view class="profile-card user-card" bindtap="openCampusVerify">
-    <view class="user-avatar">
+  <view class="profile-card user-card">
+    <view class="user-avatar" bindtap="openProfileEdit">
+      <image wx:if="{{!user.avatar.isDefaultAvatar}}" class="user-avatar-image" src="{{user.avatar.avatarUrl}}" mode="aspectFill"></image>
+      <view wx:else class="user-avatar-default {{user.avatar.defaultAvatarClass}}"></view>
       <view wx:if="{{user.verified}}" class="avatar-verified-dot"></view>
     </view>
     <view class="user-meta">
@@ -15,13 +17,14 @@
         <text wx:if="{{user.verified}}" class="verify-badge">已认证</text>
       </view>
       <text class="user-school">{{user.school}}</text>
-      <view class="user-verify-entry">
+      <view class="user-verify-entry" bindtap="openCampusVerify">
         <text class="verify-entry-text {{user.verified ? 'done' : ''}}">
           {{user.verified ? "绿色认证状态已开启" : "去认证，解锁更多校园服务"}}
         </text>
         <view class="setting-arrow"></view>
       </view>
     </view>
+    <view class="edit-text" bindtap="openProfileEdit">编辑</view>
   </view>
 
   <view class="profile-card">

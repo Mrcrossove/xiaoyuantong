@@ -1,4 +1,4 @@
-const schools = require("./schools");
+const schools = require("./school-options");
 
 const STORAGE_KEY = "homeFeedScope";
 const HOME_FEED_ALL = "__all__";

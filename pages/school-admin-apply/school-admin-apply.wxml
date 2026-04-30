@@ -31,11 +31,11 @@
         <view class="detail-label">团队人数</view>
         <view class="detail-value">{{currentApply.teamSize}} 人</view>
       </view>
-      <view class="detail-item">
+      <view class="detail-item full">
         <view class="detail-label">联系方式</view>
         <view class="detail-value">{{currentApply.contact}}</view>
       </view>
-      <view class="detail-item">
+      <view class="detail-item full">
         <view class="detail-label">申请时间</view>
         <view class="detail-value">{{currentApply.createdAt}}</view>
       </view>
@@ -48,19 +48,42 @@
 
     <view class="field">
       <view class="field-label">学校</view>
-      <input class="field-input" value="{{form.school}}" placeholder="请输入学校名称" bindinput="onSchoolInput" />
+      <input
+        class="field-input"
+        value="{{form.school}}"
+        placeholder="请输入学校名称"
+        placeholder-class="field-placeholder"
+        bindinput="onSchoolInput"
+      />
     </view>
 
     <view class="field">
       <view class="field-label">团队人数</view>
-      <input class="field-input" type="number" value="{{form.teamSize}}" placeholder="请输入团队人数" bindinput="onTeamSizeInput" />
+      <input
+        class="field-input"
+        type="number"
+        value="{{form.teamSize}}"
+        placeholder="请输入团队人数"
+        placeholder-class="field-placeholder"
+        bindinput="onTeamSizeInput"
+      />
     </view>
 
     <view class="field">
       <view class="field-label">联系方式</view>
-      <textarea class="field-textarea" value="{{form.contact}}" placeholder="请输入手机号、微信号或其他有效联系方式" bindinput="onContactInput"></textarea>
+      <textarea
+        class="field-textarea"
+        value="{{form.contact}}"
+        placeholder="请输入手机号、微信号或其他有效联系方式"
+        placeholder-class="field-placeholder"
+        maxlength="200"
+        bindinput="onContactInput"
+      ></textarea>
+      <view class="field-tip">{{form.contact.length || 0}}/200</view>
     </view>
 
-    <button class="submit-btn" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submitApply">提交申请</button>
+    <button class="submit-btn" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submitApply">
+      {{submitting ? "提交中" : "提交申请"}}
+    </button>
   </view>
 </view>

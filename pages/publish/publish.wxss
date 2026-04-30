@@ -225,6 +225,21 @@
   font-size: 20rpx;
 }
 
+.school-readonly-row {
+  min-height: 44rpx;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.school-dot {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+  background: #36a86e;
+  box-shadow: 0 0 0 8rpx rgba(54, 168, 110, 0.12);
+}
+
 .location-row {
   min-height: 42rpx;
   display: flex;

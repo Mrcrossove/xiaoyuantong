@@ -1,7 +1,9 @@
-const { getSelectedSchool } = require("../../utils/school-state");
+const { buildAvatarView } = require("../../utils/avatar");
+const { getSelectedSchool, setSelectedSchool } = require("../../utils/school-state");
 const { getVerificationInfo, setVerificationInfo, clearVerificationInfo } = require("../../utils/verification-state");
-const { ensureMiniSession, clearSession } = require("../../utils/mini-auth");
+const { ensureMiniSession, clearSession, getProfile, setProfile } = require("../../utils/mini-auth");
 const { fetchCurrentVerification } = require("../../utils/verification-api");
+const { fetchMiniProfile } = require("../../utils/profile-api");
 
 const contentRouteMap = {
   order: "/pages/my-orders/my-orders",
@@ -18,8 +20,10 @@ const supportRouteMap = {
 };
 
 function buildGuestUser() {
+  const profile = getProfile();
   return {
-    name: "校园用户",
+    name: profile.nickname || "校园用户",
+    avatar: buildAvatarView(profile.avatarUrl || ""),
     school: getSelectedSchool(),
     verified: false,
     statusText: "去认证"
@@ -60,19 +64,26 @@ Page({
   async syncVerification() {
     const selectedSchool = getSelectedSchool();
     let verificationInfo = getVerificationInfo();
+    let profile = getProfile();
 
     try {
       await ensureMiniSession();
-      const remoteInfo = await fetchCurrentVerification();
+      const [remoteInfo, remoteProfile] = await Promise.all([fetchCurrentVerification(), fetchMiniProfile()]);
       verificationInfo = setVerificationInfo({
         ...remoteInfo,
         verified: !!remoteInfo.verified
       });
+      profile = setProfile(remoteProfile);
     } catch (error) {}
+
+    if (verificationInfo.verified && verificationInfo.school) {
+      setSelectedSchool(verificationInfo.school);
+    }
 
     this.setData({
       user: {
-        name: verificationInfo.name || "校园用户",
+        name: profile.nickname || verificationInfo.name || "校园用户",
+        avatar: buildAvatarView(profile.avatarUrl || ""),
         school: verificationInfo.school || selectedSchool,
         verified: !!verificationInfo.verified,
         statusText: verificationInfo.verified ? "已认证" : "去认证"
@@ -83,7 +94,7 @@ Page({
   async handleLogout() {
     const { confirm } = await wx.showModal({
       title: "退出登录",
-      content: "退出后会清除当前小程序账户缓存，是否继续？",
+      content: "退出后会清除当前小程序账号缓存，是否继续？",
       confirmText: "退出",
       cancelText: "取消"
     });
@@ -101,7 +112,7 @@ Page({
       await ensureMiniSession();
       await this.syncVerification();
       wx.showToast({
-        title: "已退出当前账户",
+        title: "已退出当前账号",
         icon: "success"
       });
     } catch (error) {
@@ -133,6 +144,12 @@ Page({
   openCampusVerify() {
     wx.navigateTo({
       url: "/pages/campus-verify/campus-verify"
+    });
+  },
+
+  openProfileEdit() {
+    wx.navigateTo({
+      url: "/pages/profile-edit/profile-edit"
     });
   },
 

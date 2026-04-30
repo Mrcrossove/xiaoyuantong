@@ -3,7 +3,10 @@
 
   <view class="topbar">
     <view class="topbar-left">
-      <view class="circle-btn user-btn"></view>
+      <view class="circle-btn user-btn" bindtap="goProfileEdit">
+        <image wx:if="{{!userAvatar.isDefaultAvatar}}" class="top-avatar-image" src="{{userAvatar.avatarUrl}}" mode="aspectFill"></image>
+        <view wx:else class="top-avatar-default {{userAvatar.defaultAvatarClass}}"></view>
+      </view>
     </view>
     <view class="topbar-title">校园通</view>
     <view class="topbar-right"></view>
@@ -68,7 +71,10 @@
   <view class="feed">
     <view class="post-card" wx:for="{{posts}}" wx:key="id" data-id="{{item.id}}" bindtap="openPostDetail">
       <view class="post-head">
-        <view class="avatar"></view>
+        <view class="avatar">
+          <image wx:if="{{!item.authorAvatar.isDefaultAvatar}}" class="post-avatar-image" src="{{item.authorAvatar.avatarUrl}}" mode="aspectFill"></image>
+          <view wx:else class="post-avatar-default {{item.authorAvatar.defaultAvatarClass}}"></view>
+        </view>
         <view>
           <view class="author-name">{{item.author}}</view>
           <view class="meta-row">

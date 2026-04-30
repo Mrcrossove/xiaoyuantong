@@ -63,14 +63,47 @@
 
       <view class="field-block">
         <view class="field-label">学校 <text class="required">*</text></view>
+        <view class="school-select-row">
+          <input
+            class="field-input school-input"
+            value="{{form.school}}"
+            placeholder="请输入或搜索学校名称"
+            placeholder-class="input-placeholder"
+            bindinput="onSchoolInput"
+          />
+          <view class="school-select-btn" bindtap="openSchoolPicker">选择</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{schoolPickerVisible}}" class="school-picker-mask" bindtap="closeSchoolPicker">
+    <view class="school-picker-panel" catchtap="stopTap">
+      <view class="school-picker-head">
+        <view class="school-picker-title">选择学校</view>
+        <view class="school-picker-close" bindtap="closeSchoolPicker">关闭</view>
+      </view>
+      <view class="school-search-box">
         <input
-          class="field-input"
-          value="{{form.school}}"
-          placeholder="请输入学校名称"
+          value="{{schoolKeyword}}"
+          placeholder="输入学校名称搜索"
           placeholder-class="input-placeholder"
-          bindinput="onSchoolInput"
+          bindinput="onSchoolKeywordInput"
+          focus="{{schoolPickerVisible}}"
         />
       </view>
+      <scroll-view scroll-y class="school-result-list" enhanced show-scrollbar="{{false}}">
+        <view
+          wx:for="{{schoolOptions}}"
+          wx:key="*this"
+          class="school-result-item {{item === form.school ? 'active' : ''}}"
+          data-school="{{item}}"
+          bindtap="selectSchool"
+        >
+          {{item}}
+        </view>
+        <view wx:if="{{!schoolOptions.length}}" class="school-result-empty">没有匹配到学校，请换个关键词</view>
+      </scroll-view>
     </view>
   </view>
 

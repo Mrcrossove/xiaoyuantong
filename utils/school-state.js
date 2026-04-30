@@ -1,4 +1,4 @@
-const schools = require("./schools");
+const schools = require("./school-options");
 
 const STORAGE_KEY = "selectedSchool";
 const FALLBACK_SCHOOL = "\u516d\u76d8\u6c34\u5e08\u8303\u5b66\u9662";

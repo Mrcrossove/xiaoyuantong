@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { ok } from "../utils/response";
 import { adminActivate, adminLogin, getAdminAccountProfile, getAdminSession, updateAdminPassword } from "../services/auth.service";
-import { miniLogin } from "../services/mini-auth.service";
+import { getMiniProfile, miniLogin, updateMiniProfile } from "../services/mini-auth.service";
 
 export async function adminLoginAction(req: Request, res: Response) {
   const data = await adminLogin(req.body);
@@ -31,4 +31,14 @@ export async function updateAdminPasswordAction(req: Request, res: Response) {
 export async function miniLoginAction(req: Request, res: Response) {
   const data = await miniLogin(req.body);
   return ok(res, data, req.traceId, "登录成功");
+}
+
+export async function getMiniProfileAction(req: Request, res: Response) {
+  const data = await getMiniProfile(req.miniAuth!.userId);
+  return ok(res, data, req.traceId);
+}
+
+export async function updateMiniProfileAction(req: Request, res: Response) {
+  const data = await updateMiniProfile(req.miniAuth!.userId, req.body);
+  return ok(res, data, req.traceId, "资料已更新");
 }

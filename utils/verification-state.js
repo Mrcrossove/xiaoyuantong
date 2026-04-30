@@ -50,8 +50,19 @@ function clearVerificationInfo() {
   return getDefaultVerification();
 }
 
+function getVerifiedSchool() {
+  const info = getVerificationInfo();
+  return info && info.verified && info.school ? info.school : "";
+}
+
+function getCampusSchool() {
+  return getVerifiedSchool() || getSelectedSchool();
+}
+
 module.exports = {
   getVerificationInfo,
   setVerificationInfo,
-  clearVerificationInfo
+  clearVerificationInfo,
+  getVerifiedSchool,
+  getCampusSchool
 };

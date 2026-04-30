@@ -14,6 +14,15 @@
     </view>
 
     <view class="form-card">
+      <view class="field-label">发布学校</view>
+      <view class="school-readonly-row">
+        <view class="school-dot"></view>
+        <view class="field-value chosen">{{publishSchool}}</view>
+      </view>
+      <view class="field-tip">优先使用已认证学校，未认证时使用首页当前选择学校。</view>
+    </view>
+
+    <view class="form-card">
       <view class="field-label">标题</view>
       <input
         class="field-input"

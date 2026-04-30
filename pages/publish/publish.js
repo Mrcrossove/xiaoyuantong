@@ -1,8 +1,9 @@
 const { getPublishType } = require("../../utils/publish-config");
-const { getSelectedSchool } = require("../../utils/school-state");
+const { getCampusSchool, setVerificationInfo } = require("../../utils/verification-state");
 const { ensureMiniSession } = require("../../utils/mini-auth");
 const { createPost } = require("../../utils/posts-api");
 const { uploadImage } = require("../../utils/upload-api");
+const { fetchCurrentVerification } = require("../../utils/verification-api");
 
 Page({
   data: {
@@ -17,6 +18,7 @@ Page({
     phone: "",
     qq: "",
     wechat: "",
+    publishSchool: "",
     publishing: false,
     imageFiles: []
   },
@@ -31,7 +33,14 @@ Page({
       statusBarHeight: systemInfo.statusBarHeight || 20,
       type,
       pageTitle: config.label,
-      category
+      category,
+      publishSchool: getCampusSchool()
+    });
+  },
+
+  onShow() {
+    this.setData({
+      publishSchool: getCampusSchool()
     });
   },
 
@@ -110,6 +119,20 @@ Page({
     return nextFiles.map((item) => item.url).filter(Boolean);
   },
 
+  async syncVerificationSchool() {
+    try {
+      await ensureMiniSession();
+      const remoteInfo = await fetchCurrentVerification();
+      setVerificationInfo({
+        ...remoteInfo,
+        verified: !!remoteInfo.verified
+      });
+      this.setData({
+        publishSchool: getCampusSchool()
+      });
+    } catch (error) {}
+  },
+
   async submitPublish() {
     const title = String(this.data.title || "").trim();
     const content = String(this.data.content || "").trim();
@@ -139,11 +162,12 @@ Page({
     this.setData({ publishing: true });
 
     try {
-      await ensureMiniSession();
+      await this.syncVerificationSchool();
       const images = await this.ensureUploadedImages();
+      const publishSchool = getCampusSchool();
 
       await createPost({
-        school: getSelectedSchool(),
+        school: publishSchool,
         category,
         title,
         content,

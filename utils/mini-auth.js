@@ -34,6 +34,13 @@ function getProfile() {
   }
 }
 
+function setProfile(profile) {
+  try {
+    wx.setStorageSync(PROFILE_KEY, profile || {});
+  } catch (error) {}
+  return profile || {};
+}
+
 function isDevtoolsEnv() {
   try {
     const info = wx.getAccountInfoSync ? wx.getAccountInfoSync() : null;
@@ -131,6 +138,7 @@ async function authRequest(options) {
 module.exports = {
   getToken,
   getProfile,
+  setProfile,
   isDevtoolsEnv,
   ensureMiniSession,
   clearSession,

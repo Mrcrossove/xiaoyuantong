@@ -40,11 +40,13 @@ function mapComment(item: any) {
 
 function mapPost(item: any, options?: { liked?: boolean; comments?: any[] }) {
   const comments = options?.comments || [];
+  const authorAvatar = item.isAnonymous ? "" : item.user?.avatarUrl || "";
   return {
     id: item.id,
     userId: item.userId,
     author: item.isAnonymous ? LABELS.anonymousUser : item.authorName,
     authorName: item.authorName,
+    authorAvatar,
     school: item.school,
     category: item.category,
     title: item.title,
@@ -109,6 +111,7 @@ async function queryAllNetworkHotPosts(rawQuery: Record<string, unknown>, page: 
     prisma.miniPost.count({ where: primaryWhere }),
     prisma.miniPost.findMany({
       where: primaryWhere,
+      include: { user: { select: { avatarUrl: true } } },
       orderBy: [{ likeCount: "desc" }, { commentCount: "desc" }, { viewCount: "desc" }, { createdAt: "desc" }],
       take: HOT_POST_FETCH_LIMIT
     })
@@ -120,6 +123,7 @@ async function queryAllNetworkHotPosts(rawQuery: Record<string, unknown>, page: 
   if (excludeSchool && primaryList.length < pageSize) {
     const fallbackList = await prisma.miniPost.findMany({
       where: baseWhere,
+      include: { user: { select: { avatarUrl: true } } },
       orderBy: [{ likeCount: "desc" }, { commentCount: "desc" }, { viewCount: "desc" }, { createdAt: "desc" }],
       take: HOT_POST_FETCH_LIMIT
     });
@@ -188,6 +192,7 @@ export async function queryMiniPosts(rawQuery: Record<string, unknown>) {
     prisma.miniPost.count({ where }),
     prisma.miniPost.findMany({
       where,
+      include: { user: { select: { avatarUrl: true } } },
       orderBy: { id: "desc" },
       skip,
       take: pageSize
@@ -214,7 +219,8 @@ export async function getMiniPostDetail(id: number, userId?: number) {
 
   const [row, liked, comments] = await Promise.all([
     prisma.miniPost.findUnique({
-      where: { id }
+      where: { id },
+      include: { user: { select: { avatarUrl: true } } }
     }),
     userId
       ? prisma.miniPostLike.findUnique({
@@ -280,6 +286,7 @@ export async function createMiniPost(userId: number, payload: MiniPostPayload) {
 export async function queryMyMiniPosts(userId: number) {
   const list = await prisma.miniPost.findMany({
     where: { userId },
+    include: { user: { select: { avatarUrl: true } } },
     orderBy: { id: "desc" }
   });
   return list.map((item: any) => ({

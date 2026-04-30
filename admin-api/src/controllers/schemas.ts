@@ -32,6 +32,11 @@ export const miniLoginSchema = z.object({
   code: requiredText("微信登录 code")
 });
 
+export const miniProfileUpdateSchema = z.object({
+  nickname: z.string().trim().min(1, "昵称不能为空").max(20, "昵称最多 20 个字"),
+  avatarUrl: z.string().trim().max(500, "头像地址过长").optional().default("")
+});
+
 export const verifySubmitSchema = z.object({
   name: requiredText("姓名"),
   phone: z.string().trim().regex(/^1\d{10}$/, "请输入正确的手机号"),
@@ -378,6 +383,7 @@ export type AdminLoginPayload = z.infer<typeof adminLoginSchema>;
 export type AdminActivatePayload = z.infer<typeof adminActivateSchema>;
 export type AdminPasswordUpdatePayload = z.infer<typeof adminPasswordUpdateSchema>;
 export type MiniLoginPayload = z.infer<typeof miniLoginSchema>;
+export type MiniProfileUpdatePayload = z.infer<typeof miniProfileUpdateSchema>;
 export type VerifySubmitPayload = z.infer<typeof verifySubmitSchema>;
 export type VerifyReviewPayload = z.infer<typeof verifyReviewSchema>;
 export type PostReportReviewPayload = z.infer<typeof postReportReviewSchema>;

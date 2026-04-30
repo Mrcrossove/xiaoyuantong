@@ -1,7 +1,16 @@
-const { getSelectedSchool } = require("../../utils/school-state");
+const schools = require("../../utils/school-options");
+const { getSelectedSchool, setSelectedSchool } = require("../../utils/school-state");
+const { setHomeFeedScope } = require("../../utils/home-feed-state");
+const { isSchoolMatched } = require("../../utils/school-catalog");
 const { getVerificationInfo, setVerificationInfo } = require("../../utils/verification-state");
 const { ensureMiniSession } = require("../../utils/mini-auth");
 const { fetchCurrentVerification, submitVerification } = require("../../utils/verification-api");
+
+function filterSchoolOptions(keyword) {
+  const trimmed = String(keyword || "").trim();
+  const list = trimmed ? schools.filter((school) => isSchoolMatched(school, trimmed)) : schools;
+  return list.slice(0, 50);
+}
 
 Page({
   data: {
@@ -16,7 +25,10 @@ Page({
       name: "",
       phone: "",
       school: ""
-    }
+    },
+    schoolPickerVisible: false,
+    schoolKeyword: "",
+    schoolOptions: []
   },
 
   async onLoad() {
@@ -31,7 +43,9 @@ Page({
         phone: verificationInfo.phone || "",
         school: verificationInfo.school || selectedSchool
       },
-      verification: verificationInfo
+      verification: verificationInfo,
+      schoolKeyword: verificationInfo.school || selectedSchool,
+      schoolOptions: filterSchoolOptions(verificationInfo.school || selectedSchool)
     });
 
     await this.loadVerification();
@@ -51,7 +65,9 @@ Page({
           name: merged.name || "",
           phone: merged.phone || "",
           school: merged.school || getSelectedSchool()
-        }
+        },
+        schoolKeyword: merged.school || getSelectedSchool(),
+        schoolOptions: filterSchoolOptions(merged.school || getSelectedSchool())
       });
     } catch (error) {
       const localInfo = getVerificationInfo();
@@ -76,8 +92,47 @@ Page({
   },
 
   onSchoolInput(event) {
+    const value = event.detail.value;
     this.setData({
-      "form.school": event.detail.value
+      "form.school": value,
+      schoolKeyword: value,
+      schoolOptions: filterSchoolOptions(value)
+    });
+  },
+
+  openSchoolPicker() {
+    const keyword = this.data.form.school || "";
+    this.setData({
+      schoolPickerVisible: true,
+      schoolKeyword: keyword,
+      schoolOptions: filterSchoolOptions(keyword)
+    });
+  },
+
+  closeSchoolPicker() {
+    this.setData({
+      schoolPickerVisible: false
+    });
+  },
+
+  stopTap() {},
+
+  onSchoolKeywordInput(event) {
+    const value = event.detail.value;
+    this.setData({
+      schoolKeyword: value,
+      schoolOptions: filterSchoolOptions(value)
+    });
+  },
+
+  selectSchool(event) {
+    const { school } = event.currentTarget.dataset;
+    if (!school) return;
+    this.setData({
+      "form.school": school,
+      schoolKeyword: school,
+      schoolOptions: filterSchoolOptions(school),
+      schoolPickerVisible: false
     });
   },
 
@@ -111,6 +166,15 @@ Page({
       return;
     }
 
+    if (!schools.includes(trimmedSchool)) {
+      wx.showToast({
+        title: "请从学校列表中选择",
+        icon: "none"
+      });
+      this.openSchoolPicker();
+      return;
+    }
+
     this.setData({ submitting: true });
 
     try {
@@ -128,6 +192,8 @@ Page({
         school: trimmedSchool,
         verified: true
       });
+      setSelectedSchool(trimmedSchool);
+      setHomeFeedScope(trimmedSchool, trimmedSchool);
 
       this.setData({
         verification: nextInfo,

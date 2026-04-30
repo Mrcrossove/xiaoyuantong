@@ -20,7 +20,9 @@ import {
   adminLoginAction,
   getAdminAccountProfileAction,
   getAdminSessionAction,
+  getMiniProfileAction,
   miniLoginAction,
+  updateMiniProfileAction,
   updateAdminPasswordAction
 } from "../controllers/auth.controller";
 import {
@@ -31,10 +33,11 @@ import {
   adminPasswordUpdateSchema,
   adminRolePayloadSchema,
   miniLoginSchema,
+  miniProfileUpdateSchema,
   rolePermissionAssignSchema
 } from "../controllers/schemas";
 import { asyncHandler } from "../middlewares/async-handler";
-import { requireAdminAuth, requireAdminMenuAccess, requireAdminPermission } from "../middlewares/auth";
+import { requireAdminAuth, requireAdminMenuAccess, requireAdminPermission, requireMiniAuth } from "../middlewares/auth";
 import { createRateLimit } from "../middlewares/rate-limit";
 import { validateBody } from "../middlewares/validate";
 import { env } from "../config/env";
@@ -146,5 +149,7 @@ router.post(
   validateBody(miniLoginSchema),
   asyncHandler(miniLoginAction)
 );
+router.get("/mini/profile", requireMiniAuth, asyncHandler(getMiniProfileAction));
+router.put("/mini/profile", requireMiniAuth, validateBody(miniProfileUpdateSchema), asyncHandler(updateMiniProfileAction));
 
 export default router;

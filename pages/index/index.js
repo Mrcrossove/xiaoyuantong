@@ -1,6 +1,9 @@
 const { services, fabOptions } = require("../../utils/home-config");
 const { fetchHomeBanners } = require("../../utils/banner-api");
 const { fetchPostList } = require("../../utils/posts-api");
+const { buildAvatarView } = require("../../utils/avatar");
+const { getProfile, setProfile } = require("../../utils/mini-auth");
+const { fetchMiniProfile } = require("../../utils/profile-api");
 const { DEFAULT_SCHOOL, getSelectedSchool } = require("../../utils/school-state");
 const { HOME_FEED_ALL, getHomeFeedScope, setHomeFeedScope } = require("../../utils/home-feed-state");
 const { getProvinceSchoolGroups, filterProvinceSchoolGroups } = require("../../utils/school-catalog");
@@ -14,6 +17,13 @@ const DEFAULT_HOME_BANNER = {
 };
 
 const DEFAULT_EXPANDED_PROVINCES = [];
+
+function mapPostView(post) {
+  return {
+    ...post,
+    authorAvatar: buildAvatarView(post.authorAvatar || "")
+  };
+}
 
 Page({
   data: {
@@ -36,7 +46,8 @@ Page({
     statusBarHeight: 20,
     postsLoading: false,
     postsErrorText: "",
-    bannerCurrent: 0
+    bannerCurrent: 0,
+    userAvatar: buildAvatarView("")
   },
 
   onLoad() {
@@ -51,7 +62,22 @@ Page({
 
   onShow() {
     const businessSchool = getSelectedSchool();
+    this.syncProfile();
     this.applyFeedScope(getHomeFeedScope(businessSchool), businessSchool);
+  },
+
+  async syncProfile() {
+    const localProfile = getProfile();
+    this.setData({
+      userAvatar: buildAvatarView(localProfile.avatarUrl || "")
+    });
+    try {
+      const remoteProfile = await fetchMiniProfile();
+      setProfile(remoteProfile);
+      this.setData({
+        userAvatar: buildAvatarView(remoteProfile.avatarUrl || "")
+      });
+    } catch (error) {}
   },
 
   buildDisplayGroups(keyword, sourceGroups = this.data.provinceSchoolGroups, expandedProvinces = this.data.expandedProvinces) {
@@ -121,7 +147,7 @@ Page({
       ]);
 
       this.setData({
-        posts: postResult.list || [],
+        posts: (postResult.list || []).map(mapPostView),
         banners: bannerResult.list || [],
         displayBanners: (bannerResult.list || []).length ? bannerResult.list : [DEFAULT_HOME_BANNER],
         postsErrorText: ""
@@ -299,6 +325,12 @@ Page({
   goProfile() {
     wx.redirectTo({
       url: "/pages/profile/profile"
+    });
+  },
+
+  goProfileEdit() {
+    wx.navigateTo({
+      url: "/pages/profile-edit/profile-edit"
     });
   },
 
