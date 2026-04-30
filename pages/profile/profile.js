@@ -1,7 +1,7 @@
 const { buildAvatarView } = require("../../utils/avatar");
 const { getSelectedSchool, setSelectedSchool } = require("../../utils/school-state");
 const { getVerificationInfo, setVerificationInfo, clearVerificationInfo } = require("../../utils/verification-state");
-const { ensureMiniSession, clearSession, getProfile, setProfile } = require("../../utils/mini-auth");
+const { getToken, ensureMiniSession, clearSession, getProfile, setProfile } = require("../../utils/mini-auth");
 const { fetchCurrentVerification } = require("../../utils/verification-api");
 const { fetchMiniProfile } = require("../../utils/profile-api");
 
@@ -15,7 +15,6 @@ const contentRouteMap = {
 };
 
 const supportRouteMap = {
-  service: "/pages/customer-service/customer-service",
   about: "/pages/about/about"
 };
 
@@ -33,7 +32,8 @@ function buildGuestUser() {
 Page({
   data: {
     statusBarHeight: 20,
-    logoutText: "退出登录",
+    isLoggedIn: !!getToken(),
+    logoutText: getToken() ? "退出登录" : "立即登录",
     user: buildGuestUser(),
     contentItems: [
       { label: "我的订单", icon: "order" },
@@ -52,13 +52,25 @@ Page({
   onLoad() {
     const systemInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
     this.setData({
-      statusBarHeight: systemInfo.statusBarHeight || 20,
-      logoutText: "退出登录"
+      statusBarHeight: systemInfo.statusBarHeight || 20
     });
   },
 
   async onShow() {
-    await this.syncVerification();
+    const isLoggedIn = !!getToken();
+    this.setData({
+      isLoggedIn,
+      logoutText: isLoggedIn ? "退出登录" : "立即登录"
+    });
+
+    if (isLoggedIn) {
+      await this.syncVerification();
+      return;
+    }
+
+    this.setData({
+      user: buildGuestUser()
+    });
   },
 
   async syncVerification() {
@@ -92,6 +104,11 @@ Page({
   },
 
   async handleLogout() {
+    if (!this.data.isLoggedIn) {
+      this.openLogin();
+      return;
+    }
+
     const { confirm } = await wx.showModal({
       title: "退出登录",
       content: "退出后会清除当前小程序账号缓存，是否继续？",
@@ -107,12 +124,12 @@ Page({
       clearSession();
       clearVerificationInfo();
       this.setData({
+        isLoggedIn: false,
+        logoutText: "立即登录",
         user: buildGuestUser()
       });
-      await ensureMiniSession();
-      await this.syncVerification();
       wx.showToast({
-        title: "已退出当前账号",
+        title: "已退出登录",
         icon: "success"
       });
     } catch (error) {
@@ -141,13 +158,30 @@ Page({
     });
   },
 
+  openLogin() {
+    wx.navigateTo({
+      url: "/pages/login/login"
+    });
+  },
+
+  ensureLoggedIn() {
+    if (this.data.isLoggedIn) {
+      return true;
+    }
+
+    this.openLogin();
+    return false;
+  },
+
   openCampusVerify() {
+    if (!this.ensureLoggedIn()) return;
     wx.navigateTo({
       url: "/pages/campus-verify/campus-verify"
     });
   },
 
   openProfileEdit() {
+    if (!this.ensureLoggedIn()) return;
     wx.navigateTo({
       url: "/pages/profile-edit/profile-edit"
     });
@@ -158,6 +192,10 @@ Page({
     const targetUrl = contentRouteMap[icon];
 
     if (!targetUrl) {
+      return;
+    }
+
+    if (!this.ensureLoggedIn()) {
       return;
     }
 

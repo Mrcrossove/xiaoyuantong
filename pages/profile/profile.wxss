@@ -402,3 +402,7 @@
   font-size: 30rpx;
   font-weight: 700;
 }
+
+.logout-btn.login {
+  color: #2d8be8;
+}

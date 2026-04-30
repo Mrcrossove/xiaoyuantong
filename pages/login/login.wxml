@@ -1,0 +1,20 @@
+<view class="login-page" style="padding-top: {{statusBarHeight}}px;">
+  <view class="login-system-space"></view>
+
+  <view class="brand-section">
+    <view class="brand-logo">
+      <view class="logo-layer one"></view>
+      <view class="logo-layer two"></view>
+      <view class="logo-layer three"></view>
+    </view>
+    <view class="brand-title">校园通</view>
+    <view class="brand-subtitle">连接校园，分享生活</view>
+  </view>
+
+  <view class="login-actions">
+    <button class="wechat-login-btn {{loading ? 'loading' : ''}}" loading="{{loading}}" bindtap="handleWechatLogin">
+      微信授权登录
+    </button>
+    <view class="cancel-login" bindtap="cancelLogin">取消授权登录</view>
+  </view>
+</view>

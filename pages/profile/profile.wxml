@@ -5,7 +5,7 @@
     <view class="profile-nav-spacer"></view>
   </view>
 
-  <view class="profile-card user-card">
+  <view wx:if="{{isLoggedIn}}" class="profile-card user-card">
     <view class="user-avatar" bindtap="openProfileEdit">
       <image wx:if="{{!user.avatar.isDefaultAvatar}}" class="user-avatar-image" src="{{user.avatar.avatarUrl}}" mode="aspectFill"></image>
       <view wx:else class="user-avatar-default {{user.avatar.defaultAvatarClass}}"></view>
@@ -19,7 +19,7 @@
       <text class="user-school">{{user.school}}</text>
       <view class="user-verify-entry" bindtap="openCampusVerify">
         <text class="verify-entry-text {{user.verified ? 'done' : ''}}">
-          {{user.verified ? "绿色认证状态已开启" : "去认证，解锁更多校园服务"}}
+          {{user.verified ? "校园认证状态已开启" : "去认证，解锁更多校园服务"}}
         </text>
         <view class="setting-arrow"></view>
       </view>
@@ -27,7 +27,7 @@
     <view class="edit-text" bindtap="openProfileEdit">编辑</view>
   </view>
 
-  <view wx:if="{{!user.verified}}" class="verify-guide-card" bindtap="openCampusVerify">
+  <view wx:if="{{isLoggedIn && !user.verified}}" class="verify-guide-card" bindtap="openCampusVerify">
     <view class="verify-guide-main">
       <view class="verify-guide-title">完成校园认证，解锁完整服务</view>
       <view class="verify-guide-desc">认证后可发布帖子、申请开店、参与校园交易，内容也会优先展示你所在学校。</view>
@@ -85,7 +85,7 @@
     </block>
   </view>
 
-  <view class="logout-btn" bindtap="handleLogout">{{logoutText}}</view>
+  <view class="logout-btn {{isLoggedIn ? '' : 'login'}}" bindtap="handleLogout">{{logoutText}}</view>
 
   <view class="tabbar card">
     <view class="tab" bindtap="goHome">
