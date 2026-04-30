@@ -552,3 +552,24 @@
   font-size: 24rpx;
   line-height: 1.7;
 }
+
+.shop-empty-actions {
+  margin-top: 26rpx;
+  display: flex;
+  justify-content: center;
+}
+
+.shop-empty-btn {
+  min-width: 220rpx;
+  padding: 18rpx 28rpx;
+  border-radius: 999rpx;
+  background: #f0f4fb;
+  color: #51607b;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.shop-empty-btn.primary {
+  background: #ffb930;
+  color: #7a4b00;
+}

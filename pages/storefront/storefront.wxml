@@ -82,6 +82,9 @@
     <view wx:if="{{!shops.length}}" class="shop-empty-card">
       <view class="shop-empty-title">{{loadErrorText || "当前高校暂无创业店铺"}}</view>
       <view class="shop-empty-desc">{{loadErrorText ? "请稍后重试，或切换其他高校查看" : "后续有新商家入驻后会在这里展示"}}</view>
+      <view wx:if="{{!loadErrorText}}" class="shop-empty-actions">
+        <view class="shop-empty-btn primary" bindtap="goOpenShop">邀请商家入驻</view>
+      </view>
     </view>
   </view>
 

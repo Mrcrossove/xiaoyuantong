@@ -164,6 +164,45 @@
   font-weight: 700;
 }
 
+.verify-guide-card {
+  margin-top: 16rpx;
+  padding: 24rpx;
+  border-radius: 22rpx;
+  background: linear-gradient(135deg, #fff7df, #eef7ff);
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  box-shadow: 0 12rpx 28rpx rgba(59, 80, 122, 0.08);
+}
+
+.verify-guide-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.verify-guide-title {
+  color: #22304a;
+  font-size: 30rpx;
+  font-weight: 800;
+}
+
+.verify-guide-desc {
+  margin-top: 10rpx;
+  color: #66738a;
+  font-size: 24rpx;
+  line-height: 1.55;
+}
+
+.verify-guide-btn {
+  flex: 0 0 auto;
+  padding: 14rpx 22rpx;
+  border-radius: 999rpx;
+  background: #2f68e3;
+  color: #ffffff;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
 .section-title {
   margin-bottom: 24rpx;
   font-size: 30rpx;

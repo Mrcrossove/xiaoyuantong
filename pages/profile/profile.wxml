@@ -27,6 +27,14 @@
     <view class="edit-text" bindtap="openProfileEdit">编辑</view>
   </view>
 
+  <view wx:if="{{!user.verified}}" class="verify-guide-card" bindtap="openCampusVerify">
+    <view class="verify-guide-main">
+      <view class="verify-guide-title">完成校园认证，解锁完整服务</view>
+      <view class="verify-guide-desc">认证后可发布帖子、申请开店、参与校园交易，内容也会优先展示你所在学校。</view>
+    </view>
+    <view class="verify-guide-btn">去认证</view>
+  </view>
+
   <view class="profile-card">
     <view class="section-title">我的内容</view>
     <view class="content-grid">

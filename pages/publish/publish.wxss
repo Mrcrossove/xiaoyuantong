@@ -89,6 +89,55 @@
   position: relative;
 }
 
+.publish-step-card {
+  margin-bottom: 18rpx;
+  padding: 22rpx 24rpx;
+  border-radius: 24rpx;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 12rpx 28rpx rgba(59, 80, 122, 0.08);
+}
+
+.step-item {
+  display: grid;
+  justify-items: center;
+  gap: 8rpx;
+  color: #a1aabb;
+  font-size: 22rpx;
+}
+
+.step-item.active,
+.step-item.done {
+  color: #2f68e3;
+  font-weight: 700;
+}
+
+.step-dot {
+  width: 42rpx;
+  height: 42rpx;
+  border-radius: 50%;
+  background: #edf1f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  font-size: 22rpx;
+  font-weight: 800;
+}
+
+.step-item.active .step-dot,
+.step-item.done .step-dot {
+  background: #eaf1ff;
+}
+
+.step-line {
+  flex: 1;
+  height: 2rpx;
+  margin: 0 16rpx 30rpx;
+  background: #e8edf5;
+}
+
 .field-label {
   color: #2f3340;
   font-size: 24rpx;

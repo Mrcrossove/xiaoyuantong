@@ -121,6 +121,10 @@
       <view class="empty-feed-desc">
         {{postsErrorText ? '请稍后重试，或切换其他高校查看' : (selectedFeedMode === 'all' ? '可以切换具体高校继续浏览校园内容' : '可以切换其他高校，或稍后再来看看')}}
       </view>
+      <view wx:if="{{!postsErrorText && selectedFeedMode != 'all'}}" class="empty-feed-actions">
+        <view class="empty-feed-btn primary" catchtap="selectAllNetwork">去全网看看</view>
+        <view class="empty-feed-btn" catchtap="toggleFabMenu">发布第一条</view>
+      </view>
     </view>
   </view>
 

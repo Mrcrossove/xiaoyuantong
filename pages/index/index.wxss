@@ -461,6 +461,29 @@
   line-height: 1.7;
 }
 
+.empty-feed-actions {
+  margin-top: 26rpx;
+  display: flex;
+  justify-content: center;
+  gap: 16rpx;
+  flex-wrap: wrap;
+}
+
+.empty-feed-btn {
+  min-width: 176rpx;
+  padding: 18rpx 24rpx;
+  border-radius: 999rpx;
+  background: #f0f4fb;
+  color: #51607b;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.empty-feed-btn.primary {
+  background: #2f68e3;
+  color: #ffffff;
+}
+
 .post-card {
   background: #ffffff;
   border-radius: 32rpx;

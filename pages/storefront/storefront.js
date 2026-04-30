@@ -78,6 +78,12 @@ Page({
     });
   },
 
+  goOpenShop() {
+    wx.navigateTo({
+      url: "/pages/open-shop/open-shop"
+    });
+  },
+
   goHome() {
     wx.redirectTo({
       url: "/pages/index/index"
