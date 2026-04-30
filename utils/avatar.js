@@ -12,10 +12,11 @@ function isDefaultAvatar(avatarUrl) {
 }
 
 function buildAvatarView(avatarUrl) {
+  const normalizedAvatarUrl = avatarUrl || "default-avatar-1";
   return {
-    avatarUrl: avatarUrl || "default-avatar-1",
-    isDefaultAvatar: isDefaultAvatar(avatarUrl),
-    defaultAvatarClass: getDefaultAvatarClass(avatarUrl)
+    avatarUrl: normalizedAvatarUrl,
+    isDefaultAvatar: isDefaultAvatar(normalizedAvatarUrl),
+    defaultAvatarClass: getDefaultAvatarClass(normalizedAvatarUrl)
   };
 }
 

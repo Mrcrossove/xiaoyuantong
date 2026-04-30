@@ -180,7 +180,7 @@ export const miniMerchantBatchIdsSchema = z.object({
 export const miniUploadImageSchema = z.object({
   fileName: requiredText("文件名"),
   base64: requiredText("图片内容"),
-  scene: z.enum(["post", "merchant", "verify"]).optional().default("post")
+  scene: z.enum(["post", "merchant", "verify", "avatar"]).optional().default("post")
 });
 
 export const schoolContentPayloadSchema = z.object({

@@ -190,6 +190,14 @@ button.avatar-btn::after {
   color: #2f68e3;
 }
 
+.avatar-tip {
+  margin-top: 18rpx;
+  color: #8a94a6;
+  font-size: 24rpx;
+  line-height: 1.6;
+  text-align: center;
+}
+
 .action-row {
   margin-top: 36rpx;
   display: grid;

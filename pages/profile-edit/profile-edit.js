@@ -68,9 +68,20 @@ Page({
     wx.showLoading({ title: "上传中", mask: true });
     try {
       const uploaded = await uploadImage(filePath, "avatar");
+      const nickname = String(this.data.nickname || "").trim() || "校园用户";
+      const profile = await updateMiniProfile({
+        nickname,
+        avatarUrl: uploaded.url
+      });
+      setProfile(profile);
       this.setData({
-        avatarUrl: uploaded.url,
-        avatarView: buildAvatarView(uploaded.url)
+        nickname: profile.nickname || nickname,
+        avatarUrl: profile.avatarUrl || uploaded.url,
+        avatarView: buildAvatarView(profile.avatarUrl || uploaded.url)
+      });
+      wx.showToast({
+        title: "头像已更新",
+        icon: "success"
       });
     } catch (error) {
       wx.showToast({

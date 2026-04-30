@@ -34,6 +34,8 @@
       <view class="avatar-btn upload-btn" bindtap="chooseAvatarFromAlbum">上传图片</view>
     </view>
 
+    <view class="avatar-tip">头像选择后会自动保存，也可以修改昵称后点击更新。</view>
+
     <view class="action-row">
       <view class="cancel-btn" bindtap="goBack">取消</view>
       <view class="save-btn {{saving ? 'disabled' : ''}}" bindtap="saveProfile">{{saving ? "保存中" : "更新"}}</view>

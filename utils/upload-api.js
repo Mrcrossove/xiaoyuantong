@@ -22,6 +22,7 @@ async function uploadImage(filePath, scene = "post") {
   return authRequest({
     url: "/mini/upload/image",
     method: "POST",
+    timeout: 30000,
     data: {
       fileName,
       base64: `data:image/jpeg;base64,${base64}`,
