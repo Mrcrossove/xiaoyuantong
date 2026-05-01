@@ -22,6 +22,14 @@ function roundMoney(value: number) {
   return Number(Number(value || 0).toFixed(2));
 }
 
+function normalizeCommissionRate(value: unknown) {
+  const rate = Number(value);
+  if (!Number.isFinite(rate) || rate < 0 || rate > 0.3) {
+    return Number(env.wechatPayCommissionRate || 0);
+  }
+  return Number(rate.toFixed(4));
+}
+
 function buildProfitSharingOutOrderNo(orderNo: string) {
   return `PS${String(orderNo || "").trim()}`;
 }
@@ -147,6 +155,7 @@ async function finalizeMiniOrderSettlementWithProfitSharing(
       platformCommissionAmount: meta.platformCommissionAmount,
       merchantIncomeAmount: meta.merchantIncomeAmount,
       settledAt: current.settledAt || new Date(),
+      commissionRateSnapshot: Number((meta.platformCommissionAmount / Math.max(meta.amount, 1)).toFixed(4)),
       profitSharingStatus: MINI_PROFIT_SHARING_STATUS.success,
       profitSharingAmount: meta.merchantIncomeAmount,
       profitSharedAt: meta.finishedAt || new Date()
@@ -195,14 +204,26 @@ export async function createOrSyncMiniOrderProfitSharing(orderId: number) {
     };
   }
 
-  const merchantIncomeAmount = roundMoney(Number(order.amount || 0) * (1 - env.wechatPayCommissionRate));
+  const commissionRate = normalizeCommissionRate(order.commissionRateSnapshot ?? store?.commissionRate ?? env.wechatPayCommissionRate);
+  const merchantIncomeAmount = roundMoney(Number(order.amount || 0) * (1 - commissionRate));
   const platformCommissionAmount = roundMoney(Number(order.amount || 0) - merchantIncomeAmount);
 
-  if (!store || !ownerUserId || !subMchId || env.payUseMock || !env.wechatPayUseServiceProvider || !env.wechatPayProfitSharing) {
+  if (
+    !store ||
+    !ownerUserId ||
+    !subMchId ||
+    !store.profitSharingEnabled ||
+    store.settlementMode === "disabled" ||
+    env.payUseMock ||
+    !env.wechatPayUseServiceProvider ||
+    !env.wechatPayProfitSharing
+  ) {
     await prisma.miniOrder.update({
       where: { id: order.id },
       data: {
         profitSharingStatus: MINI_PROFIT_SHARING_STATUS.skipped,
+        settlementStatus: store?.settlementMode === "manual" ? MINI_SETTLEMENT_STATUS_WAITING : order.settlementStatus,
+        commissionRateSnapshot: commissionRate,
         profitSharingAmount: merchantIncomeAmount
       }
     });
@@ -281,6 +302,7 @@ export async function createOrSyncMiniOrderProfitSharing(orderId: number) {
     where: { id: order.id },
     data: {
       settlementStatus: MINI_SETTLEMENT_STATUS_WAITING,
+      commissionRateSnapshot: commissionRate,
       profitSharingStatus: MINI_PROFIT_SHARING_STATUS.pending,
       profitSharingAmount: merchantIncomeAmount
     }
@@ -305,6 +327,7 @@ export async function createOrSyncMiniOrderProfitSharing(orderId: number) {
       where: { id: order.id },
       data: {
         settlementStatus: MINI_SETTLEMENT_STATUS_WAITING,
+        commissionRateSnapshot: commissionRate,
         profitSharingStatus: localStatus,
         profitSharingAmount: merchantIncomeAmount,
         profitSharedAt: finishedAt || undefined

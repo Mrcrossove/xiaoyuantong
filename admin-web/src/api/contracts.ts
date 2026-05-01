@@ -842,6 +842,48 @@ export interface WalletAccountListResult extends PageResult<WalletAccountItem> {
 
 export interface WalletAccountQuery extends PageQuery {}
 
+export interface StoreSettlementConfigItem {
+  id: number;
+  detailId: string;
+  storeName: string;
+  school: string;
+  ownerName: string;
+  ownerPhone: string;
+  wechatSubMchId: string;
+  wechatSubMchStatus: "not_invited" | "pending" | "active" | "rejected" | "disabled";
+  commissionRate: number | null;
+  effectiveCommissionRate: number;
+  profitSharingEnabled: boolean;
+  settlementMode: "auto" | "manual" | "disabled";
+  merchantContactName: string;
+  merchantContactPhone: string;
+  orderCount: number;
+  productCount: number;
+  updatedAt: string;
+}
+
+export interface StoreSettlementConfigQuery extends PageQuery {}
+
+export interface StoreSettlementConfigPayload {
+  wechatSubMchId: string;
+  wechatSubMchStatus: "not_invited" | "pending" | "active" | "rejected" | "disabled";
+  commissionRate: number;
+  profitSharingEnabled: boolean;
+  settlementMode: "auto" | "manual" | "disabled";
+  merchantContactName: string;
+  merchantContactPhone: string;
+}
+
+export interface StoreSettlementConfigListResult extends PageResult<StoreSettlementConfigItem> {
+  summary: {
+    total: number;
+    activeCount: number;
+    enabledCount: number;
+    defaultCommissionRate: number;
+    schoolOptions: string[];
+  };
+}
+
 export interface ProductSpecItem {
   id: number;
   school: string;

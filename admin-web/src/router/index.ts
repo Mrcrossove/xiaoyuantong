@@ -44,6 +44,7 @@ const router = createRouter({
         { path: "trade/order", component: () => import("../views/trade/OrderListView.vue"), meta: { title: "订单列表", menuPath: "/trade/order" } },
         { path: "trade/refund", component: () => import("../views/trade/RefundListView.vue"), meta: { title: "退款管理", menuPath: "/trade/refund" } },
         { path: "trade/wallet", component: () => import("../views/trade/WalletAccountView.vue"), meta: { title: "钱包账户", menuPath: "/trade/wallet" } },
+        { path: "trade/settlement", component: () => import("../views/trade/SettlementConfigView.vue"), meta: { title: "分账配置", menuPath: "/trade/settlement" } },
         { path: "trade/withdraw", component: () => import("../views/trade/WithdrawListView.vue"), meta: { title: "提现审核", menuPath: "/trade/withdraw" } },
         { path: "stat/user", component: () => import("../views/stat/UserStatView.vue"), meta: { title: "用户统计", menuPath: "/stat/user" } },
         { path: "stat/post", component: () => import("../views/stat/PostStatView.vue"), meta: { title: "帖子统计", menuPath: "/stat/post" } },

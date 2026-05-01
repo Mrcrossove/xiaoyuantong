@@ -97,6 +97,7 @@ export const ADMIN_MENU_TREE: AdminMenuNode[] = [
       { key: "trade-order", title: "订单列表", path: "/trade/order" },
       { key: "trade-refund", title: "退款管理", path: "/trade/refund" },
       { key: "trade-wallet", title: "钱包账户", path: "/trade/wallet" },
+      { key: "trade-settlement", title: "分账配置", path: "/trade/settlement" },
       { key: "trade-withdraw", title: "提现审核", path: "/trade/withdraw" }
     ]
   },
@@ -207,6 +208,7 @@ export const ADMIN_PERMISSION_GROUPS: AdminPermissionGroup[] = [
       { code: "order:export", title: "导出订单列表" },
       { code: "wallet:view", title: "查看钱包账户" },
       { code: "wallet:export", title: "导出钱包账户" },
+      { code: "settlement:config", title: "配置店铺分账" },
       { code: "refund:review", title: "审核退款" },
       { code: "withdraw:review", title: "审核提现" }
     ]

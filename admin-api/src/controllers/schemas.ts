@@ -335,6 +335,16 @@ export const refundReviewSchema = z.object({
   reviewNote: z.string().trim().max(100, "审核备注最多 100 个字").optional().default("")
 });
 
+export const storeSettlementConfigSchema = z.object({
+  wechatSubMchId: z.string().trim().max(32, "特约商户号最多 32 个字符").optional().default(""),
+  wechatSubMchStatus: z.enum(["not_invited", "pending", "active", "rejected", "disabled"]).optional().default("not_invited"),
+  commissionRate: z.number().min(0, "分成比例不能小于 0").max(0.3, "平台分成比例不能超过 30%"),
+  profitSharingEnabled: z.boolean().optional().default(true),
+  settlementMode: z.enum(["auto", "manual", "disabled"]).optional().default("auto"),
+  merchantContactName: z.string().trim().max(20, "联系人姓名最多 20 个字").optional().default(""),
+  merchantContactPhone: z.string().trim().max(20, "联系人手机号最多 20 位").optional().default("")
+});
+
 export const adminManagerCreateSchema = z.object({
   account: z
     .string()
@@ -400,6 +410,7 @@ export type MiniOrderCreatePayload = z.infer<typeof miniOrderCreateSchema>;
 export type MiniWithdrawCreatePayload = z.infer<typeof miniWithdrawCreateSchema>;
 export type MiniWithdrawReviewPayload = z.infer<typeof miniWithdrawReviewSchema>;
 export type RefundReviewPayload = z.infer<typeof refundReviewSchema>;
+export type StoreSettlementConfigPayload = z.infer<typeof storeSettlementConfigSchema>;
 export type MiniPostCommentCreatePayload = z.infer<typeof miniPostCommentCreateSchema>;
 export type MiniMessageReadAllPayload = z.infer<typeof miniMessageReadAllSchema>;
 export type MiniMerchantStoreUpdatePayload = z.infer<typeof miniMerchantStoreUpdateSchema>;

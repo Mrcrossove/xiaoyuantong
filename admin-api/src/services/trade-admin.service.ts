@@ -7,7 +7,7 @@ import { ERROR_CODES } from "../constants/error-codes";
 import { getAdminSchoolScope } from "./admin-scope.service";
 import { createMiniMessage } from "./mini-message.service";
 import { reviewMiniRefundRequest } from "./mini-refund.service";
-import type { RefundReviewPayload } from "../controllers/schemas";
+import type { RefundReviewPayload, StoreSettlementConfigPayload } from "../controllers/schemas";
 
 function buildSchoolWhere(scope: Awaited<ReturnType<typeof getAdminSchoolScope>>, school: string) {
   if (scope.isAll) {
@@ -21,6 +21,139 @@ function buildSchoolWhere(scope: Awaited<ReturnType<typeof getAdminSchoolScope>>
   return {
     in: scope.schools
   };
+}
+
+function formatRate(value: number | null | undefined) {
+  return Number(Number(value ?? 0).toFixed(4));
+}
+
+function mapSettlementConfigStore(item: any) {
+  const rate = item.commissionRate == null ? null : formatRate(Number(item.commissionRate));
+  return {
+    id: item.id,
+    detailId: item.detailId,
+    storeName: item.name,
+    school: item.school,
+    ownerName: item.ownerUser?.nickname || item.merchantAccount?.name || item.merchantContactName || "",
+    ownerPhone: item.merchantAccount?.phone || item.merchantContactPhone || item.phone || "",
+    wechatSubMchId: item.wechatSubMchId || "",
+    wechatSubMchStatus: item.wechatSubMchStatus || "not_invited",
+    commissionRate: rate,
+    effectiveCommissionRate: rate == null ? formatRate(Number(process.env.WECHAT_PAY_COMMISSION_RATE || 0.05)) : rate,
+    profitSharingEnabled: Boolean(item.profitSharingEnabled),
+    settlementMode: item.settlementMode || "auto",
+    merchantContactName: item.merchantContactName || item.merchantAccount?.name || "",
+    merchantContactPhone: item.merchantContactPhone || item.merchantAccount?.phone || item.phone || "",
+    orderCount: item.orderCount || 0,
+    productCount: item._count?.productRows || 0,
+    updatedAt: formatDateTime(item.updatedAt)
+  };
+}
+
+export async function queryStoreSettlementConfigList(adminUserId: number, rawQuery: Record<string, unknown>) {
+  const { page, pageSize, skip } = parsePageParams(rawQuery);
+  const keyword = String(rawQuery.keyword || "").trim();
+  const school = String(rawQuery.school || "").trim();
+  const status = String(rawQuery.status || "").trim();
+  const scope = await getAdminSchoolScope(adminUserId);
+  const schoolWhere = buildSchoolWhere(scope, school);
+  const summarySchoolWhere = buildSchoolWhere(scope, "");
+
+  const where = {
+    school: schoolWhere,
+    wechatSubMchStatus: status || undefined,
+    OR: keyword
+      ? [
+          { name: { contains: keyword, mode: "insensitive" as const } },
+          { phone: { contains: keyword, mode: "insensitive" as const } },
+          { wechatSubMchId: { contains: keyword, mode: "insensitive" as const } },
+          { merchantContactName: { contains: keyword, mode: "insensitive" as const } },
+          { merchantContactPhone: { contains: keyword, mode: "insensitive" as const } },
+          { merchantAccount: { is: { phone: { contains: keyword, mode: "insensitive" as const } } } }
+        ]
+      : undefined
+  };
+
+  const [total, list, activeCount, enabledCount, schoolRows] = await prisma.$transaction([
+    prisma.miniStore.count({ where }),
+    prisma.miniStore.findMany({
+      where,
+      include: {
+        ownerUser: { select: { nickname: true } },
+        merchantAccount: { select: { name: true, phone: true } },
+        _count: {
+          select: {
+            productRows: true
+          }
+        }
+      },
+      orderBy: { id: "desc" },
+      skip,
+      take: pageSize
+    }),
+    prisma.miniStore.count({ where: { school: summarySchoolWhere, wechatSubMchStatus: "active" } }),
+    prisma.miniStore.count({ where: { school: summarySchoolWhere, profitSharingEnabled: true } }),
+    prisma.miniStore.findMany({
+      where: { school: summarySchoolWhere },
+      select: { school: true },
+      distinct: ["school"],
+      orderBy: { school: "asc" }
+    })
+  ]);
+
+  return {
+    list: list.map(mapSettlementConfigStore),
+    page,
+    pageSize,
+    total,
+    summary: {
+      total,
+      activeCount,
+      enabledCount,
+      defaultCommissionRate: formatRate(Number(process.env.WECHAT_PAY_COMMISSION_RATE || 0.05)),
+      schoolOptions: schoolRows.map((item: any) => item.school)
+    }
+  };
+}
+
+export async function updateStoreSettlementConfig(id: number, adminUserId: number, payload: StoreSettlementConfigPayload) {
+  const scope = await getAdminSchoolScope(adminUserId);
+  const store = await prisma.miniStore.findUnique({
+    where: { id },
+    include: {
+      ownerUser: { select: { nickname: true } },
+      merchantAccount: { select: { name: true, phone: true } },
+      _count: { select: { productRows: true } }
+    }
+  });
+
+  if (!store) {
+    throw new ApiError("店铺不存在", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  if (!scope.isAll && !scope.schools.includes(store.school)) {
+    throw new ApiError("无权配置该店铺分账规则", ERROR_CODES.FORBIDDEN, 403);
+  }
+
+  const updated = await prisma.miniStore.update({
+    where: { id },
+    data: {
+      wechatSubMchId: payload.wechatSubMchId || null,
+      wechatSubMchStatus: payload.wechatSubMchStatus,
+      commissionRate: formatRate(payload.commissionRate),
+      profitSharingEnabled: payload.profitSharingEnabled,
+      settlementMode: payload.settlementMode,
+      merchantContactName: payload.merchantContactName || null,
+      merchantContactPhone: payload.merchantContactPhone || null
+    },
+    include: {
+      ownerUser: { select: { nickname: true } },
+      merchantAccount: { select: { name: true, phone: true } },
+      _count: { select: { productRows: true } }
+    }
+  });
+
+  return mapSettlementConfigStore(updated);
 }
 
 export async function queryRefundList(adminUserId: number, rawQuery: Record<string, unknown>) {

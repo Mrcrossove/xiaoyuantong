@@ -6,6 +6,10 @@ import type {
   RefundListResult,
   RefundQuery,
   RefundReviewPayload,
+  StoreSettlementConfigItem,
+  StoreSettlementConfigListResult,
+  StoreSettlementConfigPayload,
+  StoreSettlementConfigQuery,
   WalletAccountListResult,
   WalletAccountQuery,
   WithdrawItem,
@@ -66,5 +70,21 @@ export function syncWithdrawTransferApi(id: number) {
   return request<WithdrawItem>({
     url: `/mini/wallet/admin/withdraw/${id}/sync`,
     method: "POST"
+  });
+}
+
+export function getStoreSettlementConfigListApi(query: StoreSettlementConfigQuery) {
+  return request<StoreSettlementConfigListResult>({
+    url: "/trade/admin/settlement/store/list",
+    method: "GET",
+    params: query
+  });
+}
+
+export function updateStoreSettlementConfigApi(id: number, payload: StoreSettlementConfigPayload) {
+  return request<StoreSettlementConfigItem>({
+    url: `/trade/admin/settlement/store/${id}`,
+    method: "PUT",
+    body: JSON.stringify(payload)
   });
 }

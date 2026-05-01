@@ -228,6 +228,12 @@ model MiniStore {
   banners      Json
   products     Json
   wechatSubMchId String?
+  wechatSubMchStatus String @default("not_invited")
+  commissionRate Float?
+  profitSharingEnabled Boolean @default(true)
+  settlementMode String @default("auto")
+  merchantContactName String?
+  merchantContactPhone String?
   status       String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -474,6 +480,7 @@ model MiniOrder {
   finishedAt      DateTime?
   settlementStatus        String   @default("未结算")
   settlementAmount        Float    @default(0)
+  commissionRateSnapshot  Float?
   platformCommissionAmount Float   @default(0)
   merchantIncomeAmount    Float    @default(0)
   settledAt              DateTime?
