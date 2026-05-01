@@ -1,15 +1,11 @@
 import { Router } from "express";
 import {
   getMerchantSessionAction,
-  merchantActivateAction,
   merchantCodeLoginAction,
-  merchantPasswordLoginAction,
   merchantSendCodeAction
 } from "../controllers/merchant-auth.controller";
 import {
-  merchantActivateSchema,
   merchantCodeLoginSchema,
-  merchantPasswordLoginSchema,
   merchantSendCodeSchema
 } from "../controllers/merchant-schemas";
 import { asyncHandler } from "../middlewares/async-handler";
@@ -51,19 +47,6 @@ router.post(
   }),
   asyncHandler(merchantCodeLoginAction)
 );
-router.post(
-  "/password-login",
-  validateBody(merchantPasswordLoginSchema),
-  createRateLimit({
-    namespace: "merchant-password-login",
-    windowMs: env.merchantLoginWindowMs,
-    max: env.merchantLoginMaxAttempts,
-    keyBuilder: buildPhoneAndIpKey,
-    message: "密码登录尝试过于频繁，请稍后再试"
-  }),
-  asyncHandler(merchantPasswordLoginAction)
-);
-router.post("/activate", requireMerchantAuth, validateBody(merchantActivateSchema), asyncHandler(merchantActivateAction));
 router.get("/session", requireMerchantAuth, asyncHandler(getMerchantSessionAction));
 
 export default router;

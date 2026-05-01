@@ -93,18 +93,13 @@ router.beforeEach((to) => {
 
   if (isPublic) {
     if (to.path === "/login" && authStore.isLogin) {
-      return authStore.mustChangePassword ? "/account" : "/dashboard";
+      return "/dashboard";
     }
     return true;
   }
 
   if (!authStore.isLogin) {
     return `/login?redirect=${encodeURIComponent(to.fullPath)}`;
-  }
-
-  if (authStore.mustChangePassword && to.path !== "/account") {
-    ElMessage.warning("首次登录后需要先修改密码");
-    return "/account";
   }
 
   const menuPath = String(to.meta.menuPath || to.path);

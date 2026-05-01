@@ -176,8 +176,16 @@ export async function merchantSendLoginCode(payload: MerchantSendCodePayload) {
 
 export async function merchantCodeLogin(payload: MerchantCodeLoginPayload) {
   await consumeLoginCode(payload.phone, payload.code);
+  const loaded = await loadAccountByPhone(payload.phone);
+  await prisma.merchantAccount.update({
+    where: { id: loaded.id },
+    data: {
+      lastLoginAt: new Date(),
+      activatedAt: loaded.activatedAt || new Date(),
+      mustChangePassword: false
+    }
+  });
   const account = await loadAccountByPhone(payload.phone);
-  await touchLogin(account.id);
 
   return {
     token: issueToken({ typ: "merchant", uid: account.id, storeId: account.store.id }),

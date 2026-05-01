@@ -9,6 +9,7 @@ export const env = {
   port: Number(process.env.PORT || 3001),
   databaseUrl: process.env.DATABASE_URL || "",
   publicBaseUrl: process.env.PUBLIC_BASE_URL || `http://127.0.0.1:${Number(process.env.PORT || 3001)}`,
+  merchantWebUrl: process.env.MERCHANT_WEB_URL || "https://xy-merchant.jpwlkj.com/merchant/",
   corsOrigins: (process.env.CORS_ORIGINS || "")
     .split(",")
     .map((item) => item.trim())

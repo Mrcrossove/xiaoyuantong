@@ -17,12 +17,6 @@
         <text wx:if="{{user.verified}}" class="verify-badge">已认证</text>
       </view>
       <text class="user-school">{{user.school}}</text>
-      <view class="user-verify-entry" bindtap="openCampusVerify">
-        <text class="verify-entry-text {{user.verified ? 'done' : ''}}">
-          {{user.verified ? "校园认证状态已开启" : "去认证，解锁更多校园服务"}}
-        </text>
-        <view class="setting-arrow"></view>
-      </view>
     </view>
     <view class="edit-text" bindtap="openProfileEdit">编辑</view>
   </view>
@@ -62,19 +56,19 @@
   <view class="profile-card">
     <view class="section-title">设置与支持</view>
     <block wx:for="{{supportItems}}" wx:key="label">
-      <button
-        wx:if="{{item.icon == 'service'}}"
-        class="setting-row contact-service-btn"
-        open-type="contact"
-        send-message-title="校园通客服"
-        send-message-path="/pages/profile/profile"
-        show-message-card="true"
-      >
+      <view wx:if="{{item.icon == 'service'}}" class="setting-row contact-service-row">
         <view class="setting-left">
           <view class="setting-icon icon-{{item.icon}}"></view>
           <text>{{item.label}}</text>
         </view>
-      </button>
+        <button
+          class="contact-service-btn"
+          open-type="contact"
+          send-message-title="校园通客服"
+          send-message-path="/pages/profile/profile"
+          show-message-card="true"
+        ></button>
+      </view>
       <view wx:else class="setting-row" data-icon="{{item.icon}}" bindtap="onSupportTap">
         <view class="setting-left">
           <view class="setting-icon icon-{{item.icon}}"></view>

@@ -6,7 +6,7 @@ import { ApiError } from "../utils/api-error";
 import { ERROR_CODES } from "../constants/error-codes";
 import { assertRiskPassed } from "./risk-control.service";
 import { createMiniMessage } from "./mini-message.service";
-import { hashPassword } from "../utils/password";
+import { env } from "../config/env";
 
 const STATUS = {
   pending: "待审核",
@@ -82,15 +82,6 @@ function buildDetailId(applyId: number) {
   return `apply-store-${applyId}`;
 }
 
-function generateInitialPassword() {
-  const seed = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
-  let result = "";
-  for (let i = 0; i < 10; i += 1) {
-    result += seed[Math.floor(Math.random() * seed.length)];
-  }
-  return result;
-}
-
 async function createStoreForApprovedApply(apply: any) {
   const existingStore = await prisma.miniStore.findFirst({
     where: {
@@ -145,9 +136,7 @@ async function createMerchantAccountForApprovedApply(apply: any, storeId: number
   });
 
   const now = new Date();
-  const shouldGenerateInitialPassword = !existing?.password || !existing.activatedAt || existing.mustChangePassword;
-  const initialPassword = shouldGenerateInitialPassword ? generateInitialPassword() : "";
-  const nextPassword = shouldGenerateInitialPassword ? hashPassword(initialPassword) : existing?.password;
+  const loginUrl = env.merchantWebUrl;
 
   const account = existing
     ? await prisma.merchantAccount.update({
@@ -158,10 +147,10 @@ async function createMerchantAccountForApprovedApply(apply: any, storeId: number
           phone: apply.contactPhone,
           name: apply.contactName,
           status: "启用",
-          password: nextPassword,
+          password: existing.password,
           activatedAt: existing.activatedAt || now,
-          mustChangePassword: shouldGenerateInitialPassword,
-          initialPasswordSentAt: shouldGenerateInitialPassword ? now : existing.initialPasswordSentAt
+          mustChangePassword: false,
+          initialPasswordSentAt: existing.initialPasswordSentAt || now
         }
       })
     : await prisma.merchantAccount.create({
@@ -170,25 +159,23 @@ async function createMerchantAccountForApprovedApply(apply: any, storeId: number
           storeId,
           phone: apply.contactPhone,
           name: apply.contactName,
-          password: nextPassword,
+          password: null,
           status: "启用",
-          mustChangePassword: true,
+          mustChangePassword: false,
           activatedAt: now,
           initialPasswordSentAt: now
         }
       });
 
-  if (shouldGenerateInitialPassword) {
-    await createMiniMessage({
-      school: apply.school,
-      type: "system",
-      category: "商家后台账号开通",
-      content: `你的商家后台账号已开通。登录账号：${apply.contactPhone}；初始密码：${initialPassword}。请尽快登录商家后台并修改密码。`,
-      receiverUserId: apply.userId,
-      targetType: "merchant_account",
-      targetId: String(account.id)
-    });
-  }
+  await createMiniMessage({
+    school: apply.school,
+    type: "system",
+    category: "商家后台账号开通",
+    content: `你的店铺已审核通过，商家后台已开通。后台地址：${loginUrl}；登录手机号：${apply.contactPhone}。请使用手机号和短信验证码登录，无需初始密码。`,
+    receiverUserId: apply.userId,
+    targetType: "merchant_account",
+    targetId: String(account.id)
+  });
 
   return account;
 }

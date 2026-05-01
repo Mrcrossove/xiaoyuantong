@@ -2,7 +2,6 @@
 import { computed, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
-import { ApiRequestError } from "../../api/request";
 import { sendCodeApi } from "../../api/modules/merchant";
 import { useMerchantAuthStore } from "../../stores/auth";
 
@@ -10,24 +9,28 @@ const route = useRoute();
 const router = useRouter();
 const authStore = useMerchantAuthStore();
 
-const activeTab = ref<"code" | "password">("password");
 const loading = ref(false);
 const sending = ref(false);
+const countdown = ref(0);
+let countdownTimer: number | undefined;
 
 const codeForm = reactive({
   phone: "",
   code: ""
 });
 
-const passwordForm = reactive({
-  phone: "",
-  password: ""
-});
-
 const redirectPath = computed(() => String(route.query.redirect || "/dashboard"));
+const canSendCode = computed(() => /^1\d{10}$/.test(codeForm.phone) && countdown.value <= 0 && !sending.value);
 
-function nextPath() {
-  return authStore.mustChangePassword ? "/account" : redirectPath.value;
+function startCountdown() {
+  countdown.value = 60;
+  window.clearInterval(countdownTimer);
+  countdownTimer = window.setInterval(() => {
+    countdown.value -= 1;
+    if (countdown.value <= 0) {
+      window.clearInterval(countdownTimer);
+    }
+  }, 1000);
 }
 
 async function handleSendCode() {
@@ -39,6 +42,7 @@ async function handleSendCode() {
   sending.value = true;
   try {
     await sendCodeApi({ phone: codeForm.phone, scene: "login" });
+    startCountdown();
     ElMessage.success("验证码已发送");
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : "验证码发送失败");
@@ -48,30 +52,22 @@ async function handleSendCode() {
 }
 
 async function handleCodeLogin() {
+  if (!/^1\d{10}$/.test(codeForm.phone)) {
+    ElMessage.warning("请输入正确的手机号");
+    return;
+  }
+  if (!/^\d{6}$/.test(codeForm.code)) {
+    ElMessage.warning("请输入 6 位验证码");
+    return;
+  }
+
   loading.value = true;
   try {
     await authStore.loginByCode({ phone: codeForm.phone, code: codeForm.code });
     ElMessage.success("登录成功");
-    router.replace(nextPath());
+    router.replace(redirectPath.value);
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : "登录失败");
-  } finally {
-    loading.value = false;
-  }
-}
-
-async function handlePasswordLogin() {
-  loading.value = true;
-  try {
-    await authStore.loginByPassword(passwordForm);
-    ElMessage.success("登录成功");
-    router.replace(nextPath());
-  } catch (error) {
-    if (error instanceof ApiRequestError) {
-      ElMessage.error(error.message);
-    } else {
-      ElMessage.error("登录失败");
-    }
   } finally {
     loading.value = false;
   }
@@ -81,52 +77,68 @@ async function handlePasswordLogin() {
 <template>
   <div class="login-page">
     <div class="login-panel">
-      <div class="hero">
+      <section class="hero">
         <div class="hero-badge">校园通商家中心</div>
-        <h1>商家后台登录</h1>
+        <h1>用手机号验证码登录商家后台</h1>
         <p>
-          平台审核通过后，系统会自动创建商家后台账号，并把登录账号和初始密码推送到小程序消息中心。
-          首次登录后必须先修改密码，修改完成后才能正常使用后台。
+          店铺入驻申请审核通过后，平台会把商家后台地址发送到小程序消息中心。请使用申请店铺时填写的联系人手机号获取验证码登录。
         </p>
-        <ul class="tips">
-          <li>登录账号默认是入驻申请里填写的手机号</li>
-          <li>初始密码请到小程序“消息”页查看</li>
-          <li>短信验证码登录可作为补充登录方式</li>
-        </ul>
-      </div>
-      <div class="form-card">
-        <el-tabs v-model="activeTab" stretch>
-          <el-tab-pane label="密码登录" name="password">
-            <el-form label-position="top" @submit.prevent="handlePasswordLogin">
-              <el-form-item label="手机号">
-                <el-input v-model.trim="passwordForm.phone" maxlength="11" placeholder="请输入入驻申请联系人手机号" />
-              </el-form-item>
-              <el-form-item label="密码">
-                <el-input v-model.trim="passwordForm.password" show-password placeholder="请输入登录密码" />
-              </el-form-item>
-              <el-button class="submit-btn" type="primary" :loading="loading" @click="handlePasswordLogin">
-                登录并进入后台
+        <div class="flow-card">
+          <div class="flow-item">
+            <span>1</span>
+            <strong>提交开店申请</strong>
+            <em>手机号就是商家后台登录账号</em>
+          </div>
+          <div class="flow-item">
+            <span>2</span>
+            <strong>平台审核通过</strong>
+            <em>小程序消息会收到后台入口</em>
+          </div>
+          <div class="flow-item">
+            <span>3</span>
+            <strong>短信验证码登录</strong>
+            <em>无需初始密码，手机和电脑都可使用</em>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-card">
+        <div class="form-title">
+          <h2>商家登录</h2>
+          <p>登录地址：https://xy-merchant.jpwlkj.com/merchant/</p>
+        </div>
+        <el-form label-position="top" @submit.prevent="handleCodeLogin">
+          <el-form-item label="手机号">
+            <el-input
+              v-model.trim="codeForm.phone"
+              maxlength="11"
+              inputmode="numeric"
+              size="large"
+              placeholder="请输入开店申请联系人手机号"
+            />
+          </el-form-item>
+          <el-form-item label="短信验证码">
+            <div class="code-row">
+              <el-input
+                v-model.trim="codeForm.code"
+                maxlength="6"
+                inputmode="numeric"
+                size="large"
+                placeholder="请输入 6 位验证码"
+              />
+              <el-button size="large" :disabled="!canSendCode" :loading="sending" @click="handleSendCode">
+                {{ countdown > 0 ? `${countdown}s` : "发送验证码" }}
               </el-button>
-            </el-form>
-          </el-tab-pane>
-          <el-tab-pane label="验证码登录" name="code">
-            <el-form label-position="top" @submit.prevent="handleCodeLogin">
-              <el-form-item label="手机号">
-                <el-input v-model.trim="codeForm.phone" maxlength="11" placeholder="请输入入驻申请联系人手机号" />
-              </el-form-item>
-              <el-form-item label="验证码">
-                <div class="code-row">
-                  <el-input v-model.trim="codeForm.code" maxlength="6" placeholder="请输入验证码" />
-                  <el-button :loading="sending" @click="handleSendCode">发送验证码</el-button>
-                </div>
-              </el-form-item>
-              <el-button class="submit-btn" type="primary" :loading="loading" @click="handleCodeLogin">
-                登录并进入后台
-              </el-button>
-            </el-form>
-          </el-tab-pane>
-        </el-tabs>
-      </div>
+            </div>
+          </el-form-item>
+          <el-button class="submit-btn" type="primary" size="large" :loading="loading" @click="handleCodeLogin">
+            登录商家后台
+          </el-button>
+        </el-form>
+        <div class="login-help">
+          如果提示“手机号未绑定商家账号”，请确认店铺申请已审核通过，或检查手机号是否为申请时填写的手机号。
+        </div>
+      </section>
     </div>
   </div>
 </template>
@@ -138,28 +150,29 @@ async function handlePasswordLogin() {
   place-items: center;
   padding: 32px;
   background:
-    radial-gradient(circle at top left, rgba(59, 130, 246, 0.18), transparent 30%),
-    radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.18), transparent 28%),
-    linear-gradient(180deg, #f7fbff, #eef4ff 45%, #f5f7fb);
+    radial-gradient(circle at 8% 12%, rgba(37, 99, 235, 0.18), transparent 30%),
+    radial-gradient(circle at 92% 88%, rgba(14, 165, 233, 0.2), transparent 28%),
+    linear-gradient(135deg, #f8fbff 0%, #eef5ff 45%, #f7f9fc 100%);
 }
 
 .login-panel {
-  width: min(1080px, 100%);
+  width: min(1120px, 100%);
   display: grid;
   grid-template-columns: 1.05fr 0.95fr;
   gap: 24px;
+  align-items: stretch;
 }
 
 .hero,
 .form-card {
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(219, 234, 254, 0.9);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(219, 234, 254, 0.95);
   border-radius: 28px;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
 }
 
 .hero {
-  padding: 36px;
+  padding: 38px;
 }
 
 .hero-badge {
@@ -169,47 +182,134 @@ async function handlePasswordLogin() {
   background: #dbeafe;
   color: #1d4ed8;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 h1 {
-  margin: 18px 0 14px;
-  font-size: 38px;
-  line-height: 1.15;
+  margin: 20px 0 16px;
+  font-size: clamp(30px, 4vw, 46px);
+  line-height: 1.12;
   color: #0f172a;
+  letter-spacing: -0.04em;
 }
 
-p {
+.hero p,
+.form-title p,
+.login-help {
   margin: 0;
   color: #475467;
   line-height: 1.8;
 }
 
-.tips {
-  margin: 26px 0 0;
-  padding-left: 18px;
-  color: #334155;
-  line-height: 2;
+.flow-card {
+  display: grid;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.flow-item {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 4px 12px;
+  padding: 14px;
+  border-radius: 18px;
+  background: #f8fbff;
+  border: 1px solid #e5eefb;
+}
+
+.flow-item span {
+  grid-row: span 2;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 800;
+}
+
+.flow-item strong {
+  color: #111827;
+}
+
+.flow-item em {
+  font-style: normal;
+  color: #667085;
+  font-size: 13px;
 }
 
 .form-card {
-  padding: 28px;
+  padding: 30px;
+  align-self: center;
+}
+
+.form-title {
+  margin-bottom: 24px;
+}
+
+.form-title h2 {
+  margin: 0 0 8px;
+  font-size: 26px;
+  color: #111827;
 }
 
 .code-row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr 132px;
   gap: 12px;
+  width: 100%;
 }
 
 .submit-btn {
   width: 100%;
+  margin-top: 12px;
+  height: 46px;
+  font-weight: 700;
+}
+
+.login-help {
   margin-top: 18px;
-  height: 44px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f8fafc;
+  font-size: 13px;
 }
 
 @media (max-width: 900px) {
+  .login-page {
+    padding: 18px;
+    place-items: start center;
+  }
+
   .login-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .hero,
+  .form-card {
+    border-radius: 22px;
+  }
+
+  .hero {
+    padding: 24px;
+  }
+
+  .form-card {
+    padding: 22px;
+  }
+}
+
+@media (max-width: 520px) {
+  .login-page {
+    padding: 12px;
+  }
+
+  .hero {
+    display: none;
+  }
+
+  .code-row {
     grid-template-columns: 1fr;
   }
 }

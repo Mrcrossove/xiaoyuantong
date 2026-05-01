@@ -1,6 +1,6 @@
 .search-row {
   display: grid;
-  grid-template-columns: 1.35fr 1.5fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 12rpx;
   padding: 18rpx;
   align-items: center;
@@ -89,15 +89,17 @@
 }
 
 .campus-pill {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10rpx;
+  gap: 6rpx;
+  max-width: 240rpx;
   min-width: 0;
 }
 
 .campus-text {
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
+  max-width: 184rpx;
   color: #3f83ff;
   font-size: 24rpx;
   overflow: hidden;

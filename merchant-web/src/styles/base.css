@@ -54,3 +54,27 @@ a {
   font-weight: 700;
   color: #111827;
 }
+
+@media (max-width: 720px) {
+  .toolbar {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar .input,
+  .toolbar .select {
+    width: 100%;
+  }
+
+  .el-card {
+    border-radius: 14px;
+  }
+
+  .el-table {
+    font-size: 13px;
+  }
+
+  .metric-value {
+    font-size: 24px;
+  }
+}

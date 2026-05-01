@@ -10,8 +10,7 @@ const contentRouteMap = {
   publish: "/pages/my-posts/my-posts",
   favorite: "/pages/my-favorites/my-favorites",
   shop: "/pages/open-shop/open-shop",
-  address: "/pages/my-address/my-address",
-  wallet: "/pages/wallet/wallet"
+  address: "/pages/my-address/my-address"
 };
 
 const supportRouteMap = {
@@ -40,8 +39,7 @@ Page({
       { label: "我的发布", icon: "publish" },
       { label: "我的收藏", icon: "favorite" },
       { label: "我要开店", icon: "shop" },
-      { label: "我的地址", icon: "address" },
-      { label: "我的钱包", icon: "wallet" }
+      { label: "我的地址", icon: "address" }
     ],
     supportItems: [
       { label: "联系客服", icon: "service", arrow: false },

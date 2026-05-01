@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { merchantMenus } from "../config/menu";
 import { useMerchantAuthStore } from "../stores/auth";
@@ -7,9 +7,15 @@ import { useMerchantAuthStore } from "../stores/auth";
 const route = useRoute();
 const router = useRouter();
 const authStore = useMerchantAuthStore();
+const menuOpen = ref(false);
 
 const activePath = computed(() => String(route.meta.menuPath || route.path));
 const visibleMenus = computed(() => merchantMenus.filter((item) => authStore.hasMenuAccess(item.path)));
+
+function go(path: string) {
+  router.push(path);
+  menuOpen.value = false;
+}
 
 function handleLogout() {
   authStore.logout();
@@ -19,30 +25,34 @@ function handleLogout() {
 
 <template>
   <el-container class="layout-shell">
-    <el-aside width="240px" class="aside">
+    <el-aside :class="['aside', { 'aside-open': menuOpen }]" width="248px">
       <div class="logo">校园通商家后台</div>
       <div class="store-card">
         <div class="store-name">{{ authStore.profile?.storeName || "-" }}</div>
         <div class="store-meta">{{ authStore.profile?.school || "-" }}</div>
       </div>
-      <el-menu :default-active="activePath" class="menu" @select="router.push">
+      <el-menu :default-active="activePath" class="menu" @select="go">
         <el-menu-item v-for="item in visibleMenus" :key="item.key" :index="item.path">
           {{ item.title }}
         </el-menu-item>
       </el-menu>
     </el-aside>
-    <el-container>
+
+    <div v-if="menuOpen" class="mobile-mask" @click="menuOpen = false" />
+
+    <el-container class="content-shell">
       <el-header class="header">
-        <div>
-          <div class="page-title">{{ route.meta.title || "商家后台" }}</div>
-          <div class="page-sub">手机号：{{ authStore.profile?.phone || "-" }}</div>
+        <div class="header-main">
+          <el-button class="menu-toggle" text @click="menuOpen = true">菜单</el-button>
+          <div>
+            <div class="page-title">{{ route.meta.title || "商家后台" }}</div>
+            <div class="page-sub">手机号：{{ authStore.profile?.phone || "-" }}</div>
+          </div>
         </div>
         <div class="header-right">
-          <el-tag :type="authStore.profile?.isActivated ? 'success' : 'warning'">
-            {{ authStore.profile?.isActivated ? "已激活" : "待激活" }}
-          </el-tag>
+          <el-tag type="success">验证码登录</el-tag>
           <el-tag type="info">{{ authStore.profile?.storeStatus || "未知" }}</el-tag>
-          <span>{{ authStore.profile?.name || "-" }}</span>
+          <span class="account-name">{{ authStore.profile?.name || "-" }}</span>
           <el-button link type="danger" @click="handleLogout">退出登录</el-button>
         </div>
       </el-header>
@@ -56,11 +66,14 @@ function handleLogout() {
 <style scoped>
 .layout-shell {
   min-height: 100vh;
+  background: #f4f7fb;
 }
 
 .aside {
   background: #fff;
   border-right: 1px solid #e7edf6;
+  transition: transform 0.2s ease;
+  z-index: 20;
 }
 
 .logo {
@@ -85,6 +98,7 @@ function handleLogout() {
 .store-name {
   font-weight: 700;
   color: #111827;
+  word-break: break-word;
 }
 
 .store-meta {
@@ -97,12 +111,31 @@ function handleLogout() {
   border-right: 0;
 }
 
+.content-shell {
+  min-width: 0;
+}
+
 .header {
+  min-height: 68px;
+  height: auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
   background: #fff;
   border-bottom: 1px solid #eef2f7;
+}
+
+.header-main {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.menu-toggle {
+  display: none;
 }
 
 .page-title {
@@ -120,10 +153,66 @@ function handleLogout() {
 .header-right {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
+  flex-wrap: wrap;
+}
+
+.account-name {
+  color: #334155;
 }
 
 .main {
   background: #f4f7fb;
+  padding: 18px;
+  overflow-x: hidden;
+}
+
+.mobile-mask {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .aside {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 248px;
+    transform: translateX(-105%);
+    box-shadow: 18px 0 40px rgba(15, 23, 42, 0.14);
+  }
+
+  .aside-open {
+    transform: translateX(0);
+  }
+
+  .mobile-mask {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.32);
+    z-index: 10;
+  }
+
+  .menu-toggle {
+    display: inline-flex;
+    padding-left: 0;
+  }
+
+  .layout-shell {
+    display: block;
+  }
+
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .header-right {
+    justify-content: flex-start;
+  }
+
+  .main {
+    padding: 12px;
+  }
 }
 </style>
