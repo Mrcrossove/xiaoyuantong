@@ -31,7 +31,8 @@ export const MERCHANT_PERMISSION_CODES = [
   "message:read",
   "stat:view",
   "account:view",
-  "account:edit"
+  "account:edit",
+  "account:password"
 ] as const;
 
 export function getDefaultMerchantMenuPaths() {

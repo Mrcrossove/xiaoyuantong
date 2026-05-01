@@ -1,18 +1,25 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage } from "element-plus";
-import { getAccountProfileApi, updateAccountProfileApi } from "../../api/modules/merchant";
+import { getAccountProfileApi, updateAccountPasswordApi, updateAccountProfileApi } from "../../api/modules/merchant";
 import { useMerchantAuthStore } from "../../stores/auth";
 
 const authStore = useMerchantAuthStore();
 const loading = ref(false);
 const savingProfile = ref(false);
+const savingPassword = ref(false);
 const profile = ref<any>(null);
 
 const profileForm = reactive({
   name: "",
   withdrawRealName: "",
   acceptWithdrawAgreement: false
+});
+
+const passwordForm = reactive({
+  oldPassword: "",
+  newPassword: "",
+  confirmPassword: ""
 });
 
 const withdrawProfile = computed(() => profile.value?.withdrawProfile || {});
@@ -50,6 +57,37 @@ async function handleUpdateProfile() {
   }
 }
 
+async function handleUpdatePassword() {
+  if (passwordForm.oldPassword.length < 6) {
+    ElMessage.warning("请输入至少 6 位原密码");
+    return;
+  }
+  if (passwordForm.newPassword.length < 6) {
+    ElMessage.warning("新密码至少 6 位");
+    return;
+  }
+  if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+    ElMessage.warning("两次输入的新密码不一致");
+    return;
+  }
+
+  savingPassword.value = true;
+  try {
+    await updateAccountPasswordApi({
+      oldPassword: passwordForm.oldPassword,
+      newPassword: passwordForm.newPassword
+    });
+    passwordForm.oldPassword = "";
+    passwordForm.newPassword = "";
+    passwordForm.confirmPassword = "";
+    ElMessage.success("密码已更新");
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : "密码更新失败");
+  } finally {
+    savingPassword.value = false;
+  }
+}
+
 onMounted(loadData);
 </script>
 
@@ -65,7 +103,7 @@ onMounted(loadData);
         <el-descriptions-item label="店铺名称">{{ profile?.storeName || "-" }}</el-descriptions-item>
         <el-descriptions-item label="所属学校">{{ profile?.school || "-" }}</el-descriptions-item>
         <el-descriptions-item label="最近登录">{{ profile?.lastLoginAt || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="登录方式">手机号 + 短信验证码</el-descriptions-item>
+        <el-descriptions-item label="登录方式">账号密码 / 短信验证码</el-descriptions-item>
       </el-descriptions>
 
       <el-divider />
@@ -75,6 +113,31 @@ onMounted(loadData);
           <el-input v-model.trim="profileForm.name" maxlength="20" />
         </el-form-item>
         <el-button type="primary" :loading="savingProfile" @click="handleUpdateProfile">保存资料</el-button>
+      </el-form>
+    </el-card>
+
+    <el-card>
+      <template #header>
+        <div class="section-title">修改登录密码</div>
+      </template>
+      <el-alert
+        title="如果你还在使用小程序消息里的初始密码，建议登录后在这里修改为自己的密码。"
+        type="info"
+        :closable="false"
+        show-icon
+        style="margin-bottom: 16px"
+      />
+      <el-form label-position="top" class="password-form">
+        <el-form-item label="原密码">
+          <el-input v-model.trim="passwordForm.oldPassword" type="password" show-password maxlength="30" />
+        </el-form-item>
+        <el-form-item label="新密码">
+          <el-input v-model.trim="passwordForm.newPassword" type="password" show-password maxlength="30" />
+        </el-form-item>
+        <el-form-item label="确认新密码">
+          <el-input v-model.trim="passwordForm.confirmPassword" type="password" show-password maxlength="30" />
+        </el-form-item>
+        <el-button type="primary" :loading="savingPassword" @click="handleUpdatePassword">保存新密码</el-button>
       </el-form>
     </el-card>
 
@@ -104,7 +167,11 @@ onMounted(loadData);
 
       <el-form label-position="top">
         <el-form-item label="收款人真实姓名">
-          <el-input v-model.trim="profileForm.withdrawRealName" maxlength="20" placeholder="用于后续补齐大额提现实名能力，当前可先选填" />
+          <el-input
+            v-model.trim="profileForm.withdrawRealName"
+            maxlength="20"
+            placeholder="用于后续补齐大额提现实名能力，当前可先选填"
+          />
         </el-form-item>
         <el-form-item>
           <el-checkbox v-model="profileForm.acceptWithdrawAgreement">
@@ -127,6 +194,10 @@ onMounted(loadData);
 .section-title {
   font-size: 16px;
   font-weight: 700;
+}
+
+.password-form {
+  max-width: 520px;
 }
 
 .hint {

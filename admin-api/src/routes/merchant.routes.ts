@@ -24,11 +24,12 @@ import {
   reviewMerchantRefundAction,
   toggleMerchantProductStatusAction,
   updateMerchantAccountProfileAction,
+  updateMerchantPasswordAction,
   updateMerchantProductAction,
   updateMerchantStoreAction,
   uploadMerchantImageAction
 } from "../controllers/merchant-portal.controller";
-import { merchantProfileUpdateSchema } from "../controllers/merchant-schemas";
+import { merchantPasswordUpdateSchema, merchantProfileUpdateSchema } from "../controllers/merchant-schemas";
 import {
   miniMessageReadAllSchema,
   miniMerchantBatchIdsSchema,
@@ -230,5 +231,12 @@ router.put(
   requireMerchantPermission("account:edit"),
   validateBody(merchantProfileUpdateSchema),
   asyncHandler(updateMerchantAccountProfileAction)
+);
+router.put(
+  "/account/password",
+  requireMerchantMenuAccess("/account"),
+  requireMerchantPermission("account:password"),
+  validateBody(merchantPasswordUpdateSchema),
+  asyncHandler(updateMerchantPasswordAction)
 );
 export default router;

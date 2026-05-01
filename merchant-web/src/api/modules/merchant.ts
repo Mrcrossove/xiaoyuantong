@@ -23,6 +23,14 @@ export function codeLoginApi(payload: { phone: string; code: string }) {
   });
 }
 
+export function passwordLoginApi(payload: { phone: string; password: string }) {
+  return request<MerchantSessionResponse>({
+    url: "/merchant/auth/password-login",
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
 export function getSessionApi() {
   return request<MerchantSessionResponse>({
     url: "/merchant/auth/session",
@@ -80,3 +88,5 @@ export const getStatApi = () => request<any>({ url: "/merchant/stat/overview", m
 export const getAccountProfileApi = () => request<any>({ url: "/merchant/account/profile", method: "GET" });
 export const updateAccountProfileApi = (payload: { name: string; withdrawRealName?: string; acceptWithdrawAgreement?: boolean }) =>
   request<any>({ url: "/merchant/account/profile", method: "PUT", body: JSON.stringify(payload) });
+export const updateAccountPasswordApi = (payload: { oldPassword: string; newPassword: string }) =>
+  request<any>({ url: "/merchant/account/password", method: "PUT", body: JSON.stringify(payload) });

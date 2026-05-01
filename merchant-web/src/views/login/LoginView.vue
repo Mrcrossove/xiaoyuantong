@@ -9,10 +9,16 @@ const route = useRoute();
 const router = useRouter();
 const authStore = useMerchantAuthStore();
 
+const activeMode = ref<"password" | "code">("password");
 const loading = ref(false);
 const sending = ref(false);
 const countdown = ref(0);
 let countdownTimer: number | undefined;
+
+const passwordForm = reactive({
+  phone: "",
+  password: ""
+});
 
 const codeForm = reactive({
   phone: "",
@@ -33,11 +39,35 @@ function startCountdown() {
   }, 1000);
 }
 
-async function handleSendCode() {
-  if (!/^1\d{10}$/.test(codeForm.phone)) {
+function validatePhone(phone: string) {
+  if (!/^1\d{10}$/.test(phone)) {
     ElMessage.warning("请输入正确的手机号");
+    return false;
+  }
+  return true;
+}
+
+async function handlePasswordLogin() {
+  if (!validatePhone(passwordForm.phone)) return;
+  if (!passwordForm.password || passwordForm.password.length < 6) {
+    ElMessage.warning("请输入至少 6 位密码");
     return;
   }
+
+  loading.value = true;
+  try {
+    await authStore.loginByPassword({ phone: passwordForm.phone, password: passwordForm.password });
+    ElMessage.success("登录成功");
+    router.replace(redirectPath.value);
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : "登录失败");
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function handleSendCode() {
+  if (!validatePhone(codeForm.phone)) return;
 
   sending.value = true;
   try {
@@ -52,10 +82,7 @@ async function handleSendCode() {
 }
 
 async function handleCodeLogin() {
-  if (!/^1\d{10}$/.test(codeForm.phone)) {
-    ElMessage.warning("请输入正确的手机号");
-    return;
-  }
+  if (!validatePhone(codeForm.phone)) return;
   if (!/^\d{6}$/.test(codeForm.code)) {
     ElMessage.warning("请输入 6 位验证码");
     return;
@@ -79,25 +106,25 @@ async function handleCodeLogin() {
     <div class="login-panel">
       <section class="hero">
         <div class="hero-badge">校园通商家中心</div>
-        <h1>用手机号验证码登录商家后台</h1>
+        <h1>用账号密码或验证码登录商家后台</h1>
         <p>
-          店铺入驻申请审核通过后，平台会把商家后台地址发送到小程序消息中心。请使用申请店铺时填写的联系人手机号获取验证码登录。
+          店铺入驻申请审核通过后，平台会把商家后台地址、登录账号和初始密码发送到小程序消息中心。短信服务审核通过后，也可以使用手机号验证码登录。
         </p>
         <div class="flow-card">
           <div class="flow-item">
             <span>1</span>
             <strong>提交开店申请</strong>
-            <em>手机号就是商家后台登录账号</em>
+            <em>申请手机号就是商家后台登录账号</em>
           </div>
           <div class="flow-item">
             <span>2</span>
             <strong>平台审核通过</strong>
-            <em>小程序消息会收到后台入口</em>
+            <em>小程序消息中心收到后台地址和初始密码</em>
           </div>
           <div class="flow-item">
             <span>3</span>
-            <strong>短信验证码登录</strong>
-            <em>无需初始密码，手机和电脑都可使用</em>
+            <strong>进入商家后台</strong>
+            <em>手机和电脑浏览器都可以使用</em>
           </div>
         </div>
       </section>
@@ -107,8 +134,43 @@ async function handleCodeLogin() {
           <h2>商家登录</h2>
           <p>登录地址：https://xy-merchant.jpwlkj.com/merchant/</p>
         </div>
-        <el-form label-position="top" @submit.prevent="handleCodeLogin">
-          <el-form-item label="手机号">
+
+        <div class="login-tabs">
+          <button :class="{ active: activeMode === 'password' }" type="button" @click="activeMode = 'password'">
+            账号密码登录
+          </button>
+          <button :class="{ active: activeMode === 'code' }" type="button" @click="activeMode = 'code'">
+            短信验证码登录
+          </button>
+        </div>
+
+        <el-form v-if="activeMode === 'password'" label-position="top" @submit.prevent="handlePasswordLogin">
+          <el-form-item label="登录手机号">
+            <el-input
+              v-model.trim="passwordForm.phone"
+              maxlength="11"
+              inputmode="numeric"
+              size="large"
+              placeholder="请输入开店申请联系人手机号"
+            />
+          </el-form-item>
+          <el-form-item label="登录密码">
+            <el-input
+              v-model.trim="passwordForm.password"
+              type="password"
+              maxlength="30"
+              show-password
+              size="large"
+              placeholder="请输入小程序消息收到的初始密码"
+            />
+          </el-form-item>
+          <el-button class="submit-btn" type="primary" size="large" :loading="loading" @click="handlePasswordLogin">
+            登录商家后台
+          </el-button>
+        </el-form>
+
+        <el-form v-else label-position="top" @submit.prevent="handleCodeLogin">
+          <el-form-item label="登录手机号">
             <el-input
               v-model.trim="codeForm.phone"
               maxlength="11"
@@ -135,8 +197,9 @@ async function handleCodeLogin() {
             登录商家后台
           </el-button>
         </el-form>
+
         <div class="login-help">
-          如果提示“手机号未绑定商家账号”，请确认店铺申请已审核通过，或检查手机号是否为申请时填写的手机号。
+          如果提示账号不存在，请确认店铺申请已审核通过；如果暂时收不到短信，请先使用小程序消息里的账号和初始密码登录。
         </div>
       </section>
     </div>
@@ -245,13 +308,39 @@ h1 {
 }
 
 .form-title {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .form-title h2 {
   margin: 0 0 8px;
   font-size: 26px;
   color: #111827;
+}
+
+.login-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 6px;
+  margin-bottom: 20px;
+  border-radius: 16px;
+  background: #f1f5f9;
+}
+
+.login-tabs button {
+  border: 0;
+  border-radius: 12px;
+  padding: 11px 8px;
+  background: transparent;
+  color: #64748b;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.login-tabs button.active {
+  background: #fff;
+  color: #1d4ed8;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
 }
 
 .code-row {
@@ -309,6 +398,7 @@ h1 {
     display: none;
   }
 
+  .login-tabs,
   .code-row {
     grid-template-columns: 1fr;
   }

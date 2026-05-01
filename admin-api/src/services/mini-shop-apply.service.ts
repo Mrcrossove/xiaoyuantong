@@ -7,6 +7,7 @@ import { ERROR_CODES } from "../constants/error-codes";
 import { assertRiskPassed } from "./risk-control.service";
 import { createMiniMessage } from "./mini-message.service";
 import { env } from "../config/env";
+import { hashPassword } from "../utils/password";
 
 const STATUS = {
   pending: "待审核",
@@ -82,6 +83,10 @@ function buildDetailId(applyId: number) {
   return `apply-store-${applyId}`;
 }
 
+function generateMerchantInitialPassword() {
+  return `xy${Math.floor(100000 + Math.random() * 900000)}`;
+}
+
 async function createStoreForApprovedApply(apply: any) {
   const existingStore = await prisma.miniStore.findFirst({
     where: {
@@ -137,6 +142,7 @@ async function createMerchantAccountForApprovedApply(apply: any, storeId: number
 
   const now = new Date();
   const loginUrl = env.merchantWebUrl;
+  const initialPassword = existing?.password ? null : generateMerchantInitialPassword();
 
   const account = existing
     ? await prisma.merchantAccount.update({
@@ -147,7 +153,7 @@ async function createMerchantAccountForApprovedApply(apply: any, storeId: number
           phone: apply.contactPhone,
           name: apply.contactName,
           status: "启用",
-          password: existing.password,
+          password: existing.password || hashPassword(initialPassword!),
           activatedAt: existing.activatedAt || now,
           mustChangePassword: false,
           initialPasswordSentAt: existing.initialPasswordSentAt || now
@@ -159,7 +165,7 @@ async function createMerchantAccountForApprovedApply(apply: any, storeId: number
           storeId,
           phone: apply.contactPhone,
           name: apply.contactName,
-          password: null,
+          password: hashPassword(initialPassword!),
           status: "启用",
           mustChangePassword: false,
           activatedAt: now,
@@ -171,7 +177,9 @@ async function createMerchantAccountForApprovedApply(apply: any, storeId: number
     school: apply.school,
     type: "system",
     category: "商家后台账号开通",
-    content: `你的店铺已审核通过，商家后台已开通。后台地址：${loginUrl}；登录手机号：${apply.contactPhone}。请使用手机号和短信验证码登录，无需初始密码。`,
+    content: initialPassword
+      ? `你的店铺已审核通过，商家后台已开通。后台地址：${loginUrl}；登录账号：${apply.contactPhone}；初始密码：${initialPassword}。你也可以在短信服务可用后使用手机号验证码登录。`
+      : `你的店铺已审核通过，商家后台已开通。后台地址：${loginUrl}；登录账号：${apply.contactPhone}。该账号已有密码，请使用原密码登录；短信服务可用后也可使用验证码登录。`,
     receiverUserId: apply.userId,
     targetType: "merchant_account",
     targetId: String(account.id)

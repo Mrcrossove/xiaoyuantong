@@ -1,6 +1,6 @@
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
-import { codeLoginApi, getSessionApi, type MerchantSessionResponse } from "../api/modules/merchant";
+import { codeLoginApi, getSessionApi, passwordLoginApi, type MerchantSessionResponse } from "../api/modules/merchant";
 import {
   clearSession,
   getMenuPaths,
@@ -43,6 +43,12 @@ export const useMerchantAuthStore = defineStore("merchant-auth", () => {
     return result;
   }
 
+  async function loginByPassword(payload: { phone: string; password: string }) {
+    const result = await passwordLoginApi(payload);
+    applySession(result, result.token);
+    return result;
+  }
+
   async function refreshSession() {
     if (!token.value) return;
     const result = await getSessionApi();
@@ -75,6 +81,7 @@ export const useMerchantAuthStore = defineStore("merchant-auth", () => {
     needActivate,
     mustChangePassword,
     loginByCode,
+    loginByPassword,
     refreshSession,
     hasMenuAccess,
     hasPermission,
