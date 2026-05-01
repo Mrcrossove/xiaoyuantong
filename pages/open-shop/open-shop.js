@@ -8,19 +8,14 @@ const { ensureMiniSession } = require("../../utils/mini-auth");
 const { uploadImage } = require("../../utils/upload-api");
 const { fetchCurrentVerification } = require("../../utils/verification-api");
 const {
-  batchDeleteMerchantProducts,
-  batchDownMerchantProducts,
-  createMerchantProduct,
-  deleteMerchantProduct,
   fetchCurrentMerchantOrderBoard,
   fetchCurrentMerchantStore,
   fetchCurrentShopApply,
-  moveMerchantProduct,
   submitShopApply,
-  toggleMerchantProductStatus,
-  updateCurrentMerchantStore,
-  updateMerchantProduct
+  updateCurrentMerchantStore
 } = require("../../utils/open-shop-api");
+
+const MERCHANT_WEB_URL = "https://xy-merchant.jpwlkj.com/merchant/";
 
 const LABELS = {
   title: "我要开店",
@@ -30,7 +25,7 @@ const LABELS = {
   processTitle: "申请流程",
   process1: "1. 完成校园认证，并确认当前高校",
   process2: "2. 填写店铺名称、经营分类和联系方式",
-  process3: "3. 等待平台审核，审核通过后即可上架商品",
+  process3: "3. 等待平台审核，审核通过后到商家后台统一维护商品",
   formTitle: "申请信息",
   currentSchool: "入驻高校",
   storeName: "店铺名称",
@@ -49,8 +44,7 @@ const LABELS = {
   submitting: "提交中...",
   retryTip: "已驳回的申请可修改后重新提交。",
   rejected: "已驳回",
-  storeManage: "店铺管理",
-  goodsManage: "商品管理",
+  storeManage: "店铺资料",
   orderManage: "接单看板",
   orderNew: "新订单提醒",
   orderPending: "待处理订单",
@@ -65,41 +59,16 @@ const LABELS = {
   orderFinishedAt: "完成时间：",
   storeCover: "店铺封面",
   storeBanners: "店铺轮播图",
-  saveStore: "保存店铺信息",
+  saveStore: "保存店铺资料",
   saveStoreLoading: "保存中...",
-  addProduct: "新增商品",
-  editProduct: "编辑商品",
-  submitProduct: "保存商品",
-  saveProductLoading: "保存中...",
-  emptyProduct: "暂无商品，点击上方按钮新增",
   subtitle: "店铺副标题",
   notice: "店铺公告",
   phone: "联系电话",
   address: "店铺地址",
-  productName: "商品名称",
-  productDesc: "商品描述",
-  productPrice: "商品价格",
-  productCover: "商品图片",
-  productStock: "库存数量",
-  productDailyLimit: "每日限购",
-  productRecommended: "推荐商品",
-  cancel: "取消",
-  statusUp: "已上架",
-  statusDown: "已下架",
-  toggleStatus: "启停",
   moveUp: "上移",
   moveDown: "下移",
   remove: "删除",
   addBanner: "添加轮播图",
-  batchSelect: "批量管理",
-  batchCancel: "取消选择",
-  batchDown: "批量下架",
-  batchDelete: "批量删除",
-  selectedCount: "已选",
-  recommendedTag: "推荐",
-  stockTag: "库存",
-  dailyLimitTag: "日限",
-  unitCount: "件",
   placeholders: {
     storeName: "例如：校园轻食屋",
     category: "例如：学生商家",
@@ -110,29 +79,9 @@ const LABELS = {
     notice: "请输入店铺公告",
     phone: "请输入店铺联系电话",
     address: "请输入店铺地址",
-    storeCover: "上传店铺封面",
-    productName: "例如：招牌套餐饭",
-    productDesc: "例如：热菜 / 米饭 / 例汤",
-    productPrice: "例如：12.8",
-    productCover: "上传商品封面",
-    productStock: "例如：99",
-    productDailyLimit: "例如：10，填 0 表示不限"
+    storeCover: "上传店铺封面"
   }
 };
-
-function getInitialProductForm() {
-  return {
-    id: "",
-    name: "",
-    desc: "",
-    price: "",
-    cover: "",
-    stock: 0,
-    dailyLimit: 0,
-    recommended: false,
-    status: LABELS.statusUp
-  };
-}
 
 function getInitialMerchantForm() {
   return {
@@ -171,26 +120,18 @@ function moveArrayItem(list, index, direction) {
   return next;
 }
 
-function normalizePrice(value) {
-  return String(value || "").replace(/[￥¥元]/g, "").trim();
-}
-
 Page({
   data: {
     statusBarHeight: 20,
     loading: true,
     submitting: false,
     savingStore: false,
-    savingProduct: false,
     selectedSchool: "",
+    merchantWebUrl: MERCHANT_WEB_URL,
     labels: LABELS,
     currentApply: null,
     merchantStore: null,
     merchantOrderBoard: getInitialOrderBoard(),
-    productModalVisible: false,
-    batchMode: false,
-    selectedProductIds: [],
-    productForm: getInitialProductForm(),
     form: {
       school: "",
       storeName: "",
@@ -250,8 +191,6 @@ Page({
         currentApply,
         merchantStore,
         merchantOrderBoard: merchantStore ? merchantOrderBoard : getInitialOrderBoard(),
-        batchMode: false,
-        selectedProductIds: [],
         merchantForm: merchantStore
           ? {
               name: merchantStore.name || "",
@@ -290,16 +229,6 @@ Page({
   onMerchantInput(event) {
     const { field } = event.currentTarget.dataset;
     this.setData({ [`merchantForm.${field}`]: event.detail.value });
-  },
-
-  onProductInput(event) {
-    const { field } = event.currentTarget.dataset;
-    this.setData({ [`productForm.${field}`]: event.detail.value });
-  },
-
-  onProductSwitchChange(event) {
-    const { field } = event.currentTarget.dataset;
-    this.setData({ [`productForm.${field}`]: !!event.detail.value });
   },
 
   async submitApply() {
@@ -377,7 +306,7 @@ Page({
       payload.notice.length < 5 ||
       payload.address.length < 5
     ) {
-      return wx.showToast({ title: "请完整填写店铺信息", icon: "none" });
+      return wx.showToast({ title: "请完整填写店铺资料", icon: "none" });
     }
 
     this.setData({ savingStore: true });
@@ -395,131 +324,12 @@ Page({
           banners: merchantStore.banners || []
         }
       });
-      wx.showToast({ title: "店铺信息已保存", icon: "success" });
+      wx.showToast({ title: "店铺资料已保存", icon: "success" });
     } catch (error) {
       wx.showToast({ title: error.message || "保存失败", icon: "none" });
     } finally {
       this.setData({ savingStore: false });
     }
-  },
-
-  openCreateProduct() {
-    this.setData({
-      productModalVisible: true,
-      productForm: getInitialProductForm()
-    });
-  },
-
-  openEditProduct(event) {
-    if (this.data.batchMode) return;
-    const { id } = event.currentTarget.dataset;
-    const product = ((this.data.merchantStore && this.data.merchantStore.products) || []).find(
-      (item) => String(item.id) === String(id)
-    );
-    if (!product) return;
-    this.setData({
-      productModalVisible: true,
-      productForm: {
-        id: product.id,
-        name: product.name || "",
-        desc: product.desc || "",
-        price: normalizePrice(product.price),
-        cover: product.cover || "",
-        stock: Number(product.stock || 0),
-        dailyLimit: Number(product.dailyLimit || 0),
-        recommended: !!product.recommended,
-        status: product.status || LABELS.statusUp
-      }
-    });
-  },
-
-  closeProductModal() {
-    if (this.data.savingProduct) return;
-    this.setData({
-      productModalVisible: false,
-      productForm: getInitialProductForm()
-    });
-  },
-
-  async saveProduct() {
-    const payload = {
-      name: String(this.data.productForm.name || "").trim(),
-      desc: String(this.data.productForm.desc || "").trim(),
-      price: String(this.data.productForm.price || "").trim(),
-      cover: String(this.data.productForm.cover || "").trim(),
-      stock: Math.max(0, Number(this.data.productForm.stock || 0)),
-      dailyLimit: Math.max(0, Number(this.data.productForm.dailyLimit || 0)),
-      recommended: !!this.data.productForm.recommended,
-      status: this.data.productForm.status || LABELS.statusUp
-    };
-
-    if (payload.name.length < 2 || payload.desc.length < 2 || !payload.price) {
-      return wx.showToast({ title: "请完整填写商品信息", icon: "none" });
-    }
-
-    this.setData({ savingProduct: true });
-    try {
-      const result = this.data.productForm.id
-        ? await updateMerchantProduct(this.data.productForm.id, payload)
-        : await createMerchantProduct(payload);
-
-      this.setData({
-        merchantStore: result.store,
-        productModalVisible: false,
-        productForm: getInitialProductForm()
-      });
-      wx.showToast({ title: "商品已保存", icon: "success" });
-    } catch (error) {
-      wx.showToast({ title: error.message || "保存失败", icon: "none" });
-    } finally {
-      this.setData({ savingProduct: false });
-    }
-  },
-
-  toggleBatchMode() {
-    this.setData({
-      batchMode: !this.data.batchMode,
-      selectedProductIds: []
-    });
-  },
-
-  toggleSelectProduct(event) {
-    const { id } = event.currentTarget.dataset;
-    const current = new Set(this.data.selectedProductIds || []);
-    if (current.has(id)) current.delete(id);
-    else current.add(id);
-    this.setData({ selectedProductIds: Array.from(current) });
-  },
-
-  async batchDownProducts() {
-    const ids = this.data.selectedProductIds || [];
-    if (!ids.length) return wx.showToast({ title: "请先选择商品", icon: "none" });
-    try {
-      const merchantStore = await batchDownMerchantProducts(ids);
-      this.setData({ merchantStore, selectedProductIds: [] });
-      wx.showToast({ title: "所选商品已下架", icon: "success" });
-    } catch (error) {
-      wx.showToast({ title: error.message || "批量下架失败", icon: "none" });
-    }
-  },
-
-  batchDeleteProducts() {
-    const ids = this.data.selectedProductIds || [];
-    if (!ids.length) return wx.showToast({ title: "请先选择商品", icon: "none" });
-    wx.showModal({
-      title: "批量删除",
-      content: `确定删除已选的 ${ids.length} 件商品吗？`,
-      success: async (res) => {
-        if (!res.confirm) return;
-        try {
-          const merchantStore = await batchDeleteMerchantProducts(ids);
-          this.setData({ merchantStore, selectedProductIds: [] });
-          wx.showToast({ title: "所选商品已删除", icon: "success" });
-        } catch (error) {
-          wx.showToast({ title: error.message || "批量删除失败", icon: "none" });
-        }
-      }
-    });
   },
 
   async chooseStoreCover() {
@@ -557,10 +367,6 @@ Page({
     this.setData({ "merchantForm.banners": next });
   },
 
-  async chooseProductCover() {
-    await this.chooseAndUpload("productForm.cover");
-  },
-
   async chooseAndUpload(targetField) {
     try {
       const filePath = await this.pickSingleImage();
@@ -587,46 +393,19 @@ Page({
     });
   },
 
-  async moveProduct(event) {
-    if (this.data.batchMode) return;
-    const { id, direction } = event.currentTarget.dataset;
-    try {
-      const merchantStore = await moveMerchantProduct(id, direction);
-      this.setData({ merchantStore });
-      wx.showToast({ title: "商品顺序已更新", icon: "success" });
-    } catch (error) {
-      wx.showToast({ title: error.message || "排序失败", icon: "none" });
-    }
+  copyMerchantWebUrl() {
+    wx.setClipboardData({
+      data: MERCHANT_WEB_URL,
+      success: () => wx.showToast({ title: "后台地址已复制", icon: "success" })
+    });
   },
 
-  async handleToggleProductStatus(event) {
-    if (this.data.batchMode) return;
-    const { id } = event.currentTarget.dataset;
-    try {
-      const result = await toggleMerchantProductStatus(id);
-      this.setData({ merchantStore: result.store });
-      wx.showToast({ title: "商品状态已更新", icon: "success" });
-    } catch (error) {
-      wx.showToast({ title: error.message || "操作失败", icon: "none" });
-    }
-  },
-
-  handleDeleteProduct(event) {
-    if (this.data.batchMode) return;
-    const { id } = event.currentTarget.dataset;
+  showMerchantLoginTip() {
     wx.showModal({
-      title: "删除商品",
-      content: "确定删除这个商品吗？",
-      success: async (res) => {
-        if (!res.confirm) return;
-        try {
-          const merchantStore = await deleteMerchantProduct(id);
-          this.setData({ merchantStore });
-          wx.showToast({ title: "商品已删除", icon: "success" });
-        } catch (error) {
-          wx.showToast({ title: error.message || "删除失败", icon: "none" });
-        }
-      }
+      title: "商家后台登录说明",
+      content: "入驻审核通过后，平台会通过小程序消息发送登录账号和初始密码。请复制商家后台地址，在浏览器中打开后维护商品、订单和钱包。",
+      confirmText: "知道了",
+      showCancel: false
     });
   },
 

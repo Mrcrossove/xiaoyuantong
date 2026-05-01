@@ -346,6 +346,31 @@
   color: #66748c;
 }
 
+.merchant-web-tip {
+  margin-top: 18rpx;
+  color: #4f5d77;
+  font-size: 26rpx;
+  line-height: 1.7;
+}
+
+.merchant-web-url {
+  margin-top: 18rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 18rpx;
+  background: #f6f8fc;
+  color: #2f68e3;
+  font-size: 24rpx;
+  font-weight: 700;
+  word-break: break-all;
+}
+
+.merchant-web-actions {
+  margin-top: 18rpx;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14rpx;
+}
+
 .submit-inline-btn {
   margin-top: 24rpx;
   height: 84rpx;
@@ -370,10 +395,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.upload-cover.small {
-  height: 200rpx;
 }
 
 .banner-list {
@@ -433,214 +454,4 @@
 .upload-placeholder {
   color: #7f8ca5;
   font-size: 24rpx;
-}
-
-.product-list {
-  margin-top: 18rpx;
-  display: grid;
-  gap: 16rpx;
-}
-
-.batch-bar {
-  margin-top: 18rpx;
-  padding: 18rpx 20rpx;
-  border-radius: 18rpx;
-  background: #f6f8fc;
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-  flex-wrap: wrap;
-}
-
-.batch-count {
-  color: #4f5d77;
-  font-size: 24rpx;
-  font-weight: 700;
-}
-
-.batch-btn {
-  padding: 10rpx 18rpx;
-  border-radius: 999rpx;
-  background: #edf4ff;
-  color: #4177e2;
-  font-size: 22rpx;
-}
-
-.batch-btn.danger {
-  background: #fff0f0;
-  color: #d45454;
-}
-
-.product-card {
-  padding: 22rpx;
-  border-radius: 20rpx;
-  background: #f6f8fc;
-}
-
-.product-row {
-  display: flex;
-  gap: 18rpx;
-  align-items: flex-start;
-}
-
-.select-box {
-  width: 36rpx;
-  height: 36rpx;
-  margin-top: 8rpx;
-  border-radius: 50%;
-  border: 4rpx solid #b9c4d6;
-  background: #ffffff;
-  flex-shrink: 0;
-}
-
-.select-box.active {
-  border-color: #3f83ff;
-  background: #3f83ff;
-  box-shadow: inset 0 0 0 8rpx #ffffff;
-}
-
-.product-cover {
-  width: 136rpx;
-  height: 136rpx;
-  border-radius: 18rpx;
-  flex-shrink: 0;
-  background: #e7edf8;
-}
-
-.product-main {
-  flex: 1;
-  min-width: 0;
-}
-
-.product-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12rpx;
-}
-
-.product-name {
-  color: #202534;
-  font-size: 28rpx;
-  font-weight: 700;
-}
-
-.product-status {
-  padding: 6rpx 12rpx;
-  border-radius: 999rpx;
-  font-size: 20rpx;
-  font-weight: 700;
-}
-
-.product-status.up {
-  background: #eaf8ef;
-  color: #2ca267;
-}
-
-.product-status.down {
-  background: #fff1f1;
-  color: #e15b5b;
-}
-
-.product-desc {
-  margin-top: 10rpx;
-  color: #6f7c94;
-  font-size: 24rpx;
-}
-
-.product-meta-row {
-  margin-top: 12rpx;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10rpx;
-}
-
-.product-tag {
-  padding: 6rpx 14rpx;
-  border-radius: 999rpx;
-  background: #edf2fb;
-  color: #5f6f8d;
-  font-size: 20rpx;
-  font-weight: 700;
-}
-
-.product-tag.highlight {
-  background: #fff3d8;
-  color: #d88918;
-}
-
-.product-price {
-  margin-top: 12rpx;
-  color: #ff7f50;
-  font-size: 30rpx;
-  font-weight: 800;
-}
-
-.product-actions {
-  margin-top: 18rpx;
-  display: flex;
-  gap: 12rpx;
-  flex-wrap: wrap;
-}
-
-.product-action {
-  padding: 10rpx 18rpx;
-  border-radius: 999rpx;
-  background: #edf4ff;
-  color: #4177e2;
-  font-size: 22rpx;
-}
-
-.product-action.danger {
-  background: #fff0f0;
-  color: #e15b5b;
-}
-
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(22, 28, 45, 0.36);
-}
-
-.product-modal {
-  position: fixed;
-  left: 24rpx;
-  right: 24rpx;
-  bottom: 32rpx;
-  padding: 28rpx 24rpx;
-  border-radius: 28rpx;
-  background: #ffffff;
-  box-shadow: 0 24rpx 60rpx rgba(30, 45, 90, 0.18);
-  z-index: 10;
-}
-
-.modal-actions {
-  margin-top: 28rpx;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16rpx;
-}
-
-.modal-btn {
-  min-height: 88rpx;
-  border-radius: 999rpx;
-  background: #2f68e3;
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28rpx;
-  font-weight: 700;
-}
-
-.modal-btn.ghost {
-  background: #eef2f8;
-  color: #5f6f8d;
-}
-
-.switch-field {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20rpx;
 }

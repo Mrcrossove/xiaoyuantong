@@ -134,50 +134,15 @@
     </view>
 
     <view class="panel-card">
-      <view class="section-header">
-        <view class="section-title">{{labels.goodsManage}}</view>
-        <view class="header-actions">
-          <view class="mini-action-btn secondary" bindtap="toggleBatchMode">{{batchMode ? labels.batchCancel : labels.batchSelect}}</view>
-          <view class="mini-action-btn" bindtap="openCreateProduct">{{labels.addProduct}}</view>
-        </view>
+      <view class="section-title">商品统一在商家后台维护</view>
+      <view class="merchant-web-tip">
+        小程序端不再提供商品新增、编辑、价格、库存和上下架功能。请商家使用电脑或手机浏览器进入商家管理后台统一维护商品，维护后会自动展示到小程序店铺页。
       </view>
-
-      <view wx:if="{{batchMode}}" class="batch-bar">
-        <view class="batch-count">{{labels.selectedCount}} {{selectedProductIds.length}} {{labels.unitCount}}</view>
-        <view class="batch-btn" bindtap="batchDownProducts">{{labels.batchDown}}</view>
-        <view class="batch-btn danger" bindtap="batchDeleteProducts">{{labels.batchDelete}}</view>
+      <view class="merchant-web-url">{{merchantWebUrl}}</view>
+      <view class="merchant-web-actions">
+        <view class="mini-action-btn" bindtap="copyMerchantWebUrl">复制商家后台地址</view>
+        <view class="mini-action-btn secondary" bindtap="showMerchantLoginTip">查看登录说明</view>
       </view>
-
-      <view class="product-list" wx:if="{{merchantStore.products.length}}">
-        <view class="product-card" wx:for="{{merchantStore.products}}" wx:key="id">
-          <view class="product-row">
-            <view wx:if="{{batchMode}}" class="select-box {{selectedProductIds.indexOf(item.id) > -1 ? 'active' : ''}}" data-id="{{item.id}}" bindtap="toggleSelectProduct"></view>
-            <image class="product-cover" src="{{item.cover || merchantForm.cover}}" mode="aspectFill"></image>
-            <view class="product-main">
-              <view class="product-title-row">
-                <text class="product-name">{{item.name}}</text>
-                <text class="product-status {{item.status === labels.statusUp ? 'up' : 'down'}}">{{item.status}}</text>
-              </view>
-              <view class="product-desc">{{item.desc}}</view>
-              <view class="product-meta-row">
-                <text wx:if="{{item.recommended}}" class="product-tag highlight">{{labels.recommendedTag}}</text>
-                <text class="product-tag">{{labels.stockTag}} {{item.stock || 0}}</text>
-                <text wx:if="{{item.dailyLimit > 0}}" class="product-tag">{{labels.dailyLimitTag}} {{item.dailyLimit}}</text>
-              </view>
-              <view class="product-price">{{item.price}}</view>
-            </view>
-          </view>
-          <view wx:if="{{!batchMode}}" class="product-actions">
-            <view class="product-action" data-id="{{item.id}}" bindtap="openEditProduct">{{labels.editProduct}}</view>
-            <view class="product-action" data-id="{{item.id}}" data-direction="up" bindtap="moveProduct">{{labels.moveUp}}</view>
-            <view class="product-action" data-id="{{item.id}}" data-direction="down" bindtap="moveProduct">{{labels.moveDown}}</view>
-            <view class="product-action" data-id="{{item.id}}" bindtap="handleToggleProductStatus">{{labels.toggleStatus}}</view>
-            <view class="product-action danger" data-id="{{item.id}}" bindtap="handleDeleteProduct">{{labels.remove}}</view>
-          </view>
-        </view>
-      </view>
-
-      <view class="empty-status" wx:else>{{labels.emptyProduct}}</view>
     </view>
   </view>
 
@@ -258,51 +223,4 @@
     </view>
   </view>
 
-  <view class="overlay" wx:if="{{productModalVisible}}" bindtap="closeProductModal"></view>
-  <view class="product-modal" wx:if="{{productModalVisible}}">
-    <view class="section-title">{{productForm.id ? labels.editProduct : labels.addProduct}}</view>
-
-    <view class="field-item">
-      <view class="field-label">{{labels.productCover}}</view>
-      <view class="upload-cover small" bindtap="chooseProductCover">
-        <image wx:if="{{productForm.cover}}" class="cover-image" src="{{productForm.cover}}" mode="aspectFill"></image>
-        <view wx:else class="upload-placeholder">{{labels.placeholders.productCover}}</view>
-      </view>
-    </view>
-
-    <view class="field-item">
-      <view class="field-label">{{labels.productName}}</view>
-      <input class="field-input" value="{{productForm.name}}" data-field="name" bindinput="onProductInput" placeholder="{{labels.placeholders.productName}}" />
-    </view>
-
-    <view class="field-item">
-      <view class="field-label">{{labels.productDesc}}</view>
-      <input class="field-input" value="{{productForm.desc}}" data-field="desc" bindinput="onProductInput" placeholder="{{labels.placeholders.productDesc}}" />
-    </view>
-
-    <view class="field-item">
-      <view class="field-label">{{labels.productPrice}}</view>
-      <input class="field-input" type="digit" value="{{productForm.price}}" data-field="price" bindinput="onProductInput" placeholder="{{labels.placeholders.productPrice}}" />
-    </view>
-
-    <view class="field-item">
-      <view class="field-label">{{labels.productStock}}</view>
-      <input class="field-input" type="number" value="{{productForm.stock}}" data-field="stock" bindinput="onProductInput" placeholder="{{labels.placeholders.productStock}}" />
-    </view>
-
-    <view class="field-item">
-      <view class="field-label">{{labels.productDailyLimit}}</view>
-      <input class="field-input" type="number" value="{{productForm.dailyLimit}}" data-field="dailyLimit" bindinput="onProductInput" placeholder="{{labels.placeholders.productDailyLimit}}" />
-    </view>
-
-    <view class="field-item switch-field">
-      <view class="field-label">{{labels.productRecommended}}</view>
-      <switch color="#2f68e3" checked="{{productForm.recommended}}" data-field="recommended" bindchange="onProductSwitchChange" />
-    </view>
-
-    <view class="modal-actions">
-      <view class="modal-btn ghost" bindtap="closeProductModal">{{labels.cancel}}</view>
-      <view class="modal-btn" bindtap="saveProduct">{{savingProduct ? labels.saveProductLoading : labels.submitProduct}}</view>
-    </view>
-  </view>
 </view>
