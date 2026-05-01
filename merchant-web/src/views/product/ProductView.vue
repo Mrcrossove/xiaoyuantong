@@ -15,13 +15,15 @@ import {
 import { useMerchantAuthStore } from "../../stores/auth";
 import { readFileAsDataUrl } from "../../utils/file";
 
+type ProductStatus = "已上架" | "已下架";
+
 type ProductSku = {
   id?: string;
   name: string;
   price: string;
   stock: number;
   dailyLimit: number;
-  status: "已上架" | "已下架";
+  status: ProductStatus;
   isDefault: boolean;
 };
 
@@ -57,7 +59,7 @@ const form = reactive({
   stock: 0,
   dailyLimit: 0,
   recommended: false,
-  status: "已上架" as "已上架" | "已下架",
+  status: "已上架" as ProductStatus,
   skus: [createSku()]
 });
 
@@ -388,11 +390,7 @@ onMounted(loadData);
         </div>
       </template>
 
-      <el-table
-        :data="list"
-        empty-text="暂无商品"
-        @selection-change="handleSelectionChange"
-      >
+      <el-table :data="list" empty-text="暂无商品" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="48" />
         <el-table-column prop="name" label="商品名称" min-width="160" />
         <el-table-column prop="desc" label="商品描述" min-width="180" />
@@ -433,12 +431,12 @@ onMounted(loadData);
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="840px" @closed="resetForm">
       <el-form label-position="top">
         <el-row :gutter="16">
-          <el-col :span="12">
+          <el-col :xs="24" :sm="12">
             <el-form-item label="商品名称">
               <el-input v-model.trim="form.name" maxlength="30" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :xs="24" :sm="12">
             <el-form-item label="规格模式">
               <el-radio-group v-model="form.specMode" @change="handleSpecModeChange">
                 <el-radio-button label="single">单规格</el-radio-button>
@@ -467,17 +465,17 @@ onMounted(loadData);
 
         <template v-if="form.specMode === 'single'">
           <el-row :gutter="16">
-            <el-col :span="8">
+            <el-col :xs="24" :sm="8">
               <el-form-item label="售价">
                 <el-input v-model.trim="form.price" placeholder="例如 12.80" @blur="syncSingleSkuFromBase" />
               </el-form-item>
             </el-col>
-            <el-col :span="8">
+            <el-col :xs="24" :sm="8">
               <el-form-item label="库存">
                 <el-input-number v-model="form.stock" :min="0" :max="99999" @change="syncSingleSkuFromBase" />
               </el-form-item>
             </el-col>
-            <el-col :span="8">
+            <el-col :xs="24" :sm="8">
               <el-form-item label="每日限购">
                 <el-input-number v-model="form.dailyLimit" :min="0" :max="9999" @change="syncSingleSkuFromBase" />
               </el-form-item>
@@ -485,7 +483,7 @@ onMounted(loadData);
           </el-row>
 
           <el-row :gutter="16">
-            <el-col :span="8">
+            <el-col :xs="24" :sm="8">
               <el-form-item label="商品状态">
                 <el-select v-model="form.status" @change="syncSingleSkuFromBase">
                   <el-option label="已上架" value="已上架" />
@@ -514,17 +512,17 @@ onMounted(loadData);
             </div>
 
             <el-row :gutter="16">
-              <el-col :span="8">
+              <el-col :xs="24" :sm="8">
                 <el-form-item label="规格名称">
                   <el-input v-model.trim="sku.name" maxlength="30" placeholder="例如 大份、加辣、标准版" />
                 </el-form-item>
               </el-col>
-              <el-col :span="8">
+              <el-col :xs="24" :sm="8">
                 <el-form-item label="规格价格">
                   <el-input v-model.trim="sku.price" placeholder="例如 15.00" />
                 </el-form-item>
               </el-col>
-              <el-col :span="8">
+              <el-col :xs="24" :sm="8">
                 <el-form-item label="规格状态">
                   <el-select v-model="sku.status">
                     <el-option label="已上架" value="已上架" />
@@ -535,12 +533,12 @@ onMounted(loadData);
             </el-row>
 
             <el-row :gutter="16">
-              <el-col :span="8">
+              <el-col :xs="24" :sm="8">
                 <el-form-item label="库存">
                   <el-input-number v-model="sku.stock" :min="0" :max="99999" />
                 </el-form-item>
               </el-col>
-              <el-col :span="8">
+              <el-col :xs="24" :sm="8">
                 <el-form-item label="每日限购">
                   <el-input-number v-model="sku.dailyLimit" :min="0" :max="9999" />
                 </el-form-item>
@@ -646,12 +644,14 @@ onMounted(loadData);
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+  gap: 12px;
 }
 
 .sku-card-actions {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .hidden-input {
@@ -659,8 +659,18 @@ onMounted(loadData);
 }
 
 @media (max-width: 768px) {
+  .card-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .cover-panel {
     grid-template-columns: 1fr;
+  }
+
+  .sku-card-header {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 </style>

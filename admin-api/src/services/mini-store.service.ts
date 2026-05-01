@@ -25,6 +25,7 @@ import { reviewMiniRefundRequest } from "./mini-refund.service";
 import {
   createStoreProductRecord,
   deleteStoreProductRecord,
+  listStoreProductsByStoreId,
   mapStoreProductForApi,
   toggleStoreProductStatusRecord,
   updateStoreProductRecord
@@ -124,8 +125,13 @@ function buildBannerList(school: string) {
   ];
 }
 
+function resolveStoreProducts(item: any) {
+  const productRows = Array.isArray(item.productRows) ? item.productRows.map(mapStoreProductForApi) : [];
+  return productRows.length ? productRows : toMerchantProducts(item.products);
+}
+
 function mapStoreListItem(item: any) {
-  const products = toMerchantProducts(item.products);
+  const products = resolveStoreProducts(item);
   const availableProducts = products.filter((entry) => String(entry.status || MERCHANT_PRODUCT_STATUS.onSale) === MERCHANT_PRODUCT_STATUS.onSale);
   const recommendedProduct = availableProducts.find((entry) => Boolean(entry.recommended)) || availableProducts[0] || null;
   const defaultSku = recommendedProduct ? getDefaultSku(recommendedProduct) : null;
@@ -157,7 +163,7 @@ function mapStoreListItem(item: any) {
 
 function mapStoreDetail(item: any) {
   const cover = item.cover || "";
-  const products = toMerchantProducts(item.products)
+  const products = resolveStoreProducts(item)
     .filter((entry) => String(entry.status || MERCHANT_PRODUCT_STATUS.onSale) === MERCHANT_PRODUCT_STATUS.onSale)
     .map((entry) => {
       const defaultSku = getDefaultSku(entry);
@@ -587,6 +593,16 @@ export async function queryMiniStores(rawQuery: Record<string, unknown>) {
 
   const list = await prisma.miniStore.findMany({
     where,
+    include: {
+      productRows: {
+        include: {
+          skus: {
+            orderBy: [{ sortOrder: "asc" }, { id: "asc" }]
+          }
+        },
+        orderBy: [{ sortOrder: "asc" }, { id: "asc" }]
+      }
+    },
     orderBy: [{ groupKey: "asc" }, { id: "asc" }]
   });
 
@@ -598,7 +614,17 @@ export async function queryMiniStores(rawQuery: Record<string, unknown>) {
 
 export async function getMiniStoreDetail(detailId: string) {
   const row = await prisma.miniStore.findUniqueOrThrow({
-    where: { detailId }
+    where: { detailId },
+    include: {
+      productRows: {
+        include: {
+          skus: {
+            orderBy: [{ sortOrder: "asc" }, { id: "asc" }]
+          }
+        },
+        orderBy: [{ sortOrder: "asc" }, { id: "asc" }]
+      }
+    }
   });
   return mapStoreDetail(row);
 }

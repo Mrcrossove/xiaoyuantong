@@ -69,6 +69,6 @@
 
   <view wx:else class="category-empty">
     <view class="category-empty-title">当前分类暂无店铺</view>
-    <view class="category-empty-desc">可以切换高校或等待商家入驻后再查看。</view>
+    <view class="category-empty-desc">可以切换高校，或等待商家入驻后再查看。</view>
   </view>
 </view>

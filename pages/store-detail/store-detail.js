@@ -135,7 +135,6 @@ Page({
       return 24;
     }
 
-    // Reserve the native capsule area on the right, then keep a small visual gap.
     const capsuleAreaRpx = ((windowWidth - Number(menuButton.left)) / windowWidth) * 750;
     return Math.ceil(capsuleAreaRpx + 24);
   },
@@ -242,8 +241,7 @@ Page({
   increaseQuantity() {
     const nextQuantity = Math.min(Number(this.data.maxQuantity || 1), Number(this.data.quantity || 1) + 1);
     if (nextQuantity === this.data.quantity) {
-      const message =
-        Number((this.data.currentSku && this.data.currentSku.dailyLimit) || 0) > 0 ? "已达到每日限购" : "已达到可下单上限";
+      const message = Number((this.data.currentSku && this.data.currentSku.dailyLimit) || 0) > 0 ? "已达到每日限购" : "已达到可下单上限";
       wx.showToast({
         title: message,
         icon: "none"
@@ -284,13 +282,18 @@ Page({
 
   openConfirmModal() {
     if (!this.data.currentProduct || !this.data.currentSku) {
+      wx.showToast({
+        title: "当前店铺暂无可下单商品",
+        icon: "none"
+      });
       return;
     }
 
     if (!this.data.selectedAddress) {
       wx.showModal({
-        title: "需要地址",
+        title: "需要收货地址",
         content: "下单前请先添加收货地址。",
+        confirmText: "去添加",
         success: (res) => {
           if (!res.confirm) return;
           wx.navigateTo({
@@ -367,8 +370,9 @@ Page({
       const message = (error && error.message) || "下单失败";
       if (message.indexOf("请先添加收货地址") !== -1) {
         wx.showModal({
-          title: "需要地址",
+          title: "需要收货地址",
           content: "下单前请先添加收货地址。",
+          confirmText: "去添加",
           success: (res) => {
             if (!res.confirm) return;
             wx.navigateTo({

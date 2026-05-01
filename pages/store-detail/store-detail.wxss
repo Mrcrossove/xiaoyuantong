@@ -402,6 +402,27 @@
   font-size: 22rpx;
 }
 
+.goods-empty {
+  margin-top: 18rpx;
+  padding: 36rpx 28rpx;
+  border-radius: 20rpx;
+  background: #f7f9fc;
+  text-align: center;
+}
+
+.goods-empty-title {
+  color: #202534;
+  font-size: 28rpx;
+  font-weight: 800;
+}
+
+.goods-empty-desc {
+  margin-top: 12rpx;
+  color: #7b879c;
+  font-size: 24rpx;
+  line-height: 1.7;
+}
+
 .goods-card {
   display: grid;
   grid-template-columns: 168rpx 1fr;
@@ -563,6 +584,10 @@
   align-items: center;
   gap: 14rpx;
   box-sizing: border-box;
+}
+
+.checkout-bar.disabled {
+  opacity: 0.7;
 }
 
 .cart-icon {

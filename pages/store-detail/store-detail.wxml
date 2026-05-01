@@ -1,7 +1,7 @@
 <view class="detail-page" style="padding-top: {{statusBarHeight}}px;" wx:if="{{detail}}">
   <view class="detail-nav" style="padding-right: {{navRightSafeRpx}}rpx;">
     <view class="back-btn" bindtap="goBack"></view>
-    <view class="detail-title">{{detail.title}}</view>
+    <view class="detail-title">{{detail.title || '店铺主页'}}</view>
     <view class="detail-actions">
       <view class="action-chip" bindtap="toggleStoreFavorite">{{favorite ? '已收藏' : '收藏'}}</view>
     </view>
@@ -23,21 +23,20 @@
         <view class="info-meta">
           <view class="store-name">{{detail.storeName}}</view>
           <view class="store-notice">{{detail.notice}}</view>
-          <view class="store-phone">联系电话：{{detail.phone}}</view>
+          <view class="store-phone">联系电话：{{detail.phone || '暂无'}}</view>
         </view>
       </view>
 
       <view class="address-row">
         <view class="address-label">店铺地址：</view>
-        <view class="address-text">{{detail.address}}</view>
-        <view class="copy-text">查看</view>
+        <view class="address-text">{{detail.address || '暂无地址'}}</view>
       </view>
     </view>
 
     <view class="goods-panel card">
       <view class="goods-tabs">
         <view class="goods-tab {{activeTab === 'goods' ? 'active' : ''}}" data-key="goods" bindtap="switchTab">
-          {{detail.stats.sold}}
+          商品 {{detail.products.length}}
         </view>
         <view class="goods-tab {{activeTab === 'intro' ? 'active' : ''}}" data-key="intro" bindtap="switchTab">
           店铺说明
@@ -45,51 +44,57 @@
       </view>
 
       <view wx:if="{{activeTab === 'goods'}}" class="goods-list">
-        <view class="goods-tip">点击商品卡片可切换当前下单商品。</view>
-        <view class="goods-card {{selectedProductId == item.id ? 'active' : ''}}" wx:for="{{detail.products}}" wx:key="id" data-id="{{item.id}}" bindtap="selectProduct">
-          <view wx:if="{{item.coverMode === 'class'}}" class="goods-cover cover-{{item.cover}}"></view>
-          <image wx:else class="goods-cover hero-image" src="{{item.cover}}" mode="aspectFill"></image>
-          <view class="goods-body">
-            <view class="goods-title-row">
-              <view class="goods-name">{{item.name}}</view>
-              <text wx:if="{{selectedProductId == item.id}}" class="goods-selected">当前下单</text>
-            </view>
-            <view class="goods-desc">{{item.desc}}</view>
-            <view class="goods-meta-row">
-              <text wx:if="{{item.recommended}}" class="goods-tag highlight">推荐商品</text>
-              <text class="goods-tag">库存 {{item.stock || 0}}</text>
-              <text wx:if="{{item.dailyLimit > 0}}" class="goods-tag">每日限购 {{item.dailyLimit}}</text>
-            </view>
-            <view class="goods-price">{{item.price}}</view>
+        <view wx:if="{{detail.products.length}}">
+          <view class="goods-tip">点击商品卡片可切换当前下单商品。</view>
+          <view class="goods-card {{selectedProductId == item.id ? 'active' : ''}}" wx:for="{{detail.products}}" wx:key="id" data-id="{{item.id}}" bindtap="selectProduct">
+            <view wx:if="{{item.coverMode === 'class'}}" class="goods-cover cover-{{item.cover}}"></view>
+            <image wx:else class="goods-cover hero-image" src="{{item.cover}}" mode="aspectFill"></image>
+            <view class="goods-body">
+              <view class="goods-title-row">
+                <view class="goods-name">{{item.name}}</view>
+                <text wx:if="{{selectedProductId == item.id}}" class="goods-selected">当前下单</text>
+              </view>
+              <view class="goods-desc">{{item.desc}}</view>
+              <view class="goods-meta-row">
+                <text wx:if="{{item.recommended}}" class="goods-tag highlight">推荐商品</text>
+                <text class="goods-tag">库存 {{item.stock || 0}}</text>
+                <text wx:if="{{item.dailyLimit > 0}}" class="goods-tag">每日限购 {{item.dailyLimit}}</text>
+              </view>
+              <view class="goods-price">{{item.price}}</view>
 
-            <view wx:if="{{selectedProductId == item.id && item.skus && item.skus.length}}" class="sku-list">
-              <view class="sku-title">选择规格</view>
-              <view class="sku-row">
-                <view
-                  class="sku-chip {{selectedSkuId == sku.id ? 'active' : ''}}"
-                  wx:for="{{item.skus}}"
-                  wx:key="id"
-                  data-id="{{sku.id}}"
-                  catchtap="selectSku"
-                >
-                  <text class="sku-chip-name">{{sku.name}}</text>
-                  <text class="sku-chip-price">{{sku.price}}</text>
+              <view wx:if="{{selectedProductId == item.id && item.skus && item.skus.length}}" class="sku-list">
+                <view class="sku-title">选择规格</view>
+                <view class="sku-row">
+                  <view
+                    class="sku-chip {{selectedSkuId == sku.id ? 'active' : ''}}"
+                    wx:for="{{item.skus}}"
+                    wx:key="id"
+                    data-id="{{sku.id}}"
+                    catchtap="selectSku"
+                  >
+                    <text class="sku-chip-name">{{sku.name}}</text>
+                    <text class="sku-chip-price">{{sku.price}}</text>
+                  </view>
                 </view>
               </view>
             </view>
           </view>
         </view>
+        <view wx:else class="goods-empty">
+          <view class="goods-empty-title">商家正在上架商品</view>
+          <view class="goods-empty-desc">当前店铺还没有可购买商品，请稍后再来，或联系商家确认上架时间。</view>
+        </view>
       </view>
 
       <view wx:else class="intro-block">
         <view class="intro-title">{{detail.storeName}}</view>
-        <view class="intro-text">{{detail.notice}}</view>
-        <view class="intro-text">{{detail.address}}</view>
+        <view class="intro-text">{{detail.notice || '暂无店铺说明'}}</view>
+        <view class="intro-text">{{detail.address || '暂无店铺地址'}}</view>
       </view>
     </view>
   </scroll-view>
 
-  <view class="checkout-bar">
+  <view class="checkout-bar {{!currentProduct || !currentSku ? 'disabled' : ''}}" wx:if="{{detail.products.length}}">
     <view class="cart-icon"></view>
     <view class="checkout-meta">
       <view class="checkout-amount">当前金额：{{currentAmountText}}</view>
