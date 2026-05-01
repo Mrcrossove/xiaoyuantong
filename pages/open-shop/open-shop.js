@@ -74,7 +74,7 @@ const LABELS = {
     category: "例如：学生商家",
     contactName: "请填写真实联系人",
     contactPhone: "请填写联系手机",
-    description: "请简要说明你的商品或服务内容",
+    description: "请至少填写 5 个字，例如：主营奶茶、零食配送",
     subtitle: "例如：早餐 / 简餐 / 盖饭",
     notice: "请输入店铺公告",
     phone: "请输入店铺联系电话",
@@ -275,7 +275,7 @@ Page({
     if (!payload.category) return wx.showToast({ title: "请填写经营分类", icon: "none" });
     if (!payload.contactName) return wx.showToast({ title: "请填写联系人", icon: "none" });
     if (!/^1\d{10}$/.test(payload.contactPhone)) return wx.showToast({ title: "请输入正确的手机号", icon: "none" });
-    if (payload.description.length < 5) return wx.showToast({ title: "请填写经营说明", icon: "none" });
+    if (payload.description.length < 5) return wx.showToast({ title: "经营说明至少 5 个字", icon: "none" });
 
     this.setData({ submitting: true });
     try {

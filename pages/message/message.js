@@ -40,6 +40,7 @@ function getTargetUrl(item) {
 Page({
   data: {
     statusBarHeight: 20,
+    navRightSafeRpx: 24,
     selectedSchool: "",
     activeTab: "system",
     labels: LABELS,
@@ -58,9 +59,20 @@ Page({
 
   onLoad() {
     const systemInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
+    const menuButton = wx.getMenuButtonBoundingClientRect ? wx.getMenuButtonBoundingClientRect() : null;
     this.setData({
-      statusBarHeight: systemInfo.statusBarHeight || 20
+      statusBarHeight: systemInfo.statusBarHeight || 20,
+      navRightSafeRpx: this.getNavRightSafeRpx(systemInfo, menuButton)
     });
+  },
+
+  getNavRightSafeRpx(systemInfo, menuButton) {
+    const windowWidth = Number(systemInfo && systemInfo.windowWidth) || 375;
+    if (!menuButton || !menuButton.left || !windowWidth) {
+      return 24;
+    }
+    const capsuleAreaRpx = ((windowWidth - Number(menuButton.left)) / windowWidth) * 750;
+    return Math.ceil(capsuleAreaRpx + 24);
   },
 
   async onShow() {
@@ -137,10 +149,7 @@ Page({
     const type = this.data.activeTab;
     try {
       await ensureMiniSession();
-      await markAllMessagesRead(
-        { type },
-        { school: this.data.selectedSchool }
-      );
+      await markAllMessagesRead({ type }, { school: this.data.selectedSchool });
       const key = type === "interactive" ? "interactiveMessages" : "systemMessages";
       const current = (this.data[key] || []).map((item) => ({
         ...item,

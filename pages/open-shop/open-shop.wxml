@@ -215,6 +215,7 @@
       <view class="field-item textarea-item">
         <view class="field-label">{{labels.description}}</view>
         <textarea class="field-textarea" value="{{form.description}}" data-field="description" bindinput="onInput" maxlength="300" placeholder="{{labels.placeholders.description}}" />
+        <view class="field-helper">至少填写 5 个字，方便平台判断经营内容。</view>
       </view>
     </view>
 

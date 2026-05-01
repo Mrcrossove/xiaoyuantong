@@ -6,10 +6,37 @@ const { getVerificationInfo, setVerificationInfo } = require("../../utils/verifi
 const { ensureMiniSession } = require("../../utils/mini-auth");
 const { fetchCurrentVerification, submitVerification } = require("../../utils/verification-api");
 
+function normalizeText(value) {
+  return String(value || "").trim();
+}
+
+function scoreSchoolMatch(school, keyword) {
+  const trimmed = normalizeText(keyword);
+  if (!trimmed) return 0;
+  if (school === trimmed) return 100;
+  if (school.startsWith(trimmed)) return 80;
+  if (school.includes(trimmed)) return 60;
+  return 10;
+}
+
 function filterSchoolOptions(keyword) {
-  const trimmed = String(keyword || "").trim();
+  const trimmed = normalizeText(keyword);
   const list = trimmed ? schools.filter((school) => isSchoolMatched(school, trimmed)) : schools;
-  return list.slice(0, 50);
+  return list
+    .slice()
+    .sort((left, right) => scoreSchoolMatch(right, trimmed) - scoreSchoolMatch(left, trimmed))
+    .slice(0, 50);
+}
+
+function getSchoolHelperText(school) {
+  const trimmed = normalizeText(school);
+  if (!trimmed) {
+    return "请点击“选择”，从学校列表中搜索并选择。";
+  }
+  if (schools.includes(trimmed)) {
+    return "已匹配学校标准名称。";
+  }
+  return "当前不是标准学校名称，请从搜索结果中点击选择。";
 }
 
 Page({
@@ -26,6 +53,8 @@ Page({
       phone: "",
       school: ""
     },
+    schoolMatched: false,
+    schoolHelperText: getSchoolHelperText(""),
     schoolPickerVisible: false,
     schoolKeyword: "",
     schoolOptions: []
@@ -35,17 +64,20 @@ Page({
     const systemInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
     const selectedSchool = getSelectedSchool();
     const verificationInfo = getVerificationInfo();
+    const initialSchool = verificationInfo.school || selectedSchool;
 
     this.setData({
       statusBarHeight: systemInfo.statusBarHeight || 20,
       form: {
         name: verificationInfo.name || "",
         phone: verificationInfo.phone || "",
-        school: verificationInfo.school || selectedSchool
+        school: initialSchool
       },
       verification: verificationInfo,
-      schoolKeyword: verificationInfo.school || selectedSchool,
-      schoolOptions: filterSchoolOptions(verificationInfo.school || selectedSchool)
+      schoolMatched: schools.includes(normalizeText(initialSchool)),
+      schoolHelperText: getSchoolHelperText(initialSchool),
+      schoolKeyword: initialSchool,
+      schoolOptions: filterSchoolOptions(initialSchool)
     });
 
     await this.loadVerification();
@@ -59,20 +91,27 @@ Page({
         ...remoteInfo,
         verified: !!remoteInfo.verified
       });
+      const school = merged.school || getSelectedSchool();
+
       this.setData({
         verification: merged,
         form: {
           name: merged.name || "",
           phone: merged.phone || "",
-          school: merged.school || getSelectedSchool()
+          school
         },
-        schoolKeyword: merged.school || getSelectedSchool(),
-        schoolOptions: filterSchoolOptions(merged.school || getSelectedSchool())
+        schoolMatched: schools.includes(normalizeText(school)),
+        schoolHelperText: getSchoolHelperText(school),
+        schoolKeyword: school,
+        schoolOptions: filterSchoolOptions(school)
       });
     } catch (error) {
       const localInfo = getVerificationInfo();
+      const school = localInfo.school || getSelectedSchool();
       this.setData({
-        verification: localInfo
+        verification: localInfo,
+        schoolMatched: schools.includes(normalizeText(school)),
+        schoolHelperText: getSchoolHelperText(school)
       });
     } finally {
       this.setData({ loading: false });
@@ -88,15 +127,6 @@ Page({
   onPhoneInput(event) {
     this.setData({
       "form.phone": event.detail.value
-    });
-  },
-
-  onSchoolInput(event) {
-    const value = event.detail.value;
-    this.setData({
-      "form.school": value,
-      schoolKeyword: value,
-      schoolOptions: filterSchoolOptions(value)
     });
   },
 
@@ -130,6 +160,8 @@ Page({
     if (!school) return;
     this.setData({
       "form.school": school,
+      schoolMatched: true,
+      schoolHelperText: getSchoolHelperText(school),
       schoolKeyword: school,
       schoolOptions: filterSchoolOptions(school),
       schoolPickerVisible: false
@@ -137,10 +169,12 @@ Page({
   },
 
   async submitVerify() {
+    if (this.data.submitting) return;
+
     const { name, phone, school } = this.data.form;
-    const trimmedName = String(name || "").trim();
-    const trimmedPhone = String(phone || "").trim();
-    const trimmedSchool = String(school || "").trim();
+    const trimmedName = normalizeText(name);
+    const trimmedPhone = normalizeText(phone);
+    const trimmedSchool = normalizeText(school);
 
     if (!trimmedName) {
       wx.showToast({
@@ -152,7 +186,7 @@ Page({
 
     if (!/^1\d{10}$/.test(trimmedPhone)) {
       wx.showToast({
-        title: "请输入正确的手机号",
+        title: "请输入正确手机号",
         icon: "none"
       });
       return;
@@ -160,15 +194,16 @@ Page({
 
     if (!trimmedSchool) {
       wx.showToast({
-        title: "请填写学校",
+        title: "请选择学校",
         icon: "none"
       });
+      this.openSchoolPicker();
       return;
     }
 
     if (!schools.includes(trimmedSchool)) {
       wx.showToast({
-        title: "请从学校列表中选择",
+        title: "请点击选择标准学校名称",
         icon: "none"
       });
       this.openSchoolPicker();
@@ -201,7 +236,9 @@ Page({
           name: trimmedName,
           phone: trimmedPhone,
           school: trimmedSchool
-        }
+        },
+        schoolMatched: true,
+        schoolHelperText: getSchoolHelperText(trimmedSchool)
       });
 
       wx.showToast({

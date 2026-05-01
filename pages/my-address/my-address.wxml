@@ -6,12 +6,20 @@
     <view class="nav-space"></view>
   </view>
 
+  <view class="address-hero">
+    <view>
+      <view class="hero-title">收货地址</view>
+      <view class="hero-subtitle">下单前请确认联系人和配送位置，方便商家快速处理。</view>
+    </view>
+    <view class="hero-icon"></view>
+  </view>
+
   <view class="content-shell" wx:if="{{addressList.length}}">
     <view class="address-card" wx:for="{{addressList}}" wx:key="id">
       <view class="address-head">
         <view class="user-line">
-          <text>{{item.name}}</text>
-          <text>{{item.phone}}</text>
+          <text class="user-name">{{item.name}}</text>
+          <text class="user-phone">{{item.phone}}</text>
         </view>
         <text class="address-tag">{{item.isDefault ? labels.defaultTag : item.tag}}</text>
       </view>
@@ -26,7 +34,9 @@
   </view>
 
   <view class="empty-shell" wx:elif="{{!loading}}">
+    <view class="empty-visual"></view>
     <view class="empty-title">{{labels.empty}}</view>
+    <view class="empty-desc">新增后，下单时会自动优先使用默认地址。</view>
   </view>
 
   <view class="bottom-bar">
@@ -35,45 +45,101 @@
 
   <view class="overlay" wx:if="{{modalVisible}}" bindtap="closeModal"></view>
   <view class="address-modal" wx:if="{{modalVisible}}" catchtap="noop">
-    <view class="modal-title">{{editingId ? labels.editTitle : labels.addTitle}}</view>
-
-    <view class="field-item">
-      <view class="field-label">{{labels.school}}</view>
-      <view class="field-value">{{form.school}}</view>
+    <view class="modal-handle"></view>
+    <view class="modal-head">
+      <view>
+        <view class="modal-title">{{editingId ? labels.editTitle : labels.addTitle}}</view>
+        <view class="modal-subtitle">姓名至少 2 个字，详细地址至少 5 个字。</view>
+      </view>
+      <view class="modal-close" bindtap="closeModal">关闭</view>
     </view>
 
-    <view class="field-item">
-      <view class="field-label">{{labels.name}}</view>
-      <input class="field-input" value="{{form.receiverName}}" data-field="receiverName" bindinput="onInput" placeholder="{{labels.placeholders.name}}" />
-    </view>
+    <scroll-view scroll-y class="modal-body" enhanced show-scrollbar="{{false}}">
+      <view class="field-item readonly">
+        <view class="field-label">{{labels.school}}</view>
+        <view class="field-value">{{form.school || "未选择学校"}}</view>
+        <view class="field-helper">{{labels.helper.school}}</view>
+      </view>
 
-    <view class="field-item">
-      <view class="field-label">{{labels.phone}}</view>
-      <input class="field-input" type="number" value="{{form.phone}}" data-field="phone" bindinput="onInput" placeholder="{{labels.placeholders.phone}}" />
-    </view>
+      <view class="field-grid">
+        <view class="field-item">
+          <view class="field-label">{{labels.name}} <text class="required">*</text></view>
+          <input
+            class="field-input"
+            value="{{form.receiverName}}"
+            data-field="receiverName"
+            bindinput="onInput"
+            maxlength="20"
+            cursor-spacing="24"
+            placeholder="{{labels.placeholders.name}}"
+            placeholder-class="input-placeholder"
+          />
+          <view class="field-helper">{{labels.helper.name}}</view>
+        </view>
 
-    <view class="field-item">
-      <view class="field-label">{{labels.detail}}</view>
-      <textarea class="field-textarea" value="{{form.detail}}" data-field="detail" bindinput="onInput" placeholder="{{labels.placeholders.detail}}" />
-    </view>
+        <view class="field-item">
+          <view class="field-label">{{labels.phone}} <text class="required">*</text></view>
+          <input
+            class="field-input"
+            type="number"
+            value="{{form.phone}}"
+            data-field="phone"
+            bindinput="onInput"
+            maxlength="11"
+            cursor-spacing="24"
+            placeholder="{{labels.placeholders.phone}}"
+            placeholder-class="input-placeholder"
+          />
+          <view class="field-helper">{{labels.helper.phone}}</view>
+        </view>
+      </view>
 
-    <view class="field-item">
-      <view class="field-label">{{labels.tag}}</view>
-      <input class="field-input" value="{{form.tag}}" data-field="tag" bindinput="onInput" placeholder="{{labels.placeholders.tag}}" />
-    </view>
+      <view class="field-item">
+        <view class="field-label">{{labels.detail}} <text class="required">*</text></view>
+        <textarea
+          class="field-textarea"
+          value="{{form.detail}}"
+          data-field="detail"
+          bindinput="onInput"
+          maxlength="100"
+          auto-height="{{false}}"
+          cursor-spacing="24"
+          placeholder="{{labels.placeholders.detail}}"
+          placeholder-class="input-placeholder"
+        />
+        <view class="textarea-footer">
+          <view class="field-helper">{{labels.helper.detail}}</view>
+          <view class="counter {{detailLength < 5 ? 'warn' : ''}}">{{detailLength}}/100</view>
+        </view>
+      </view>
 
-    <view class="switch-row">
-      <text>{{labels.setDefault}}</text>
-      <checkbox-group bindchange="onDefaultChange">
-        <label class="checkbox-label">
-          <checkbox checked="{{form.isDefault}}" />
-        </label>
-      </checkbox-group>
-    </view>
+      <view class="field-item">
+        <view class="field-label">{{labels.tag}}</view>
+        <input
+          class="field-input"
+          value="{{form.tag}}"
+          data-field="tag"
+          bindinput="onInput"
+          maxlength="10"
+          cursor-spacing="24"
+          placeholder="{{labels.placeholders.tag}}"
+          placeholder-class="input-placeholder"
+        />
+        <view class="field-helper">{{labels.helper.tag}}</view>
+      </view>
+
+      <view class="switch-row">
+        <view>
+          <view class="switch-title">{{labels.setDefault}}</view>
+          <view class="switch-desc">开启后，下单时默认使用这个地址。</view>
+        </view>
+        <switch checked="{{form.isDefault}}" bindchange="onDefaultChange" color="#2f68e3" />
+      </view>
+    </scroll-view>
 
     <view class="modal-actions">
       <view class="modal-btn ghost" bindtap="closeModal">{{labels.cancel}}</view>
-      <view class="modal-btn" bindtap="submitAddress">{{submitting ? labels.saving : labels.save}}</view>
+      <view class="modal-btn {{submitting ? 'disabled' : ''}}" bindtap="submitAddress">{{submitting ? labels.saving : labels.save}}</view>
     </view>
   </view>
 </view>

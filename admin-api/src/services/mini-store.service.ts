@@ -9,8 +9,7 @@ import {
   buildProductDisplayPrice,
   getDefaultSku,
   MERCHANT_PRODUCT_STATUS,
-  parseMoneyNumber,
-  toMerchantProducts
+  parseMoneyNumber
 } from "../utils/merchant-product";
 import { getAdminSchoolScope } from "./admin-scope.service";
 import { createMiniMessage } from "./mini-message.service";
@@ -127,7 +126,7 @@ function buildBannerList(school: string) {
 
 function resolveStoreProducts(item: any) {
   const productRows = Array.isArray(item.productRows) ? item.productRows.map(mapStoreProductForApi) : [];
-  return productRows.length ? productRows : toMerchantProducts(item.products);
+  return productRows;
 }
 
 function mapStoreListItem(item: any) {
@@ -201,7 +200,7 @@ function mapStoreDetail(item: any) {
 }
 
 function mapAdminStoreItem(item: any) {
-  const products = toMerchantProducts(item.products);
+  const products = resolveStoreProducts(item);
   const recommendedCount = products.filter((entry) => Boolean(entry.recommended)).length;
 
   return {
@@ -657,6 +656,14 @@ export async function queryAdminStoreList(adminUserId: number, rawQuery: Record<
             nickname: true,
             phone: true
           }
+        },
+        productRows: {
+          include: {
+            skus: {
+              orderBy: [{ sortOrder: "asc" }, { id: "asc" }]
+            }
+          },
+          orderBy: [{ sortOrder: "asc" }, { id: "asc" }]
         }
       },
       orderBy: { id: "desc" },

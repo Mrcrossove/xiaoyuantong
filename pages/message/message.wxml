@@ -1,11 +1,17 @@
 <view class="message-page" style="padding-top: {{statusBarHeight}}px;">
-  <view class="message-nav">
+  <view class="message-nav" style="padding-right: {{navRightSafeRpx}}rpx;">
     <view class="message-nav-spacer"></view>
     <view class="message-title">{{labels.pageTitle}}</view>
-    <view class="message-nav-action" bindtap="markCurrentTabRead">{{labels.readAll}}</view>
+    <view class="message-nav-spacer"></view>
   </view>
 
-  <view class="message-school">{{selectedSchool}}</view>
+  <view class="message-hero">
+    <view>
+      <view class="message-school">{{selectedSchool}}</view>
+      <view class="message-hero-desc">查看系统通知、互动提醒和订单消息</view>
+    </view>
+    <view class="message-read-btn" bindtap="markCurrentTabRead">{{labels.readAll}}</view>
+  </view>
 
   <view class="message-tabs">
     <view
@@ -19,7 +25,6 @@
       <view class="unread-dot" wx:if="{{item.key === 'system' ? unreadCount.system : unreadCount.interactive}}">
         {{item.key === 'system' ? unreadCount.system : unreadCount.interactive}}
       </view>
-      <view class="message-tab-line"></view>
     </view>
   </view>
 

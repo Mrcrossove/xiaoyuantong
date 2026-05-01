@@ -165,6 +165,13 @@
   line-height: 1.7;
 }
 
+.field-helper {
+  margin-top: 10rpx;
+  color: #8a94a6;
+  font-size: 22rpx;
+  line-height: 1.5;
+}
+
 .readonly {
   color: #3f83ff;
   font-weight: 700;
