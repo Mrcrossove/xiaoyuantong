@@ -158,7 +158,7 @@ Page({
 
   onDefaultChange(event) {
     this.setData({
-      "form.isDefault": !!event.detail.value.length
+      "form.isDefault": !!event.detail.value
     });
   },
 
