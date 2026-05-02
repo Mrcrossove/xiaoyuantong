@@ -70,7 +70,7 @@ async function handleCoverChange(event: Event) {
   try {
     const result = await uploadSingleFile(file);
     form.cover = result.url;
-    ElMessage.success("封面图上传成功");
+    await saveStore("封面图已上传并保存");
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : "封面图上传失败");
   } finally {
@@ -99,7 +99,7 @@ async function handleBannerChange(event: Event) {
       urls.push(result.url);
     }
     form.banners = form.banners.concat(urls);
-    ElMessage.success("轮播图上传成功");
+    await saveStore("轮播图已上传并保存");
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : "轮播图上传失败");
   } finally {
@@ -107,11 +107,12 @@ async function handleBannerChange(event: Event) {
   }
 }
 
-function removeBanner(index: number) {
+async function removeBanner(index: number) {
   form.banners.splice(index, 1);
+  await saveStore("轮播图已删除并保存");
 }
 
-async function handleSave() {
+async function saveStore(successMessage = "店铺信息已更新") {
   saving.value = true;
   try {
     await updateStoreApi({
@@ -123,13 +124,17 @@ async function handleSave() {
       cover: form.cover,
       banners: form.banners
     });
-    ElMessage.success("店铺信息已更新");
+    ElMessage.success(successMessage);
     await loadData();
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : "店铺信息保存失败");
   } finally {
     saving.value = false;
   }
+}
+
+async function handleSave() {
+  await saveStore();
 }
 
 onMounted(loadData);

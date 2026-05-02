@@ -315,67 +315,132 @@ page {
   bottom: 24rpx;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  padding: 18rpx 10rpx 16rpx;
+  padding: 14rpx 10rpx 12rpx;
+  border-radius: 34rpx;
+  border: 2rpx solid rgba(230, 237, 248, 0.9);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18rpx 46rpx rgba(40, 57, 96, 0.12);
+  backdrop-filter: blur(18rpx);
   z-index: 20;
 }
 
 .tab {
-  display: grid;
-  justify-items: center;
-  gap: 8rpx;
-  color: #b1b8c7;
+  min-height: 86rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+  color: #aab3c4;
   font-size: 22rpx;
+  font-weight: 600;
+  border-radius: 26rpx;
+  transition: color 0.18s ease, background 0.18s ease, transform 0.18s ease;
 }
 
 .tab.active {
-  color: #3f83ff;
-  font-weight: 700;
+  color: #2f6df0;
+  font-weight: 800;
+  background: linear-gradient(180deg, #f2f7ff, #e7f0ff);
+  transform: translateY(-2rpx);
 }
 
 .tab-icon {
-  width: 42rpx;
-  height: 36rpx;
+  width: 44rpx;
+  height: 40rpx;
   position: relative;
 }
 
 .tab-icon.home::before {
   content: "";
   position: absolute;
-  inset: 4rpx;
+  left: 7rpx;
+  top: 13rpx;
+  width: 30rpx;
+  height: 22rpx;
+  border: 4rpx solid currentColor;
+  border-top: 0;
+  border-radius: 0 0 8rpx 8rpx;
+}
+
+.tab-icon.home::after {
+  content: "";
+  position: absolute;
+  left: 12rpx;
+  top: 5rpx;
+  width: 22rpx;
+  height: 22rpx;
+  border-left: 4rpx solid currentColor;
+  border-top: 4rpx solid currentColor;
+  border-radius: 5rpx 0 0 0;
+  transform: rotate(45deg);
+}
+
+.tab.active .tab-icon.home::before {
   background: currentColor;
-  clip-path: polygon(50% 0, 100% 35%, 100% 100%, 0 100%, 0 35%);
 }
 
 .tab-icon.shop::before {
   content: "";
   position: absolute;
-  left: 6rpx;
-  right: 6rpx;
-  top: 10rpx;
-  bottom: 2rpx;
+  left: 7rpx;
+  right: 7rpx;
+  top: 16rpx;
+  bottom: 3rpx;
   border: 4rpx solid currentColor;
-  border-radius: 8rpx;
+  border-radius: 7rpx;
   border-top: 0;
 }
 
 .tab-icon.shop::after {
   content: "";
   position: absolute;
-  left: 8rpx;
-  right: 8rpx;
-  top: 2rpx;
-  height: 12rpx;
-  border-radius: 8rpx 8rpx 4rpx 4rpx;
+  left: 6rpx;
+  right: 6rpx;
+  top: 6rpx;
+  height: 15rpx;
+  border: 4rpx solid currentColor;
+  border-radius: 10rpx 10rpx 4rpx 4rpx;
+}
+
+.tab.active .tab-icon.shop::before {
   background: currentColor;
-  clip-path: polygon(0 0, 100% 0, 90% 100%, 10% 100%);
+}
+
+.tab.active .tab-icon.shop::after {
+  background: rgba(47, 109, 240, 0.2);
 }
 
 .tab-icon.message::before {
   content: "";
   position: absolute;
-  inset: 4rpx 2rpx 8rpx;
-  border-radius: 18rpx;
+  left: 5rpx;
+  top: 7rpx;
+  width: 34rpx;
+  height: 24rpx;
+  border-radius: 13rpx;
   border: 4rpx solid currentColor;
+}
+
+.tab-icon.message::after {
+  content: "";
+  position: absolute;
+  left: 15rpx;
+  bottom: 3rpx;
+  width: 10rpx;
+  height: 10rpx;
+  border-left: 4rpx solid currentColor;
+  border-bottom: 4rpx solid currentColor;
+  background: #ffffff;
+  transform: skewX(-18deg) rotate(-10deg);
+}
+
+.tab.active .tab-icon.message::before {
+  background: currentColor;
+}
+
+.tab.active .tab-icon.message::after {
+  background: #e7f0ff;
 }
 
 .tab-icon.user::before,
@@ -384,19 +449,25 @@ page {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  background: currentColor;
+  border: 4rpx solid currentColor;
+  box-sizing: border-box;
 }
 
 .tab-icon.user::before {
-  top: 2rpx;
+  top: 4rpx;
   width: 18rpx;
   height: 18rpx;
   border-radius: 50%;
 }
 
 .tab-icon.user::after {
-  bottom: 0;
-  width: 32rpx;
-  height: 16rpx;
-  border-radius: 16rpx 16rpx 6rpx 6rpx;
+  bottom: 2rpx;
+  width: 34rpx;
+  height: 18rpx;
+  border-radius: 18rpx 18rpx 8rpx 8rpx;
+}
+
+.tab.active .tab-icon.user::before,
+.tab.active .tab-icon.user::after {
+  background: currentColor;
 }

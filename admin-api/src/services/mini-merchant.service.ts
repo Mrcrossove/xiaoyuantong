@@ -151,8 +151,8 @@ export async function updateCurrentMerchantStore(userId: number, payload: MiniMe
       notice: payload.notice,
       phone: payload.phone,
       address: payload.address,
-      cover: payload.cover || store.cover,
-      banners: (payload.banners?.length ? payload.banners : toArray(store.banners)).slice(0, 5)
+      cover: payload.cover !== undefined ? payload.cover : store.cover,
+      banners: (Array.isArray(payload.banners) ? payload.banners : toArray(store.banners)).slice(0, 5)
     }
   });
   return mapStore(row);
