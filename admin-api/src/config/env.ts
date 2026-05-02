@@ -52,6 +52,7 @@ export const env = {
   wechatPayTransferUserRecvPerception: process.env.WECHAT_PAY_TRANSFER_USER_RECV_PERCEPTION || "校园通商家提现",
 
   smsProvider: (process.env.SMS_PROVIDER || "mock").trim().toLowerCase(),
+  allowSmsMockInProduction: process.env.ALLOW_SMS_MOCK_IN_PRODUCTION === "true",
   smsCodeExpireMinutes: Number(process.env.SMS_CODE_EXPIRE_MINUTES || 10),
   smsTencentSecretId: process.env.SMS_TENCENT_SECRET_ID || "",
   smsTencentSecretKey: process.env.SMS_TENCENT_SECRET_KEY || "",

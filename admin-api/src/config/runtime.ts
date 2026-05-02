@@ -24,7 +24,7 @@ export function validateRuntimeConfig() {
     errors.push("生产环境不允许开启 PAY_USE_MOCK");
   }
 
-  if (env.smsProvider === "mock") {
+  if (env.smsProvider === "mock" && !env.allowSmsMockInProduction) {
     errors.push("生产环境不允许使用 mock 短信服务");
   }
 
