@@ -112,52 +112,16 @@ function resetForm() {
   form.skus = [createSku()];
 }
 
-function setDefaultSku(index: number) {
-  form.skus = form.skus.map((sku, skuIndex) => ({
-    ...sku,
-    isDefault: skuIndex === index
-  }));
-}
-
-function addSku() {
-  const index = form.skus.length + 1;
-  form.skus.push({
-    ...createSku(`规格${index}`),
-    isDefault: false
-  });
-  if (!form.skus.some((sku) => sku.isDefault)) {
-    setDefaultSku(0);
-  }
-}
-
-function removeSku(index: number) {
-  if (form.skus.length <= 1) {
-    ElMessage.warning("至少保留一个规格");
-    return;
-  }
-  const removingDefault = form.skus[index]?.isDefault;
-  form.skus.splice(index, 1);
-  if (removingDefault && form.skus.length) {
-    setDefaultSku(0);
-  }
-}
-
 function handleSpecModeChange(value: "single" | "multi") {
-  form.specMode = value;
-  if (value === "single") {
-    syncSingleSkuFromBase();
-  } else if (!form.skus.length) {
-    form.skus = [createSku("规格1")];
-  } else if (!form.skus.some((sku) => sku.isDefault)) {
-    setDefaultSku(0);
-  }
+  form.specMode = "single";
+  syncSingleSkuFromBase();
 }
 
 function fillForm(row: any) {
   editingId.value = row.id;
   form.name = row.name;
   form.desc = row.desc;
-  form.specMode = row.specMode || (row.skus?.length > 1 ? "multi" : "single");
+  form.specMode = "single";
   form.cover = row.cover || "";
   form.recommended = Boolean(row.recommended);
   form.status = row.status || "已上架";
@@ -181,9 +145,7 @@ function fillForm(row: any) {
   form.stock = Number(defaultSku?.stock || 0);
   form.dailyLimit = Number(defaultSku?.dailyLimit || 0);
 
-  if (form.specMode === "single") {
-    syncBaseFromSingleSku();
-  }
+  syncBaseFromSingleSku();
 }
 
 async function loadData() {
@@ -234,42 +196,23 @@ function validateForm() {
     throw new Error("请输入商品描述");
   }
 
-  if (form.specMode === "single") {
-    if (!String(form.price || "").trim()) {
-      throw new Error("请输入商品价格");
-    }
-    syncSingleSkuFromBase();
-    return;
+  if (!String(form.price || "").trim()) {
+    throw new Error("请输入商品价格");
   }
-
-  if (!form.skus.length) {
-    throw new Error("请至少添加一个规格");
-  }
-  if (!form.skus.some((sku) => sku.isDefault)) {
-    setDefaultSku(0);
-  }
-
-  form.skus.forEach((sku, index) => {
-    if (!sku.name.trim()) {
-      throw new Error(`请输入第 ${index + 1} 个规格名称`);
-    }
-    if (!String(sku.price || "").trim()) {
-      throw new Error(`请输入第 ${index + 1} 个规格价格`);
-    }
-  });
+  form.specMode = "single";
+  syncSingleSkuFromBase();
 }
 
 function buildPayload() {
   validateForm();
 
-  if (form.specMode === "single") {
-    syncSingleSkuFromBase();
-  }
+  form.specMode = "single";
+  syncSingleSkuFromBase();
 
   return {
     name: form.name,
     desc: form.desc,
-    specMode: form.specMode,
+    specMode: "single",
     price: form.price,
     cover: form.cover,
     stock: Number(form.stock || 0),
@@ -278,7 +221,7 @@ function buildPayload() {
     status: form.status,
     skus: form.skus.map((sku) => ({
       id: sku.id,
-      name: form.specMode === "single" ? "默认规格" : sku.name,
+      name: "默认规格",
       price: sku.price,
       stock: Number(sku.stock || 0),
       dailyLimit: Number(sku.dailyLimit || 0),
@@ -397,7 +340,7 @@ onMounted(loadData);
         <el-table-column prop="price" label="售价" width="120" />
         <el-table-column label="规格" width="120">
           <template #default="{ row }">
-            {{ row.specMode === "multi" ? `${row.skus?.length || 0} 个规格` : "单规格" }}
+            单规格
           </template>
         </el-table-column>
         <el-table-column label="封面" width="92">
@@ -436,14 +379,6 @@ onMounted(loadData);
               <el-input v-model.trim="form.name" maxlength="30" />
             </el-form-item>
           </el-col>
-          <el-col :xs="24" :sm="12">
-            <el-form-item label="规格模式">
-              <el-radio-group v-model="form.specMode" @change="handleSpecModeChange">
-                <el-radio-button label="single">单规格</el-radio-button>
-                <el-radio-button label="multi">多规格</el-radio-button>
-              </el-radio-group>
-            </el-form-item>
-          </el-col>
         </el-row>
 
         <el-form-item label="商品描述">
@@ -463,89 +398,34 @@ onMounted(loadData);
           </div>
         </el-form-item>
 
-        <template v-if="form.specMode === 'single'">
-          <el-row :gutter="16">
-            <el-col :xs="24" :sm="8">
-              <el-form-item label="售价">
-                <el-input v-model.trim="form.price" placeholder="例如 12.80" @blur="syncSingleSkuFromBase" />
-              </el-form-item>
-            </el-col>
-            <el-col :xs="24" :sm="8">
-              <el-form-item label="库存">
-                <el-input-number v-model="form.stock" :min="0" :max="99999" @change="syncSingleSkuFromBase" />
-              </el-form-item>
-            </el-col>
-            <el-col :xs="24" :sm="8">
-              <el-form-item label="每日限购">
-                <el-input-number v-model="form.dailyLimit" :min="0" :max="9999" @change="syncSingleSkuFromBase" />
-              </el-form-item>
-            </el-col>
-          </el-row>
+        <el-row :gutter="16">
+          <el-col :xs="24" :sm="8">
+            <el-form-item label="售价">
+              <el-input v-model.trim="form.price" placeholder="例如 12.80" @blur="syncSingleSkuFromBase" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="8">
+            <el-form-item label="库存">
+              <el-input-number v-model="form.stock" :min="0" :max="99999" @change="syncSingleSkuFromBase" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="8">
+            <el-form-item label="每日限购">
+              <el-input-number v-model="form.dailyLimit" :min="0" :max="9999" @change="syncSingleSkuFromBase" />
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-          <el-row :gutter="16">
-            <el-col :xs="24" :sm="8">
-              <el-form-item label="商品状态">
-                <el-select v-model="form.status" @change="syncSingleSkuFromBase">
-                  <el-option label="已上架" value="已上架" />
-                  <el-option label="已下架" value="已下架" />
-                </el-select>
-              </el-form-item>
-            </el-col>
-          </el-row>
-        </template>
-
-        <template v-else>
-          <div class="sku-header">
-            <div class="section-title">规格列表</div>
-            <el-button type="primary" plain @click="addSku">新增规格</el-button>
-          </div>
-
-          <div v-for="(sku, index) in form.skus" :key="sku.id || index" class="sku-card">
-            <div class="sku-card-header">
-              <span>规格 {{ index + 1 }}</span>
-              <div class="sku-card-actions">
-                <el-button size="small" :type="sku.isDefault ? 'primary' : 'default'" @click="setDefaultSku(index)">
-                  {{ sku.isDefault ? "默认规格" : "设为默认" }}
-                </el-button>
-                <el-button link type="danger" @click="removeSku(index)">删除</el-button>
-              </div>
-            </div>
-
-            <el-row :gutter="16">
-              <el-col :xs="24" :sm="8">
-                <el-form-item label="规格名称">
-                  <el-input v-model.trim="sku.name" maxlength="30" placeholder="例如 大份、加辣、标准版" />
-                </el-form-item>
-              </el-col>
-              <el-col :xs="24" :sm="8">
-                <el-form-item label="规格价格">
-                  <el-input v-model.trim="sku.price" placeholder="例如 15.00" />
-                </el-form-item>
-              </el-col>
-              <el-col :xs="24" :sm="8">
-                <el-form-item label="规格状态">
-                  <el-select v-model="sku.status">
-                    <el-option label="已上架" value="已上架" />
-                    <el-option label="已下架" value="已下架" />
-                  </el-select>
-                </el-form-item>
-              </el-col>
-            </el-row>
-
-            <el-row :gutter="16">
-              <el-col :xs="24" :sm="8">
-                <el-form-item label="库存">
-                  <el-input-number v-model="sku.stock" :min="0" :max="99999" />
-                </el-form-item>
-              </el-col>
-              <el-col :xs="24" :sm="8">
-                <el-form-item label="每日限购">
-                  <el-input-number v-model="sku.dailyLimit" :min="0" :max="9999" />
-                </el-form-item>
-              </el-col>
-            </el-row>
-          </div>
-        </template>
+        <el-row :gutter="16">
+          <el-col :xs="24" :sm="8">
+            <el-form-item label="商品状态">
+              <el-select v-model="form.status" @change="syncSingleSkuFromBase">
+                <el-option label="已上架" value="已上架" />
+                <el-option label="已下架" value="已下架" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
 
         <el-form-item>
           <el-checkbox v-model="form.recommended">设为推荐商品</el-checkbox>
@@ -618,40 +498,10 @@ onMounted(loadData);
   gap: 12px;
 }
 
-.sku-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
 .section-title {
   font-size: 15px;
   font-weight: 700;
   color: #111827;
-}
-
-.sku-card {
-  padding: 16px;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  background: #f8fafc;
-  margin-bottom: 12px;
-}
-
-.sku-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  gap: 12px;
-}
-
-.sku-card-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
 }
 
 .hidden-input {
@@ -668,9 +518,5 @@ onMounted(loadData);
     grid-template-columns: 1fr;
   }
 
-  .sku-card-header {
-    align-items: flex-start;
-    flex-direction: column;
-  }
 }
 </style>

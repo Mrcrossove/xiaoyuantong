@@ -222,14 +222,6 @@ Page({
     this.setData(buildSelectionState(currentProduct, currentSku && currentSku.id, 1));
   },
 
-  selectSku(event) {
-    const { id } = event.currentTarget.dataset;
-    if (!this.data.currentProduct || String(id || "") === String(this.data.selectedSkuId || "")) {
-      return;
-    }
-    this.setData(buildSelectionState(this.data.currentProduct, id, 1));
-  },
-
   decreaseQuantity() {
     const nextQuantity = Math.max(1, Number(this.data.quantity || 1) - 1);
     if (nextQuantity === this.data.quantity) {

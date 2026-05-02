@@ -145,7 +145,15 @@ export function buildProductDisplayPrice(product: MerchantProductItem) {
 }
 
 export function normalizeMerchantProductPayload(productId: string, payload: ProductPayloadLike) {
-  const baseSkuList = Array.isArray(payload.skus) ? payload.skus : [];
+  const singleSku = {
+    id: `${productId}_sku_default`,
+    name: "默认规格",
+    price: payload.price || 0,
+    stock: payload.stock || 0,
+    dailyLimit: payload.dailyLimit || 0,
+    status: payload.status || MERCHANT_PRODUCT_STATUS.onSale,
+    isDefault: true
+  };
   const normalized = normalizeMerchantProduct(
     {
       id: productId,
@@ -154,22 +162,11 @@ export function normalizeMerchantProductPayload(productId: string, payload: Prod
       cover: payload.cover || "poster",
       recommended: !!payload.recommended,
       status: payload.status || MERCHANT_PRODUCT_STATUS.onSale,
-      specMode: payload.specMode || (baseSkuList.length > 1 ? "multi" : "single"),
+      specMode: "single",
       price: payload.price || 0,
       stock: payload.stock || 0,
       dailyLimit: payload.dailyLimit || 0,
-      skus:
-        baseSkuList.length > 0
-          ? baseSkuList.map((sku, index) => ({
-              id: String(sku.id || `${productId}_sku_${index + 1}`),
-              name: sku.name,
-              price: sku.price,
-              stock: sku.stock,
-              dailyLimit: sku.dailyLimit,
-              status: sku.status,
-              isDefault: sku.isDefault
-            }))
-          : undefined
+      skus: [singleSku]
     },
     0
   );
