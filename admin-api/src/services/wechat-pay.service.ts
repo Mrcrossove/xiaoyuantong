@@ -215,6 +215,9 @@ export async function createWechatJsapiOrder(params: CreateWechatJsapiOrderParam
     },
     payer: {
       sp_openid: params.payerOpenid
+    },
+    settle_info: {
+      profit_sharing: env.wechatPayProfitSharing
     }
   });
 
