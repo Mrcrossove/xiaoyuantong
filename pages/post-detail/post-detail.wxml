@@ -39,22 +39,30 @@
       <view class="contact-trigger" bindtap="showContact">点击获取联系方式</view>
 
       <view class="detail-actions">
-        <view class="detail-action {{post.liked ? 'active' : ''}}" bindtap="handleToggleLike">
-          <view class="icon like"></view>
+        <view class="detail-action like-action {{post.liked ? 'active' : ''}}" bindtap="handleToggleLike">
+          <view class="action-icon-wrap">
+            <view class="icon like"></view>
+          </view>
           <text>点赞 {{post.likeCount}}</text>
         </view>
-        <view class="detail-action" bindtap="focusCommentInput">
-          <view class="icon comment"></view>
+        <view class="detail-action comment-action" bindtap="focusCommentInput">
+          <view class="action-icon-wrap">
+            <view class="icon comment"></view>
+          </view>
           <text>评论 {{post.commentCount}}</text>
         </view>
-        <view class="detail-action {{favorite ? 'active' : ''}}" bindtap="togglePostFavorite">
-          <view class="icon star"></view>
+        <view class="detail-action favorite-action {{favorite ? 'active' : ''}}" bindtap="togglePostFavorite">
+          <view class="action-icon-wrap">
+            <view class="icon star"></view>
+          </view>
           <text>{{favorite ? "已收藏" : "收藏"}}</text>
         </view>
-        <view class="detail-action">
-          <view class="icon share"></view>
+        <button class="detail-action share-action share-button" open-type="share">
+          <view class="action-icon-wrap">
+            <view class="icon share"></view>
+          </view>
           <text>分享</text>
-        </view>
+        </button>
       </view>
     </view>
 

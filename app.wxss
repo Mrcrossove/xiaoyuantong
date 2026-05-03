@@ -316,8 +316,8 @@ page {
   bottom: 24rpx;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  padding: 12rpx 10rpx 10rpx;
-  border-radius: 34rpx;
+  padding: 10rpx;
+  border-radius: 32rpx;
   border: 2rpx solid rgba(226, 233, 244, 0.96);
   background: rgba(255, 255, 255, 0.98);
   box-shadow: 0 18rpx 42rpx rgba(32, 47, 82, 0.13);
@@ -326,28 +326,29 @@ page {
 }
 
 .tab {
-  min-height: 84rpx;
+  min-height: 82rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6rpx;
+  gap: 5rpx;
   color: #9da8bc;
   font-size: 22rpx;
-  font-weight: 600;
-  border-radius: 26rpx;
+  font-weight: 700;
+  border-radius: 24rpx;
   transition: color 0.18s ease, background 0.18s ease, transform 0.18s ease;
 }
 
 .tab.active {
-  color: #245fe0;
+  color: #ffffff;
   font-weight: 800;
-  background: #edf4ff;
-  transform: translateY(-2rpx);
+  background: #2f6df0;
+  box-shadow: 0 10rpx 22rpx rgba(47, 109, 240, 0.18);
+  transform: translateY(-1rpx);
 }
 
 .tab-icon {
-  width: 44rpx;
+  width: 42rpx;
   height: 40rpx;
   position: relative;
 }
@@ -356,9 +357,9 @@ page {
   content: "";
   position: absolute;
   left: 7rpx;
-  top: 13rpx;
-  width: 30rpx;
-  height: 22rpx;
+  top: 14rpx;
+  width: 28rpx;
+  height: 21rpx;
   border: 4rpx solid currentColor;
   border-top: 0;
   border-radius: 0 0 8rpx 8rpx;
@@ -367,10 +368,10 @@ page {
 .tab-icon.home::after {
   content: "";
   position: absolute;
-  left: 12rpx;
+  left: 11rpx;
   top: 5rpx;
-  width: 22rpx;
-  height: 22rpx;
+  width: 21rpx;
+  height: 21rpx;
   border-left: 4rpx solid currentColor;
   border-top: 4rpx solid currentColor;
   border-radius: 5rpx 0 0 0;
@@ -378,14 +379,14 @@ page {
 }
 
 .tab.active .tab-icon.home::before {
-  background: currentColor;
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .tab-icon.shop::before {
   content: "";
   position: absolute;
-  left: 7rpx;
-  right: 7rpx;
+  left: 8rpx;
+  right: 8rpx;
   top: 16rpx;
   bottom: 3rpx;
   border: 4rpx solid currentColor;
@@ -405,11 +406,11 @@ page {
 }
 
 .tab.active .tab-icon.shop::before {
-  background: currentColor;
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .tab.active .tab-icon.shop::after {
-  background: rgba(47, 109, 240, 0.2);
+  background: rgba(255, 255, 255, 0.16);
 }
 
 .tab-icon.message::before {
@@ -437,11 +438,11 @@ page {
 }
 
 .tab.active .tab-icon.message::before {
-  background: currentColor;
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .tab.active .tab-icon.message::after {
-  background: #e7f0ff;
+  background: #2f6df0;
 }
 
 .tab-icon.user::before,
@@ -470,5 +471,5 @@ page {
 
 .tab.active .tab-icon.user::before,
 .tab.active .tab-icon.user::after {
-  background: currentColor;
+  background: rgba(255, 255, 255, 0.22);
 }

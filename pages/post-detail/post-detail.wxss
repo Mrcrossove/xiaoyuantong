@@ -68,29 +68,107 @@
 
 .detail-actions {
   margin-top: 24rpx;
-  padding-top: 22rpx;
-  border-top: 2rpx solid #e7ebf3;
+  padding: 22rpx 4rpx 0;
+  border-top: 2rpx solid #eef2f8;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  gap: 8rpx;
 }
 
 .detail-action {
+  min-width: 0;
+  min-height: 94rpx;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 24rpx;
+  background: transparent;
   display: grid;
   justify-items: center;
-  gap: 10rpx;
-  color: #7f899e;
+  align-content: center;
+  gap: 8rpx;
+  color: #768299;
   font-size: 22rpx;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.detail-action::after,
+.share-button::after {
+  border: 0;
 }
 
 .detail-action.active {
-  color: #2f68e3;
-  font-weight: 700;
+  transform: translateY(-2rpx);
+}
+
+.action-icon-wrap {
+  width: 54rpx;
+  height: 54rpx;
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 18rpx rgba(45, 66, 110, 0.08);
+}
+
+.like-action {
+  color: #f05b7d;
+}
+
+.like-action .action-icon-wrap {
+  background: #fff0f5;
+}
+
+.like-action.active .action-icon-wrap {
+  background: #f05b7d;
+  box-shadow: 0 12rpx 22rpx rgba(240, 91, 125, 0.22);
+}
+
+.comment-action {
+  color: #3d7cff;
+}
+
+.comment-action .action-icon-wrap {
+  background: #eef5ff;
+}
+
+.favorite-action {
+  color: #f2a51a;
+}
+
+.favorite-action .action-icon-wrap {
+  background: #fff7df;
+}
+
+.favorite-action.active .action-icon-wrap {
+  background: #f2a51a;
+  box-shadow: 0 12rpx 22rpx rgba(242, 165, 26, 0.22);
+}
+
+.share-action {
+  color: #16a3b8;
+}
+
+.share-action .action-icon-wrap {
+  background: #eafcff;
+}
+
+.like-action.active,
+.favorite-action.active {
+  color: #202534;
+}
+
+.like-action.active .icon,
+.favorite-action.active .icon {
+  color: #ffffff;
 }
 
 .icon {
-  width: 40rpx;
-  height: 40rpx;
+  width: 34rpx;
+  height: 34rpx;
   position: relative;
+  color: currentColor;
 }
 
 .icon.comment::before,
@@ -103,6 +181,7 @@
 }
 
 .icon.comment::before {
+  inset: 4rpx 3rpx 7rpx;
   border: 4rpx solid currentColor;
   border-radius: 12rpx;
 }
@@ -110,10 +189,10 @@
 .icon.comment::after {
   content: "";
   position: absolute;
-  left: 12rpx;
-  bottom: 0;
-  width: 14rpx;
-  height: 14rpx;
+  left: 11rpx;
+  bottom: 3rpx;
+  width: 10rpx;
+  height: 10rpx;
   border-left: 4rpx solid currentColor;
   border-bottom: 4rpx solid currentColor;
   transform: skew(-20deg);
