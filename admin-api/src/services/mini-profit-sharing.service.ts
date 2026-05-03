@@ -34,10 +34,18 @@ function buildProfitSharingOutOrderNo(orderNo: string) {
   return `PS${String(orderNo || "").trim()}`;
 }
 
+function normalizeWechatProfitSharingStatus(response: any) {
+  const directStatus = String(response?.status || response?.state || "").trim();
+  const receiverStatus = Array.isArray(response?.receivers)
+    ? String(response.receivers.find((item: any) => item?.result || item?.status || item?.state)?.result || "").trim()
+    : "";
+  return directStatus || receiverStatus;
+}
+
 function getLocalProfitSharingStatus(wechatStatus: string) {
-  if (wechatStatus === "FINISHED") return MINI_PROFIT_SHARING_STATUS.success;
-  if (wechatStatus === "PROCESSING" || wechatStatus === "ACCEPTED") return MINI_PROFIT_SHARING_STATUS.processing;
-  if (wechatStatus === "CLOSED") return MINI_PROFIT_SHARING_STATUS.failed;
+  if (wechatStatus === "FINISHED" || wechatStatus === "SUCCESS") return MINI_PROFIT_SHARING_STATUS.success;
+  if (wechatStatus === "PROCESSING" || wechatStatus === "ACCEPTED" || wechatStatus === "PENDING") return MINI_PROFIT_SHARING_STATUS.processing;
+  if (wechatStatus === "CLOSED" || wechatStatus === "FAILED" || wechatStatus === "FAIL") return MINI_PROFIT_SHARING_STATUS.failed;
   return MINI_PROFIT_SHARING_STATUS.pending;
 }
 
@@ -320,7 +328,7 @@ export async function createOrSyncMiniOrderProfitSharing(orderId: number) {
 
   try {
     const response = await createWechatProfitSharingOrder(requestPayload);
-    const wechatStatus = String(response?.status || "");
+    const wechatStatus = normalizeWechatProfitSharingStatus(response);
     const localStatus = getLocalProfitSharingStatus(wechatStatus);
     const finishedAt = localStatus === MINI_PROFIT_SHARING_STATUS.success ? new Date() : null;
 
@@ -413,7 +421,7 @@ export async function syncMiniProfitSharingOrder(recordId: number) {
     transactionId: record.transactionId || undefined
   });
 
-  const wechatStatus = String(response?.status || "");
+  const wechatStatus = normalizeWechatProfitSharingStatus(response);
   const localStatus = getLocalProfitSharingStatus(wechatStatus);
   const finishedAt = localStatus === MINI_PROFIT_SHARING_STATUS.success ? new Date() : null;
   const platformCommissionAmount = roundMoney(Number(record.amount || 0));
