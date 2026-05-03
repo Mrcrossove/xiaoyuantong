@@ -1,4 +1,5 @@
 const { getPublishType } = require("../../utils/publish-config");
+const { getPrimaryCategoryByType } = require("../../utils/post-category-view");
 const { getCampusSchool, setVerificationInfo } = require("../../utils/verification-state");
 const { ensureMiniSession } = require("../../utils/mini-auth");
 const { createPost } = require("../../utils/posts-api");
@@ -175,6 +176,7 @@ Page({
 
       await createPost({
         school: publishSchool,
+        primaryCategory: getPrimaryCategoryByType(this.data.type),
         category,
         title,
         content,

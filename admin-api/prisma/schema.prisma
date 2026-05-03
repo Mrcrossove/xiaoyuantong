@@ -152,6 +152,7 @@ model MiniPost {
   school       String
   authorName   String
   displayName  String?
+  primaryCategory String?
   category     String
   title        String
   content      String

@@ -101,7 +101,7 @@
           <view class="author-name">{{item.author}}</view>
           <view class="meta-row">
             <text class="school-name">{{item.school}}</text>
-            <text class="tag">{{item.category}}</text>
+            <text class="tag tag-{{item.categoryView.theme}}">{{item.categoryView.primaryLabel}}</text>
           </view>
         </view>
         <text class="post-time">{{item.time}}</text>
@@ -111,14 +111,17 @@
       <view class="image-grid">
         <view class="image-item {{img}}" wx:for="{{item.images}}" wx:for-item="img" wx:key="*this"></view>
       </view>
-      <view class="post-actions">
-        <view class="post-action-item">
-          <view class="post-action-icon comment"></view>
-          <text>{{item.commentCount || 0}}</text>
-        </view>
-        <view class="post-action-item">
-          <view class="post-action-icon like"></view>
-          <text>{{item.likeCount || 0}}</text>
+      <view class="post-foot">
+        <text class="subtag subtag-{{item.categoryView.theme}}">{{item.categoryView.secondaryLabel}}</text>
+        <view class="post-actions">
+          <view class="post-action-item">
+            <view class="post-action-icon comment"></view>
+            <text>{{item.commentCount || 0}}</text>
+          </view>
+          <view class="post-action-item">
+            <view class="post-action-icon like"></view>
+            <text>{{item.likeCount || 0}}</text>
+          </view>
         </view>
       </view>
     </view>

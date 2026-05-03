@@ -7,6 +7,7 @@ const { fetchMiniProfile } = require("../../utils/profile-api");
 const { DEFAULT_SCHOOL, getSelectedSchool } = require("../../utils/school-state");
 const { HOME_FEED_ALL, getHomeFeedScope, setHomeFeedScope } = require("../../utils/home-feed-state");
 const { getProvinceSchoolGroups, filterProvinceSchoolGroups } = require("../../utils/school-catalog");
+const { buildPostCategoryView } = require("../../utils/post-category-view");
 
 const DEFAULT_HOME_BANNER = {
   id: "default-recruit",
@@ -33,7 +34,8 @@ const floatingCategories = [
 function mapPostView(post) {
   return {
     ...post,
-    authorAvatar: buildAvatarView(post.authorAvatar || "")
+    authorAvatar: buildAvatarView(post.authorAvatar || ""),
+    categoryView: buildPostCategoryView(post)
   };
 }
 

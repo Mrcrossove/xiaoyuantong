@@ -659,8 +659,79 @@
   -webkit-box-orient: vertical;
 }
 
-.post-actions {
+.tag-market { background: linear-gradient(135deg, #ffb15f, #f97316); }
+.tag-job { background: linear-gradient(135deg, #5fa4ff, #2563eb); }
+.tag-rent { background: linear-gradient(135deg, #65d58a, #16a34a); }
+.tag-tree { background: linear-gradient(135deg, #f78acb, #c026d3); }
+.tag-partner { background: linear-gradient(135deg, #a98bff, #7c3aed); }
+.tag-errand { background: linear-gradient(135deg, #46d6d0, #0891b2); }
+.tag-default { background: linear-gradient(135deg, #93a4bd, #64748b); }
+
+.post-foot {
   margin-top: 18rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.subtag {
+  min-height: 52rpx;
+  padding: 0 22rpx;
+  border-radius: 12rpx;
+  border: 2rpx solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: 800;
+  line-height: 1;
+  box-sizing: border-box;
+}
+
+.subtag-market {
+  color: #d97706;
+  border-color: #f6a44f;
+  background: #fff8ed;
+}
+
+.subtag-job {
+  color: #2563eb;
+  border-color: #82b4ff;
+  background: #eff6ff;
+}
+
+.subtag-rent {
+  color: #15803d;
+  border-color: #82d99a;
+  background: #f0fdf4;
+}
+
+.subtag-tree {
+  color: #be185d;
+  border-color: #f49ac7;
+  background: #fdf2f8;
+}
+
+.subtag-partner {
+  color: #6d28d9;
+  border-color: #b49af8;
+  background: #f5f3ff;
+}
+
+.subtag-errand {
+  color: #0e7490;
+  border-color: #67d9dc;
+  background: #ecfeff;
+}
+
+.subtag-default {
+  color: #475569;
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.post-actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;

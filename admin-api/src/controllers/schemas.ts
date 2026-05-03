@@ -50,6 +50,7 @@ export const verifyReviewSchema = z.object({
 
 export const miniPostPayloadSchema = z.object({
   school: requiredText("学校"),
+  primaryCategory: z.string().trim().max(20, "一级分类最多 20 个字").optional().default(""),
   category: requiredText("分类"),
   title: z.string().trim().min(2, "标题至少 2 个字").max(30, "标题最多 30 个字"),
   content: z.string().trim().min(5, "内容至少 5 个字").max(500, "内容最多 500 个字"),

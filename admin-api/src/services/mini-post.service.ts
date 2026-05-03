@@ -75,6 +75,15 @@ const POST_CATEGORY_GROUPS: Record<string, string[]> = {
     "\u5176\u4ed6\u95f2\u7f6e"
   ]
 };
+const PRIMARY_CATEGORY_ALIASES: Record<string, string> = {
+  "\u6811\u6d1e": "\u6811\u6d1e",
+  "\u60c5\u611f\u6811\u6d1e": "\u6811\u6d1e",
+  "\u8df3\u86a4\u5e02\u573a": "\u8df3\u86a4\u5e02\u573a",
+  "\u517c\u804c\u4fe1\u606f": "\u517c\u804c\u4fe1\u606f",
+  "\u623f\u5c4b\u79df\u552e": "\u623f\u5c4b\u79df\u552e",
+  "\u627e\u642d\u5b50": "\u627e\u642d\u5b50",
+  "\u8dd1\u817f\u4ee3\u529e": "\u8dd1\u817f\u4ee3\u529e"
+};
 
 function toLikeText(value?: string) {
   if (!value) return undefined;
@@ -85,6 +94,20 @@ function buildCategoryWhere(category: string) {
   if (!category) return undefined;
   const categoryGroup = POST_CATEGORY_GROUPS[category];
   return categoryGroup ? { in: categoryGroup } : category;
+}
+
+function inferPrimaryCategory(category: string) {
+  const normalized = String(category || "").trim();
+  if (!normalized) return "";
+  if (PRIMARY_CATEGORY_ALIASES[normalized]) return PRIMARY_CATEGORY_ALIASES[normalized];
+
+  for (const [primaryCategory, categoryGroup] of Object.entries(POST_CATEGORY_GROUPS)) {
+    if (categoryGroup.includes(normalized)) {
+      return PRIMARY_CATEGORY_ALIASES[primaryCategory] || primaryCategory;
+    }
+  }
+
+  return "";
 }
 
 function toArray(value: Prisma.JsonValue | null | undefined) {
@@ -126,6 +149,7 @@ function mapPost(item: any, options?: { liked?: boolean; comments?: any[] }) {
     displayName: item.displayName || "",
     authorAvatar,
     school: item.school,
+    primaryCategory: item.primaryCategory || inferPrimaryCategory(item.category) || "",
     category: item.category,
     title: item.title,
     content: item.content,
@@ -343,6 +367,7 @@ export async function createMiniPost(userId: number, payload: MiniPostPayload) {
     scene: "post_create",
     texts: [
       payload.school,
+      payload.primaryCategory,
       payload.category,
       payload.title,
       payload.content,
@@ -357,6 +382,7 @@ export async function createMiniPost(userId: number, payload: MiniPostPayload) {
       school: payload.school,
       authorName,
       displayName,
+      primaryCategory: payload.primaryCategory || inferPrimaryCategory(payload.category) || "",
       category: payload.category,
       title: payload.title,
       content: payload.content,
