@@ -67,7 +67,7 @@ async function loadData() {
   try {
     const [metaResult, roleResult] = await Promise.all([
       getAuthManageMetaApi(),
-      getAdminRoleListApi({ page: 1, pageSize: 500, keyword: "", status: "" })
+      getAdminRoleListApi({ page: 1, pageSize: 100, keyword: "", status: "" })
     ]);
     meta.value = metaResult;
     roles.value = roleResult.list;
