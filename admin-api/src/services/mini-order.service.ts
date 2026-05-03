@@ -824,6 +824,10 @@ export async function createMiniOrder(userId: number, payload: MiniOrderCreatePa
     throw new ApiError("请至少选择一件商品", ERROR_CODES.BAD_REQUEST, 400);
   }
 
+  if (address.school && address.school !== firstItem.store.school) {
+    throw new ApiError("收货地址不在该店铺所属高校，请切换到店铺高校的收货地址", ERROR_CODES.BAD_REQUEST, 400);
+  }
+
   const totalQuantity = resolvedItems.reduce((sum, item) => sum + item.quantity, 0);
   const amount = roundMoney(resolvedItems.reduce((sum, item) => sum + item.amount, 0));
 
@@ -831,7 +835,7 @@ export async function createMiniOrder(userId: number, payload: MiniOrderCreatePa
     data: {
       orderNo: buildOrderNo(),
       userId,
-      school: payload.school,
+      school: firstItem.store.school,
       storeDetailId: firstItem.store.detailId,
       storeName: firstItem.store.name,
       productId: String(firstItem.product.id),
@@ -870,7 +874,7 @@ export async function createMiniOrder(userId: number, payload: MiniOrderCreatePa
   });
 
   await createMiniMessage({
-    school: payload.school,
+    school: firstItem.store.school,
     type: "system",
     category: "订单通知",
     content: `你的订单 ${row.orderNo} 已创建，请尽快完成支付。`,

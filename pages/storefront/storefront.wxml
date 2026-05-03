@@ -6,10 +6,13 @@
   </view>
 
   <view class="storefront-body">
-    <view class="current-school">{{selectedSchool}}</view>
-
-    <view class="search-card">
-      <view class="search-field">
+    <view class="top-filter-row">
+      <view class="current-school" bindtap="openSchoolPicker">
+        <text>{{selectedSchool}}</text>
+        <view class="school-arrow"></view>
+      </view>
+      <view class="search-card">
+        <view class="search-field">
         <view class="search-icon"></view>
         <input
           value="{{keyword}}"
@@ -19,6 +22,7 @@
           bindconfirm="openSearchPage"
           confirm-type="search"
         />
+        </view>
       </view>
     </view>
 
@@ -106,6 +110,46 @@
     <view class="tab" bindtap="goProfile">
       <view class="tab-icon user"></view>
       <text>我的</text>
+    </view>
+  </view>
+
+  <view wx:if="{{schoolPickerOpen}}" class="school-picker-mask" bindtap="closeSchoolPicker">
+    <view class="school-picker" catchtap="stopTap">
+      <view class="school-picker-head">
+        <view class="school-picker-title">选择高校</view>
+        <view class="school-picker-close" bindtap="closeSchoolPicker">关闭</view>
+      </view>
+      <view class="school-picker-search">
+        <view class="search-icon"></view>
+        <input
+          value="{{schoolKeyword}}"
+          placeholder="搜索高校"
+          placeholder-class="search-placeholder"
+          bindinput="onSchoolKeywordInput"
+        />
+      </view>
+      <scroll-view class="school-list" scroll-y enhanced show-scrollbar="{{false}}">
+        <view wx:for="{{filteredProvinceSchoolGroups}}" wx:key="province" class="school-group">
+          <view class="school-group-head" data-province="{{item.province}}" catchtap="toggleProvince">
+            <view class="school-group-title">{{item.province}}</view>
+            <view class="school-group-arrow {{item.expanded ? 'expanded' : ''}}"></view>
+          </view>
+          <view wx:if="{{item.expanded}}" class="school-group-body">
+            <view
+              class="school-item {{schoolItem === selectedSchool ? 'active' : ''}}"
+              wx:for="{{item.schools}}"
+              wx:for-item="schoolItem"
+              wx:key="*this"
+              data-school="{{schoolItem}}"
+              bindtap="selectSchool"
+            >
+              <text>{{schoolItem}}</text>
+              <text wx:if="{{schoolItem === selectedSchool}}" class="school-item-mark">当前</text>
+            </view>
+          </view>
+        </view>
+        <view wx:if="{{!filteredProvinceSchoolGroups.length}}" class="school-empty">没有匹配到高校</view>
+      </scroll-view>
     </view>
   </view>
 </view>

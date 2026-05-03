@@ -1,5 +1,5 @@
 const { fetchStoreList } = require("../../utils/stores-api");
-const { getSelectedSchool } = require("../../utils/school-state");
+const { getStorefrontSchool } = require("../../utils/school-state");
 const { normalizeStoreList } = require("../../utils/store-cover");
 const { getStoreGroupTitle } = require("../../utils/store-config");
 
@@ -50,7 +50,7 @@ Page({
   async onLoad(options) {
     const systemInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
     const groupKey = options.key || "student";
-    const selectedSchool = getSelectedSchool();
+    const selectedSchool = getStorefrontSchool();
 
     this.setData({
       statusBarHeight: systemInfo.statusBarHeight || 20,
@@ -63,7 +63,7 @@ Page({
   },
 
   async onShow() {
-    const selectedSchool = getSelectedSchool();
+    const selectedSchool = getStorefrontSchool();
     if (selectedSchool !== this.data.selectedSchool) {
       this.setData({ selectedSchool });
       await this.loadStoreCategoryData(this.data.groupKey, selectedSchool);
