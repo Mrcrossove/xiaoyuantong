@@ -7,10 +7,29 @@ const { getSelectedSchool } = require("../../utils/school-state");
 const { ensureMiniSession } = require("../../utils/mini-auth");
 const { fetchFavoriteStatus, toggleFavorite } = require("../../utils/favorites-api");
 
+function isStyleImage(value) {
+  return /^style-/.test(String(value || ""));
+}
+
+function buildImageViews(images) {
+  return (Array.isArray(images) ? images : [])
+    .map((url) => {
+      const value = String(url || "").trim();
+      const styleImage = isStyleImage(value);
+      return {
+        url: value,
+        className: styleImage ? value : "",
+        isImage: !!value && !styleImage
+      };
+    })
+    .filter((item) => item.url);
+}
+
 function normalizePost(post) {
   if (!post) return null;
   return {
     ...post,
+    imageViews: buildImageViews(post.images),
     contact: post.contact || [],
     likeCount: Number(post.likeCount || 0),
     commentCount: Number(post.commentCount || 0),
@@ -28,7 +47,8 @@ Page({
     favorite: false,
     commentInput: "",
     sendingComment: false,
-    loadErrorText: ""
+    loadErrorText: "",
+    keyboardHeight: 0
   },
 
   async onLoad(options) {
@@ -39,6 +59,28 @@ Page({
 
     await this.loadPostDetail(options.id);
     await this.loadFavoriteStatus(options.id);
+    this.bindKeyboardHeightChange();
+  },
+
+  onUnload() {
+    if (this.keyboardHeightChangeHandler && wx.offKeyboardHeightChange) {
+      wx.offKeyboardHeightChange(this.keyboardHeightChangeHandler);
+    }
+  },
+
+  bindKeyboardHeightChange() {
+    if (!wx.onKeyboardHeightChange) {
+      return;
+    }
+
+    this.keyboardHeightChangeHandler = (res) => {
+      const height = Number((res && res.height) || 0);
+      this.setData({
+        keyboardHeight: height > 0 ? height + 8 : 0
+      });
+    };
+
+    wx.onKeyboardHeightChange(this.keyboardHeightChangeHandler);
   },
 
   async loadPostDetail(id) {
@@ -73,6 +115,22 @@ Page({
     wx.navigateBack();
   },
 
+  previewPostImage(event) {
+    const current = String((event.currentTarget.dataset && event.currentTarget.dataset.url) || "").trim();
+    const urls = ((this.data.post && this.data.post.imageViews) || [])
+      .filter((item) => item.isImage)
+      .map((item) => item.url);
+
+    if (!current || !urls.length) {
+      return;
+    }
+
+    wx.previewImage({
+      current,
+      urls
+    });
+  },
+
   showContact() {
     if (!this.data.post) {
       return;
@@ -85,6 +143,33 @@ Page({
   hideContact() {
     this.setData({
       contactVisible: false
+    });
+  },
+
+  copyContact(event) {
+    const value = String((event.currentTarget.dataset && event.currentTarget.dataset.value) || "").trim();
+    if (!value) {
+      wx.showToast({
+        title: "暂无可复制内容",
+        icon: "none"
+      });
+      return;
+    }
+
+    wx.setClipboardData({
+      data: value,
+      success: () => {
+        wx.showToast({
+          title: "已复制",
+          icon: "success"
+        });
+      },
+      fail: () => {
+        wx.showToast({
+          title: "复制失败",
+          icon: "none"
+        });
+      }
     });
   },
 

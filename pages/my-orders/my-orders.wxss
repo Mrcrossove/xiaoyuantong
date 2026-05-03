@@ -152,8 +152,47 @@
 }
 
 .empty-shell {
-  padding: 180rpx 40rpx 0;
+  margin: 28rpx 16rpx 0;
+  padding: 96rpx 40rpx;
+  border-radius: 28rpx;
+  background: #ffffff;
+  box-shadow: 0 16rpx 36rpx rgba(53, 88, 163, 0.08);
   text-align: center;
+}
+
+.empty-illustration {
+  width: 156rpx;
+  height: 132rpx;
+  margin: 0 auto 28rpx;
+  border-radius: 28rpx;
+  background: linear-gradient(180deg, #f3f7ff, #e8effb);
+  position: relative;
+  overflow: hidden;
+}
+
+.empty-line {
+  position: absolute;
+  left: 34rpx;
+  right: 34rpx;
+  top: 58rpx;
+  height: 10rpx;
+  border-radius: 999rpx;
+  background: #b8c6dd;
+}
+
+.empty-line.short {
+  top: 38rpx;
+  right: 62rpx;
+}
+
+.empty-dot {
+  position: absolute;
+  right: 34rpx;
+  bottom: 30rpx;
+  width: 24rpx;
+  height: 24rpx;
+  border-radius: 50%;
+  background: #8db1ff;
 }
 
 .empty-title {

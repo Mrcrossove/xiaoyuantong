@@ -41,7 +41,12 @@
   </view>
 
   <view class="empty-shell" wx:elif="{{!loading}}">
+    <view class="empty-illustration">
+      <view class="empty-line short"></view>
+      <view class="empty-line"></view>
+      <view class="empty-dot"></view>
+    </view>
     <view class="empty-title">{{labels.empty}}</view>
-    <view class="empty-btn" bindtap="goStorefront">\u53bb\u521b\u4e1a\u5e97\u94fa</view>
+    <view class="empty-btn" bindtap="goStorefront">去创业店铺</view>
   </view>
 </view>

@@ -31,11 +31,30 @@ const floatingCategories = [
   }))
 ];
 
+function isStyleImage(value) {
+  return /^style-/.test(String(value || ""));
+}
+
+function buildImageViews(images) {
+  return (Array.isArray(images) ? images : [])
+    .map((url) => {
+      const value = String(url || "").trim();
+      const styleImage = isStyleImage(value);
+      return {
+        url: value,
+        className: styleImage ? value : "",
+        isImage: !!value && !styleImage
+      };
+    })
+    .filter((item) => item.url);
+}
+
 function mapPostView(post) {
   return {
     ...post,
     authorAvatar: buildAvatarView(post.authorAvatar || ""),
-    categoryView: buildPostCategoryView(post)
+    categoryView: buildPostCategoryView(post),
+    imageViews: buildImageViews(post.images)
   };
 }
 

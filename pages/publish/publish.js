@@ -193,7 +193,9 @@ Page({
       });
 
       setTimeout(() => {
-        wx.navigateBack();
+        wx.reLaunch({
+          url: "/pages/index/index"
+        });
       }, 800);
     } catch (error) {
       wx.showToast({

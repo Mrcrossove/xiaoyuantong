@@ -16,24 +16,13 @@
 }
 
 .back-btn {
-  width: 64rpx;
-  height: 64rpx;
+  width: 68rpx;
+  height: 68rpx;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.9);
+  border: 2rpx solid rgba(228, 234, 245, 0.92);
   position: relative;
   box-shadow: 0 10rpx 24rpx rgba(45, 72, 114, 0.08);
-}
-
-.back-btn::after {
-  content: "";
-  position: absolute;
-  left: 26rpx;
-  top: 20rpx;
-  width: 18rpx;
-  height: 18rpx;
-  border-left: 4rpx solid #1f2937;
-  border-bottom: 4rpx solid #1f2937;
-  transform: rotate(45deg);
 }
 
 .address-title {

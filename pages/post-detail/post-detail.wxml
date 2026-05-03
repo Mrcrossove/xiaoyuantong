@@ -32,8 +32,16 @@
         <text>评论 {{post.commentCount}}</text>
       </view>
 
-      <view class="image-grid detail-grid">
-        <view class="image-item {{item}}" wx:for="{{post.images}}" wx:key="*this"></view>
+      <view class="image-grid detail-grid" wx:if="{{post.imageViews.length}}">
+        <view
+          class="image-item {{item.className}}"
+          wx:for="{{post.imageViews}}"
+          wx:key="url"
+          data-url="{{item.url}}"
+          bindtap="previewPostImage"
+        >
+          <image wx:if="{{item.isImage}}" class="post-image" src="{{item.url}}" mode="aspectFill"></image>
+        </view>
       </view>
 
       <view class="contact-trigger" bindtap="showContact">点击获取联系方式</view>
@@ -87,7 +95,7 @@
       </view>
     </view>
 
-    <view class="detail-input-bar">
+    <view class="detail-input-bar" style="bottom: {{keyboardHeight}}px;">
       <input value="{{commentInput}}" bindinput="onCommentInput" placeholder="说点什么..." placeholder-class="placeholder" />
       <view class="send-btn active" bindtap="submitComment">{{sendingComment ? "发送中" : "发送"}}</view>
     </view>
@@ -101,7 +109,10 @@
         <view class="contact-list">
           <view class="contact-item" wx:for="{{post.contact}}" wx:key="label">
             <text class="contact-item-label">{{item.label}}</text>
-            <text class="contact-item-value">{{item.value}}</text>
+            <view class="contact-value-row">
+              <text class="contact-item-value">{{item.value}}</text>
+              <view class="copy-contact-btn" data-value="{{item.value}}" catchtap="copyContact">复制</view>
+            </view>
           </view>
         </view>
       </view>

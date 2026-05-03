@@ -7,6 +7,7 @@ import { ERROR_CODES } from "../constants/error-codes";
 
 const VERIFY_STATUS_VERIFIED_LIST = ["已认证", "宸茶璇?"];
 const DEFAULT_AVATAR_COUNT = 8;
+const LEGACY_DEFAULT_NICKNAMES = new Set(["校园用户", "鏍″洯鐢ㄦ埛"]);
 
 function buildVerifyInfo(user: {
   verifyStatus: string;
@@ -31,6 +32,10 @@ function createDefaultAvatar() {
   return `default-avatar-${Math.floor(Math.random() * DEFAULT_AVATAR_COUNT) + 1}`;
 }
 
+function createDefaultNickname() {
+  return `校友${String(Math.floor(Math.random() * 10000)).padStart(4, "0")}`;
+}
+
 function mapMiniProfile(user: {
   id: number;
   nickname: string;
@@ -47,14 +52,24 @@ function mapMiniProfile(user: {
   };
 }
 
-async function ensureAvatar<T extends { id: number; avatarUrl: string | null }>(user: T) {
-  if (user.avatarUrl) {
+async function ensureDefaultProfile<T extends { id: number; avatarUrl: string | null; nickname: string }>(user: T) {
+  const data: { avatarUrl?: string; nickname?: string } = {};
+
+  if (!user.avatarUrl) {
+    data.avatarUrl = createDefaultAvatar();
+  }
+
+  if (!user.nickname || LEGACY_DEFAULT_NICKNAMES.has(user.nickname)) {
+    data.nickname = createDefaultNickname();
+  }
+
+  if (!data.avatarUrl && !data.nickname) {
     return user;
   }
 
   return prisma.miniUser.update({
     where: { id: user.id },
-    data: { avatarUrl: createDefaultAvatar() }
+    data
   });
 }
 
@@ -71,14 +86,14 @@ export async function miniLogin(payload: MiniLoginPayload) {
       openid: wechatSession.openid,
       unionId: wechatSession.unionid,
       deviceId: createServerDeviceId(),
-      nickname: "校园用户",
+      nickname: createDefaultNickname(),
       avatarUrl: createDefaultAvatar()
     },
     update: {
       unionId: wechatSession.unionid || undefined
     }
   });
-  const profileUser = await ensureAvatar(user);
+  const profileUser = await ensureDefaultProfile(user);
 
   return {
     token: issueToken({ typ: "mini", uid: profileUser.id, deviceId: profileUser.deviceId }, 30 * 24 * 60 * 60),
@@ -91,7 +106,7 @@ export async function getMiniProfile(userId: number) {
   const user = await prisma.miniUser.findUniqueOrThrow({
     where: { id: userId }
   });
-  const profileUser = await ensureAvatar(user);
+  const profileUser = await ensureDefaultProfile(user);
   return mapMiniProfile(profileUser);
 }
 

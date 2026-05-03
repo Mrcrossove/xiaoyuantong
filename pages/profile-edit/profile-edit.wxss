@@ -13,12 +13,42 @@
 }
 
 .back-btn {
-  width: 42rpx;
-  height: 42rpx;
-  border-left: 7rpx solid #6d7481;
-  border-bottom: 7rpx solid #6d7481;
-  transform: rotate(45deg);
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2rpx solid rgba(228, 234, 245, 0.92);
+  box-shadow: 0 12rpx 28rpx rgba(36, 55, 96, 0.1);
+  position: relative;
   margin-left: 18rpx;
+}
+
+.edit-nav .back-btn::before,
+.edit-nav .back-btn::after {
+  display: none;
+}
+
+.back-icon {
+  position: absolute;
+  left: 23rpx;
+  top: 21rpx;
+  width: 22rpx;
+  height: 22rpx;
+  border-left: 6rpx solid #1d2433;
+  border-bottom: 6rpx solid #1d2433;
+  border-radius: 2rpx;
+  transform: rotate(45deg);
+  box-sizing: border-box;
+}
+
+.back-line {
+  position: absolute;
+  left: 24rpx;
+  top: 32rpx;
+  width: 28rpx;
+  height: 6rpx;
+  border-radius: 999rpx;
+  background: #1d2433;
 }
 
 .edit-title {

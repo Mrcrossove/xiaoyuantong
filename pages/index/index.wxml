@@ -108,8 +108,10 @@
       </view>
       <view class="post-title">{{item.title}}</view>
       <view class="post-text">{{item.content}}</view>
-      <view class="image-grid">
-        <view class="image-item {{img}}" wx:for="{{item.images}}" wx:for-item="img" wx:key="*this"></view>
+      <view class="image-grid" wx:if="{{item.imageViews.length}}">
+        <view class="image-item {{img.className}}" wx:for="{{item.imageViews}}" wx:for-item="img" wx:key="url">
+          <image wx:if="{{img.isImage}}" class="post-image" src="{{img.url}}" mode="aspectFill"></image>
+        </view>
       </view>
       <view class="post-foot">
         <text class="subtag subtag-{{item.categoryView.theme}}">{{item.categoryView.secondaryLabel}}</text>

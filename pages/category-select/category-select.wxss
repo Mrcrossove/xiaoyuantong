@@ -20,10 +20,11 @@
 }
 
 .back-arrow {
-  width: 22rpx;
-  height: 22rpx;
-  border-left: 4rpx solid #5d6373;
-  border-bottom: 4rpx solid #5d6373;
+  width: 24rpx;
+  height: 24rpx;
+  border-left: 6rpx solid #5d6373;
+  border-bottom: 6rpx solid #5d6373;
+  border-radius: 2rpx;
   transform: rotate(45deg);
 }
 

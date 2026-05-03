@@ -1,6 +1,9 @@
 <view class="edit-page" style="padding-top: {{statusBarHeight}}px;">
   <view class="edit-nav">
-    <view class="back-btn" bindtap="goBack"></view>
+    <view class="back-btn" bindtap="goBack">
+      <view class="back-icon"></view>
+      <view class="back-line"></view>
+    </view>
     <view class="edit-title">编辑资料</view>
     <view class="nav-spacer"></view>
   </view>

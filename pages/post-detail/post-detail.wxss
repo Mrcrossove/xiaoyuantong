@@ -64,6 +64,7 @@
   text-align: center;
   font-size: 28rpx;
   font-weight: 700;
+  box-sizing: border-box;
 }
 
 .detail-actions {
@@ -290,7 +291,9 @@
   gap: 16rpx;
   background: rgba(255, 255, 255, 0.96);
   border-top: 2rpx solid #e7ebf3;
+  box-shadow: 0 -10rpx 28rpx rgba(30, 45, 80, 0.08);
   z-index: 30;
+  transition: bottom 0.18s ease;
 }
 
 .detail-input-bar input {
@@ -398,9 +401,31 @@
 }
 
 .contact-item-value {
-  display: block;
-  margin-top: 8rpx;
+  min-width: 0;
   color: #202534;
   font-size: 32rpx;
   font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.contact-value-row {
+  margin-top: 8rpx;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16rpx;
+  align-items: center;
+}
+
+.copy-contact-btn {
+  height: 56rpx;
+  padding: 0 22rpx;
+  border-radius: 999rpx;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 24rpx;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10rpx 20rpx rgba(37, 99, 235, 0.18);
 }

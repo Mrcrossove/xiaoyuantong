@@ -1,3 +1,12 @@
+.back-arrow {
+  width: 24rpx;
+  height: 24rpx;
+  border-left: 6rpx solid #1d2433;
+  border-bottom: 6rpx solid #1d2433;
+  border-radius: 2rpx;
+  transform: rotate(45deg);
+}
+
 .hero {
   margin-top: 24rpx;
   padding: 32rpx;
