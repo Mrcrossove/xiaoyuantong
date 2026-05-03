@@ -62,9 +62,8 @@ Page({
 
   async onLoad() {
     const systemInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
-    const selectedSchool = getSelectedSchool();
     const verificationInfo = getVerificationInfo();
-    const initialSchool = verificationInfo.school || selectedSchool;
+    const initialSchool = verificationInfo.verified ? verificationInfo.school || "" : "";
 
     this.setData({
       statusBarHeight: systemInfo.statusBarHeight || 20,
@@ -91,7 +90,7 @@ Page({
         ...remoteInfo,
         verified: !!remoteInfo.verified
       });
-      const school = merged.school || getSelectedSchool();
+      const school = merged.verified ? merged.school || "" : "";
 
       this.setData({
         verification: merged,
@@ -107,11 +106,17 @@ Page({
       });
     } catch (error) {
       const localInfo = getVerificationInfo();
-      const school = localInfo.school || getSelectedSchool();
+      const school = localInfo.verified ? localInfo.school || "" : "";
       this.setData({
         verification: localInfo,
+        form: {
+          ...this.data.form,
+          school
+        },
         schoolMatched: schools.includes(normalizeText(school)),
-        schoolHelperText: getSchoolHelperText(school)
+        schoolHelperText: getSchoolHelperText(school),
+        schoolKeyword: school,
+        schoolOptions: filterSchoolOptions(school)
       });
     } finally {
       this.setData({ loading: false });

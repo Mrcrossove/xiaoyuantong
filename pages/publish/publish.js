@@ -186,7 +186,7 @@ Page({
       });
 
       wx.showToast({
-        title: "发布成功",
+        title: "发布成功，已展示",
         icon: "success"
       });
 

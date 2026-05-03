@@ -24,8 +24,10 @@
 
     <view class="category-card">
       <view class="category-item" wx:for="{{categories}}" wx:key="key" data-key="{{item.key}}" bindtap="openCategoryPage">
-        <view class="category-badge icon-{{item.icon}}"></view>
-        <text>{{item.label}}</text>
+        <view class="category-badge icon-{{item.icon}}">
+          <view class="category-symbol"></view>
+        </view>
+        <view class="category-label">{{item.label}}</view>
       </view>
     </view>
 

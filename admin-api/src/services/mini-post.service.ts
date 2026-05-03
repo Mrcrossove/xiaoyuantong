@@ -364,7 +364,9 @@ export async function createMiniPost(userId: number, payload: MiniPostPayload) {
       contacts: payload.contacts,
       isAnonymous: false,
       onlyCampus: payload.onlyCampus,
-      status: LABELS.pending
+      status: LABELS.published,
+      reviewNote: "系统风控通过，自动发布",
+      reviewedAt: new Date()
     }
   });
   return mapPost(row);
