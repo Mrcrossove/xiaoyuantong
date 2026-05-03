@@ -157,7 +157,7 @@ async function finalizeMiniOrderSettlementWithProfitSharing(
       settledAt: current.settledAt || new Date(),
       commissionRateSnapshot: Number((meta.platformCommissionAmount / Math.max(meta.amount, 1)).toFixed(4)),
       profitSharingStatus: MINI_PROFIT_SHARING_STATUS.success,
-      profitSharingAmount: meta.merchantIncomeAmount,
+      profitSharingAmount: meta.platformCommissionAmount,
       profitSharedAt: meta.finishedAt || new Date()
     }
   });
@@ -207,11 +207,16 @@ export async function createOrSyncMiniOrderProfitSharing(orderId: number) {
   const commissionRate = normalizeCommissionRate(order.commissionRateSnapshot ?? store?.commissionRate ?? env.wechatPayCommissionRate);
   const merchantIncomeAmount = roundMoney(Number(order.amount || 0) * (1 - commissionRate));
   const platformCommissionAmount = roundMoney(Number(order.amount || 0) - merchantIncomeAmount);
+  const receiverType = String(env.wechatPayProfitSharingReceiverType || "MERCHANT_ID").trim();
+  const receiverAccount = String(env.wechatPayProfitSharingReceiverAccount || env.wechatPaySpMchId || "").trim();
+  const receiverName = String(env.wechatPayProfitSharingReceiverName || "platform_commission").trim();
 
   if (
     !store ||
     !ownerUserId ||
     !subMchId ||
+    !receiverAccount ||
+    platformCommissionAmount <= 0 ||
     !store.profitSharingEnabled ||
     store.settlementMode === "disabled" ||
     env.payUseMock ||
@@ -224,7 +229,9 @@ export async function createOrSyncMiniOrderProfitSharing(orderId: number) {
         profitSharingStatus: MINI_PROFIT_SHARING_STATUS.skipped,
         settlementStatus: store?.settlementMode === "manual" ? MINI_SETTLEMENT_STATUS_WAITING : order.settlementStatus,
         commissionRateSnapshot: commissionRate,
-        profitSharingAmount: merchantIncomeAmount
+        platformCommissionAmount,
+        merchantIncomeAmount,
+        profitSharingAmount: platformCommissionAmount
       }
     });
 
@@ -259,9 +266,10 @@ export async function createOrSyncMiniOrderProfitSharing(orderId: number) {
     outTradeNo: order.orderNo,
     outOrderNo,
     transactionId: order.transactionId || "",
-    amount: merchantIncomeAmount,
-    receiverName: store.name,
-    receiverAccount: subMchId,
+    amount: platformCommissionAmount,
+    receiverType,
+    receiverName,
+    receiverAccount,
     subMchId
   };
 
@@ -271,10 +279,10 @@ export async function createOrSyncMiniOrderProfitSharing(orderId: number) {
         data: {
           status: MINI_PROFIT_SHARING_STATUS.pending,
           school: store.school,
-          amount: merchantIncomeAmount,
-          receiverType: "MERCHANT_ID",
-          receiverAccount: subMchId,
-          receiverName: store.name,
+          amount: platformCommissionAmount,
+          receiverType,
+          receiverAccount,
+          receiverName,
           subMchId,
           transactionId: order.transactionId || "",
           requestPayload: requestPayload as Prisma.InputJsonValue,
@@ -287,11 +295,11 @@ export async function createOrSyncMiniOrderProfitSharing(orderId: number) {
           outOrderNo,
           orderId: order.id,
           school: store.school,
-          amount: merchantIncomeAmount,
+          amount: platformCommissionAmount,
           status: MINI_PROFIT_SHARING_STATUS.pending,
-          receiverType: "MERCHANT_ID",
-          receiverAccount: subMchId,
-          receiverName: store.name,
+          receiverType,
+          receiverAccount,
+          receiverName,
           subMchId,
           transactionId: order.transactionId || "",
           requestPayload: requestPayload as Prisma.InputJsonValue
@@ -304,7 +312,9 @@ export async function createOrSyncMiniOrderProfitSharing(orderId: number) {
       settlementStatus: MINI_SETTLEMENT_STATUS_WAITING,
       commissionRateSnapshot: commissionRate,
       profitSharingStatus: MINI_PROFIT_SHARING_STATUS.pending,
-      profitSharingAmount: merchantIncomeAmount
+      platformCommissionAmount,
+      merchantIncomeAmount,
+      profitSharingAmount: platformCommissionAmount
     }
   });
 
@@ -329,7 +339,9 @@ export async function createOrSyncMiniOrderProfitSharing(orderId: number) {
         settlementStatus: MINI_SETTLEMENT_STATUS_WAITING,
         commissionRateSnapshot: commissionRate,
         profitSharingStatus: localStatus,
-        profitSharingAmount: merchantIncomeAmount,
+        platformCommissionAmount,
+        merchantIncomeAmount,
+        profitSharingAmount: platformCommissionAmount,
         profitSharedAt: finishedAt || undefined
       }
     });
@@ -359,7 +371,9 @@ export async function createOrSyncMiniOrderProfitSharing(orderId: number) {
       data: {
         settlementStatus: MINI_SETTLEMENT_STATUS_WAITING,
         profitSharingStatus: MINI_PROFIT_SHARING_STATUS.failed,
-        profitSharingAmount: merchantIncomeAmount
+        platformCommissionAmount,
+        merchantIncomeAmount,
+        profitSharingAmount: platformCommissionAmount
       }
     });
 
@@ -402,8 +416,8 @@ export async function syncMiniProfitSharingOrder(recordId: number) {
   const wechatStatus = String(response?.status || "");
   const localStatus = getLocalProfitSharingStatus(wechatStatus);
   const finishedAt = localStatus === MINI_PROFIT_SHARING_STATUS.success ? new Date() : null;
-  const merchantIncomeAmount = roundMoney(Number(record.amount || 0));
-  const platformCommissionAmount = roundMoney(Number(record.order.amount || 0) - merchantIncomeAmount);
+  const platformCommissionAmount = roundMoney(Number(record.amount || 0));
+  const merchantIncomeAmount = roundMoney(Number(record.order.amount || 0) - platformCommissionAmount);
 
   await updateProfitSharingOrderStatus(record.id, {
     localStatus,
@@ -419,7 +433,9 @@ export async function syncMiniProfitSharingOrder(recordId: number) {
     data: {
       settlementStatus: localStatus === MINI_PROFIT_SHARING_STATUS.success ? MINI_SETTLEMENT_STATUS_SETTLED : MINI_SETTLEMENT_STATUS_WAITING,
       profitSharingStatus: localStatus,
-      profitSharingAmount: merchantIncomeAmount,
+      platformCommissionAmount,
+      merchantIncomeAmount,
+      profitSharingAmount: platformCommissionAmount,
       profitSharedAt: finishedAt || undefined
     }
   });

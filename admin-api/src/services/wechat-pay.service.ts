@@ -27,6 +27,7 @@ type CreateWechatProfitSharingOrderParams = {
   outOrderNo?: string;
   transactionId?: string;
   amount: number;
+  receiverType?: string;
   receiverName: string;
   receiverAccount: string;
   subMchId: string;
@@ -267,10 +268,10 @@ export async function createWechatProfitSharingOrder(params: CreateWechatProfitS
     out_order_no: params.outOrderNo || `share_${params.outTradeNo}`,
     receivers: [
       {
-        type: "MERCHANT_ID",
-        account: params.receiverAccount || subMchId,
+        type: params.receiverType || "MERCHANT_ID",
+        account: params.receiverAccount,
         amount: Math.round(Number(params.amount || 0) * 100),
-        description: params.receiverName || "merchant_income"
+        description: params.receiverName || "platform_commission"
       }
     ],
     unfreeze_unsplit: true
