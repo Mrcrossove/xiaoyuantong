@@ -1,13 +1,20 @@
 import { z } from "zod";
 
+const miniOrderItemSchema = z.object({
+  productId: z.string().trim().min(1, "商品 ID 不能为空"),
+  skuId: z.string().trim().optional().default(""),
+  quantity: z.number().int().min(1).max(99).optional().default(1)
+});
+
 const requiredText = (label: string) => z.string().trim().min(1, `${label}不能为空`);
 
 export const miniOrderCreateSchema = z.object({
   school: requiredText("学校"),
   storeDetailId: requiredText("店铺 ID"),
-  productId: requiredText("商品 ID"),
+  productId: z.string().trim().optional().default(""),
   skuId: z.string().trim().optional().default(""),
   quantity: z.number().int().min(1).max(99).optional().default(1),
+  items: z.array(miniOrderItemSchema).min(1).max(50).optional().default([]),
   addressId: z.number().int().positive().optional(),
   remark: z.string().trim().max(100, "备注最多 100 个字").optional().default("")
 });

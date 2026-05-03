@@ -25,9 +25,15 @@
         <view class="order-status status-{{item.status}}">{{item.statusText}}</view>
       </view>
       <view class="order-title-line">{{item.title}}</view>
+      <view class="order-items" wx:if="{{item.items && item.items.length}}">
+        <view class="order-item-line" wx:for="{{item.items}}" wx:key="id">
+          <text>{{item.productName}}</text>
+          <text>x {{item.quantity}}</text>
+        </view>
+      </view>
       <view class="order-desc">{{item.receiverAddress}}</view>
       <view class="order-meta">
-        <text>{{labels.quantity}} x {{item.quantity}}</text>
+        <text>{{labels.quantity}} x {{item.totalQuantity || item.quantity}}</text>
         <text>{{labels.amount}} \u00a5{{item.amount}}</text>
       </view>
       <view wx:if="{{item.afterSaleStatusText}}" class="order-time">{{labels.afterSale}}：{{item.afterSaleStatusText}}</view>

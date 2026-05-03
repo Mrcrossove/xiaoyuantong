@@ -61,7 +61,13 @@
                 <text wx:if="{{item.dailyLimit > 0}}" class="goods-tag">每日限购 {{item.dailyLimit}}</text>
               </view>
               <view class="goods-price">{{item.price}}</view>
-
+              <view class="goods-cart-control" catchtap="stopTap">
+                <block wx:if="{{cartQuantityMap[item.id]}}">
+                  <view class="goods-cart-minus" data-id="{{item.id}}" catchtap="decreaseCartItem">-</view>
+                  <view class="goods-cart-count">{{cartQuantityMap[item.id]}}</view>
+                </block>
+                <view class="goods-cart-plus" data-id="{{item.id}}" catchtap="addCartItem">+</view>
+              </view>
             </view>
           </view>
         </view>
@@ -79,20 +85,15 @@
     </view>
   </scroll-view>
 
-  <view class="checkout-bar {{!currentProduct || !currentSku ? 'disabled' : ''}}" wx:if="{{detail.products.length}}">
+  <view class="checkout-bar {{!cartCount ? 'disabled' : ''}}" wx:if="{{detail.products.length}}">
     <view class="cart-icon"></view>
     <view class="checkout-meta">
-      <view class="checkout-amount">当前金额：{{currentAmountText}}</view>
+      <view class="checkout-amount">合计：{{cartAmountText}}</view>
       <view class="checkout-count">
-        已选商品：{{currentProduct ? currentProduct.name : '请选择商品'}}
+        已选 {{cartCount}} 件商品
       </view>
     </view>
-    <view class="quantity-box">
-      <view class="quantity-btn {{quantity <= 1 ? 'disabled' : ''}}" bindtap="decreaseQuantity">-</view>
-      <view class="quantity-value">{{quantity}}</view>
-      <view class="quantity-btn {{quantity >= maxQuantity ? 'disabled' : ''}}" bindtap="increaseQuantity">+</view>
-    </view>
-    <view class="checkout-btn" bindtap="openConfirmModal">{{submittingOrder ? '提交中' : '立即下单'}}</view>
+    <view class="checkout-btn" bindtap="openConfirmModal">{{submittingOrder ? '提交中' : '去结算'}}</view>
   </view>
 
   <view wx:if="{{confirmVisible}}" class="confirm-mask" bindtap="closeConfirmModal"></view>
@@ -101,10 +102,14 @@
 
     <view class="confirm-section">
       <view class="confirm-label">商品信息</view>
-      <view class="confirm-value">{{currentProduct ? currentProduct.name : '暂无商品'}}</view>
-      <view class="confirm-subvalue">
-        数量 {{quantity}}，合计 {{currentAmountText}}
+      <view class="confirm-item" wx:for="{{cartItems}}" wx:key="key">
+        <view>
+          <view class="confirm-value">{{item.productName}}</view>
+          <view class="confirm-subvalue">{{item.skuName || '默认规格'}} x {{item.quantity}}</view>
+        </view>
+        <view class="confirm-item-amount">{{item.amountText}}</view>
       </view>
+      <view class="confirm-total">共 {{cartCount}} 件，合计 {{cartAmountText}}</view>
     </view>
 
     <view class="confirm-section">

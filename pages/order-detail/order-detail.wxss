@@ -263,6 +263,41 @@
   font-weight: 800;
 }
 
+.order-detail-items {
+  margin-top: 14rpx;
+  display: grid;
+  gap: 12rpx;
+}
+
+.order-detail-item {
+  padding: 16rpx 18rpx;
+  border-radius: 18rpx;
+  background: #f6f8fc;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18rpx;
+}
+
+.order-detail-item-name {
+  color: #202534;
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.order-detail-item-meta {
+  margin-top: 8rpx;
+  color: #6f7c94;
+  font-size: 22rpx;
+}
+
+.order-detail-item-amount {
+  flex: 0 0 auto;
+  color: #ff7c4e;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
 .refund-card {
   margin-top: 16rpx;
   padding: 18rpx 20rpx;

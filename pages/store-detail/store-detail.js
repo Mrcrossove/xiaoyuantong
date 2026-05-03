@@ -65,6 +65,58 @@ function buildSelectionState(product, skuId, nextQuantity) {
   };
 }
 
+function getProductDefaultSku(product) {
+  return pickDefaultSku(product);
+}
+
+function getCartKey(productId, skuId) {
+  return `${String(productId || "")}::${String(skuId || "")}`;
+}
+
+function buildCartItem(product, quantity = 1) {
+  const sku = getProductDefaultSku(product);
+  if (!product || !sku) {
+    return null;
+  }
+
+  const maxQuantity = getMaxQuantity(sku);
+  const safeQuantity = Math.min(Math.max(1, Number(quantity || 1)), maxQuantity);
+  const price = parsePriceNumber(sku.price);
+  return {
+    key: getCartKey(product.id, sku.id),
+    productId: String(product.id || ""),
+    skuId: String(sku.id || ""),
+    productName: product.name || "",
+    skuName: sku.name || "",
+    price,
+    priceText: formatAmount(price, 1),
+    quantity: safeQuantity,
+    maxQuantity,
+    amount: Number((price * safeQuantity).toFixed(2)),
+    amountText: formatAmount(price, safeQuantity),
+    cover: product.cover || "",
+    coverMode: product.coverMode || "class"
+  };
+}
+
+function buildCartState(cartItems) {
+  const safeItems = (cartItems || []).filter((item) => item && item.quantity > 0);
+  const cartCount = safeItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  const cartAmount = Number(safeItems.reduce((sum, item) => sum + Number(item.amount || 0), 0).toFixed(2));
+  const cartQuantityMap = safeItems.reduce((map, item) => {
+    map[item.productId] = (map[item.productId] || 0) + Number(item.quantity || 0);
+    return map;
+  }, {});
+
+  return {
+    cartItems: safeItems,
+    cartCount,
+    cartAmount,
+    cartAmountText: `${CURRENCY_SYMBOL}${cartAmount.toFixed(2)}`,
+    cartQuantityMap
+  };
+}
+
 function buildDetailState(detail) {
   const normalizedDetail = normalizeStoreDetail(detail);
   const currentProduct = pickDefaultProduct(normalizedDetail);
@@ -72,7 +124,8 @@ function buildDetailState(detail) {
 
   return {
     detail: normalizedDetail,
-    ...buildSelectionState(currentProduct, currentSku && currentSku.id, 1)
+    ...buildSelectionState(currentProduct, currentSku && currentSku.id, 1),
+    ...buildCartState([])
   };
 }
 
@@ -109,6 +162,11 @@ Page({
     currentAmountText: `${CURRENCY_SYMBOL}0.00`,
     quantity: 1,
     maxQuantity: 1,
+    cartItems: [],
+    cartCount: 0,
+    cartAmount: 0,
+    cartAmountText: `${CURRENCY_SYMBOL}0.00`,
+    cartQuantityMap: {},
     addressList: [],
     selectedAddress: null,
     addressSummary: "请先添加收货地址",
@@ -209,6 +267,8 @@ Page({
     });
   },
 
+  stopTap() {},
+
   selectProduct(event) {
     const { id } = event.currentTarget.dataset;
     const products = (this.data.detail && this.data.detail.products) || [];
@@ -254,6 +314,59 @@ Page({
     this.setData(buildSelectionState(this.data.currentProduct, this.data.selectedSkuId, nextQuantity));
   },
 
+  addCartItem(event) {
+    const { id } = event.currentTarget.dataset;
+    const products = (this.data.detail && this.data.detail.products) || [];
+    const product = products.find((item) => String(item.id) === String(id));
+    const nextItem = buildCartItem(product, 1);
+
+    if (!nextItem) {
+      wx.showToast({ title: "当前商品暂不可选购", icon: "none" });
+      return;
+    }
+
+    const cartItems = (this.data.cartItems || []).slice();
+    const index = cartItems.findIndex((item) => item.key === nextItem.key);
+    if (index >= 0) {
+      const current = cartItems[index];
+      const nextQuantity = Number(current.quantity || 0) + 1;
+      if (nextQuantity > Number(current.maxQuantity || 1)) {
+        wx.showToast({ title: "已达到可下单上限", icon: "none" });
+        return;
+      }
+      cartItems[index] = buildCartItem(product, nextQuantity);
+    } else {
+      cartItems.push(nextItem);
+    }
+
+    this.setData(buildCartState(cartItems));
+  },
+
+  decreaseCartItem(event) {
+    const { id } = event.currentTarget.dataset;
+    const productId = String(id || "");
+    const cartItems = (this.data.cartItems || []).slice();
+    const index = cartItems.findIndex((item) => String(item.productId) === productId);
+    if (index < 0) {
+      return;
+    }
+
+    const current = cartItems[index];
+    const nextQuantity = Number(current.quantity || 0) - 1;
+    if (nextQuantity <= 0) {
+      cartItems.splice(index, 1);
+    } else {
+      const products = (this.data.detail && this.data.detail.products) || [];
+      const product = products.find((item) => String(item.id) === productId);
+      const nextItem = buildCartItem(product, nextQuantity);
+      if (nextItem) {
+        cartItems[index] = nextItem;
+      }
+    }
+
+    this.setData(buildCartState(cartItems));
+  },
+
   async toggleStoreFavorite() {
     if (!this.data.detail) {
       return;
@@ -284,7 +397,7 @@ Page({
   },
 
   openConfirmModal() {
-    if (!this.data.currentProduct || !this.data.currentSku) {
+    if (!this.data.cartItems.length) {
       wx.showToast({
         title: "当前店铺暂无可下单商品",
         icon: "none"
@@ -335,8 +448,7 @@ Page({
     if (
       this.data.submittingOrder ||
       !this.data.detail ||
-      !this.data.currentProduct ||
-      !this.data.currentSku ||
+      !this.data.cartItems.length ||
       !this.data.selectedAddress
     ) {
       return;
@@ -348,9 +460,11 @@ Page({
       const order = await createOrder({
         school: this.data.selectedSchool || getSelectedSchool(),
         storeDetailId: this.storeId,
-        productId: String(this.data.currentProduct.id || ""),
-        skuId: String(this.data.currentSku.id || ""),
-        quantity: Number(this.data.quantity || 1),
+        items: (this.data.cartItems || []).map((item) => ({
+          productId: String(item.productId || ""),
+          skuId: String(item.skuId || ""),
+          quantity: Number(item.quantity || 1)
+        })),
         addressId: Number(this.data.selectedAddress.id)
       });
 

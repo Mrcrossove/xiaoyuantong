@@ -495,11 +495,32 @@ model MiniOrder {
   refunds         MiniRefundRecord[]
   profitSharingOrders MiniProfitSharingOrder[]
   profitSharingReturnOrders MiniProfitSharingReturnOrder[]
+  items           MiniOrderItem[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
   @@index([userId, status])
   @@index([userId, createdAt])
+}
+
+model MiniOrderItem {
+  id           Int       @id @default(autoincrement())
+  orderId      Int
+  order        MiniOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    String
+  skuId        String?
+  skuName      String?
+  productName  String
+  productDesc  String?
+  productCover String?
+  unitPrice    Float
+  quantity     Int       @default(1)
+  amount       Float
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([orderId])
+  @@index([productId])
 }
 
 model MiniPostReport {

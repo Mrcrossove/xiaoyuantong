@@ -46,6 +46,12 @@ type StoreProductMatch = {
   sku: any;
 };
 
+type ResolvedOrderItem = StoreProductMatch & {
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+};
+
 function buildOrderNo() {
   return `${Date.now()}${Math.floor(Math.random() * 900 + 100)}`;
 }
@@ -134,6 +140,43 @@ function mapRefund(item: any) {
     applyTime: formatTime(item.applyTime),
     reviewedAt: formatTime(item.reviewedAt)
   };
+}
+
+function mapOrderItem(item: any) {
+  return {
+    id: item.id,
+    productId: String(item.productId || ""),
+    skuId: String(item.skuId || ""),
+    productName: item.productName || "",
+    productDesc: item.productDesc || "",
+    productCover: item.productCover || "",
+    skuName: item.skuName || "",
+    quantity: Number(item.quantity || 0),
+    unitPrice: formatAmount(item.unitPrice),
+    unitPriceText: formatAmountText(item.unitPrice),
+    amount: formatAmount(item.amount),
+    amountText: formatAmountText(item.amount)
+  };
+}
+
+function getOrderItems(item: any) {
+  const rows = Array.isArray(item.items) && item.items.length
+    ? item.items
+    : [
+        {
+          id: 0,
+          productId: item.productId,
+          skuId: item.skuId,
+          productName: item.productName,
+          productDesc: item.productDesc,
+          productCover: item.productCover,
+          skuName: item.skuName,
+          unitPrice: item.unitPrice,
+          quantity: item.quantity,
+          amount: item.amount
+        }
+      ];
+  return rows.map((entry: any) => mapOrderItem(entry));
 }
 
 function getLatestRefund(item: any) {
@@ -258,6 +301,11 @@ function mapOrder(item: any) {
   const statusText = normalizeUserOrderStatus(item.status);
   const settlementStatus = deriveSettlementStatus(item);
   const refunds = Array.isArray(item.refunds) ? item.refunds.map((refund: any) => mapRefund(refund)) : [];
+  const items = getOrderItems(item);
+  const itemCount = items.length;
+  const totalQuantity = items.reduce((sum: number, entry: any) => sum + Number(entry.quantity || 0), 0);
+  const firstItem = items[0] || null;
+  const summaryTitle = firstItem ? `${firstItem.productName}${itemCount > 1 ? ` 等 ${itemCount} 件` : ""}` : item.productName;
   const latestRefund = refunds[0] || null;
   const hasRefundInProgress = latestRefund && latestRefund.status !== MINI_REFUND_STATUS.rejected;
   const canRefund =
@@ -281,7 +329,7 @@ function mapOrder(item: any) {
     paymentMode: item.paymentMode || "",
     settlementStatus,
     settlementStatusText: settlementStatus,
-    title: `${item.storeName} ${item.productName}`,
+    title: `${item.storeName} ${summaryTitle}`,
     desc: item.receiverAddress,
     amount: formatAmount(item.amount),
     amountText: formatAmountText(item.amount),
@@ -301,6 +349,10 @@ function mapOrder(item: any) {
     skuId: item.skuId || "",
     skuName: item.skuName || "",
     quantity: item.quantity,
+    items,
+    itemCount,
+    totalQuantity,
+    summaryTitle,
     receiverName: item.receiverName,
     receiverPhone: item.receiverPhone,
     receiverAddress: item.receiverAddress,
@@ -423,6 +475,9 @@ async function findMiniOrderWithRefundsForUser(userId: number, id: number) {
   const row = await prisma.miniOrder.findFirst({
     where: { id, userId },
     include: {
+      items: {
+        orderBy: { id: "asc" }
+      },
       refunds: {
         orderBy: {
           applyTime: "desc"
@@ -639,6 +694,9 @@ export async function queryMiniOrderList(userId: number, rawQuery: Record<string
       status: buildMiniOrderStatusWhere(status)
     },
     include: {
+      items: {
+        orderBy: { id: "asc" }
+      },
       refunds: {
         orderBy: {
           applyTime: "desc"
@@ -676,6 +734,9 @@ export async function queryAdminOrderList(rawQuery: Record<string, unknown>) {
     prisma.miniOrder.findMany({
       where,
       include: {
+        items: {
+          orderBy: { id: "asc" }
+        },
         user: {
           select: {
             nickname: true
@@ -702,6 +763,126 @@ export async function getMiniOrderDetail(userId: number, id: number) {
 }
 
 export async function createMiniOrder(userId: number, payload: MiniOrderCreatePayload) {
+  const rawItems = Array.isArray(payload.items) && payload.items.length
+    ? payload.items
+    : payload.productId
+      ? [{ productId: payload.productId, skuId: payload.skuId || "", quantity: payload.quantity || 1 }]
+      : [];
+
+  if (!rawItems.length) {
+    throw new ApiError("请至少选择一件商品", ERROR_CODES.BAD_REQUEST, 400);
+  }
+
+  const itemMap = new Map<string, { productId: string; skuId: string; quantity: number }>();
+  for (const rawItem of rawItems) {
+    const productId = String(rawItem.productId || "").trim();
+    const skuId = String(rawItem.skuId || "").trim();
+    const quantity = Number(rawItem.quantity || 1);
+    if (!productId || !Number.isInteger(quantity) || quantity <= 0) {
+      throw new ApiError("商品或购买数量不正确", ERROR_CODES.BAD_REQUEST, 400);
+    }
+    const key = `${productId}::${skuId}`;
+    const current = itemMap.get(key);
+    itemMap.set(key, {
+      productId,
+      skuId,
+      quantity: (current?.quantity || 0) + quantity
+    });
+  }
+
+  const [address, ...resolvedItems] = await Promise.all([
+    findAvailableAddress(userId, payload.addressId),
+    ...Array.from(itemMap.values()).map(async (entry): Promise<ResolvedOrderItem> => {
+      const storeResult = await findStoreProduct(payload.storeDetailId, entry.productId, entry.skuId);
+      const stock = Number(storeResult.sku.stock || 0);
+      const dailyLimit = Number(storeResult.sku.dailyLimit || 0);
+
+      if (stock > 0 && entry.quantity > stock) {
+        throw new ApiError(`${storeResult.product.name} 库存不足`, ERROR_CODES.BAD_REQUEST, 400);
+      }
+
+      if (dailyLimit > 0 && entry.quantity > dailyLimit) {
+        throw new ApiError(`${storeResult.product.name} 超过每日限购`, ERROR_CODES.BAD_REQUEST, 400);
+      }
+
+      const unitPrice = roundMoney(parseMoneyNumber(storeResult.sku.price));
+      if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+        throw new ApiError(`${storeResult.product.name} 价格异常`, ERROR_CODES.BAD_REQUEST, 400);
+      }
+
+      return {
+        ...storeResult,
+        quantity: entry.quantity,
+        unitPrice,
+        amount: roundMoney(unitPrice * entry.quantity)
+      };
+    })
+  ]);
+
+  const firstItem = resolvedItems[0];
+  if (!firstItem) {
+    throw new ApiError("请至少选择一件商品", ERROR_CODES.BAD_REQUEST, 400);
+  }
+
+  const totalQuantity = resolvedItems.reduce((sum, item) => sum + item.quantity, 0);
+  const amount = roundMoney(resolvedItems.reduce((sum, item) => sum + item.amount, 0));
+
+  const row = await prisma.miniOrder.create({
+    data: {
+      orderNo: buildOrderNo(),
+      userId,
+      school: payload.school,
+      storeDetailId: firstItem.store.detailId,
+      storeName: firstItem.store.name,
+      productId: String(firstItem.product.id),
+      skuId: String(firstItem.sku.id || ""),
+      skuName: firstItem.sku.name || "",
+      productName: firstItem.product.name,
+      productDesc: firstItem.product.desc || "",
+      productCover: firstItem.product.cover || "",
+      unitPrice: firstItem.unitPrice,
+      quantity: totalQuantity,
+      amount,
+      status: MINI_ORDER_STATUS.pending,
+      payStatus: MINI_PAY_STATUS.pending,
+      paymentChannel: "",
+      paymentMode: "",
+      receiverName: address.receiverName,
+      receiverPhone: address.phone,
+      receiverAddress: address.detail,
+      addressTag: address.tag,
+      remark: payload.remark || "",
+      settlementStatus: MINI_SETTLEMENT_STATUS.pending,
+      items: {
+        create: resolvedItems.map((entry) => ({
+          productId: String(entry.product.id),
+          skuId: String(entry.sku.id || ""),
+          skuName: entry.sku.name || "",
+          productName: entry.product.name,
+          productDesc: entry.product.desc || "",
+          productCover: entry.product.cover || "",
+          unitPrice: entry.unitPrice,
+          quantity: entry.quantity,
+          amount: entry.amount
+        }))
+      }
+    }
+  });
+
+  await createMiniMessage({
+    school: payload.school,
+    type: "system",
+    category: "订单通知",
+    content: `你的订单 ${row.orderNo} 已创建，请尽快完成支付。`,
+    receiverUserId: userId,
+    targetType: "order",
+    targetId: String(row.id)
+  });
+
+  return getMiniOrderDetail(userId, row.id);
+}
+
+async function createMiniOrderLegacy(userId: number, payload: MiniOrderCreatePayload) {
   const [address, storeResult] = await Promise.all([
     findAvailableAddress(userId, payload.addressId),
     findStoreProduct(payload.storeDetailId, payload.productId, payload.skuId)

@@ -295,6 +295,27 @@ function formatRefundItem(refund: any) {
 
 function mapAdminOrderDetail(order: any) {
   const latestRefund = Array.isArray(order.refunds) && order.refunds.length ? order.refunds[0] : null;
+  const orderItems = (Array.isArray(order.items) && order.items.length ? order.items : [{
+    productId: order.productId,
+    skuId: order.skuId,
+    skuName: order.skuName,
+    productName: order.productName,
+    productDesc: order.productDesc,
+    productCover: order.productCover,
+    unitPrice: order.unitPrice,
+    quantity: order.quantity,
+    amount: order.amount
+  }]).map((entry: any) => ({
+    productId: String(entry.productId || ""),
+    skuId: String(entry.skuId || ""),
+    skuName: entry.skuName || "",
+    productName: entry.productName || "",
+    productDesc: entry.productDesc || "",
+    productCover: entry.productCover || "",
+    unitPrice: roundMoney(Number(entry.unitPrice || 0)),
+    quantity: Number(entry.quantity || 0),
+    amount: roundMoney(Number(entry.amount || 0))
+  }));
   const hasPendingRefund = Boolean(latestRefund && latestRefund.status === MINI_REFUND_STATUS.pending);
   const canFinish =
     (order.status === MINI_ORDER_STATUS.processing || order.status === MINI_ORDER_STATUS.accepted) &&
@@ -331,6 +352,7 @@ function mapAdminOrderDetail(order: any) {
     finishedAt: formatDateTime(order.finishedAt),
     canceledAt: formatDateTime(order.canceledAt),
     refunds: Array.isArray(order.refunds) ? order.refunds.map((item: any) => formatRefundItem(item)) : [],
+    items: orderItems,
     latestRefund: latestRefund ? formatRefundItem(latestRefund) : null,
     actions: {
       canFinish,
@@ -815,6 +837,9 @@ export async function getAdminStoreDashboard(adminUserId: number, storeId: numbe
     prisma.miniOrder.findMany({
       where: { storeDetailId: store.detailId, createdAt },
       include: {
+        items: {
+          orderBy: { id: "asc" }
+        },
         user: {
           select: {
             nickname: true
@@ -860,10 +885,13 @@ export async function getAdminStoreDashboard(adminUserId: number, storeId: numbe
   const revenueByProductId = new Map<string, number>();
 
   for (const order of orders) {
-    const productId = String(order.productId || "");
-    if (!productId) continue;
-    ordersByProductId.set(productId, (ordersByProductId.get(productId) || 0) + Number(order.quantity || 1));
-    revenueByProductId.set(productId, roundMoney((revenueByProductId.get(productId) || 0) + Number(order.amount || 0)));
+    const orderItems = Array.isArray(order.items) && order.items.length ? order.items : [order];
+    for (const item of orderItems) {
+      const productId = String(item.productId || "");
+      if (!productId) continue;
+      ordersByProductId.set(productId, (ordersByProductId.get(productId) || 0) + Number(item.quantity || 1));
+      revenueByProductId.set(productId, roundMoney((revenueByProductId.get(productId) || 0) + Number(item.amount || 0)));
+    }
   }
 
   const productList = products.map((product: any) => {
@@ -1043,10 +1071,11 @@ export async function getAdminStoreDashboard(adminUserId: number, storeId: numbe
       buyer: item.user?.nickname || item.receiverName || "-",
       receiverName: item.receiverName,
       receiverPhone: item.receiverPhone,
-      productName: item.productName,
+      productName: `${item.productName}${Array.isArray(item.items) && item.items.length > 1 ? ` 等 ${item.items.length} 件` : ""}`,
       skuName: item.skuName || "",
       quantity: item.quantity,
       amount: roundMoney(Number(item.amount || 0)),
+      items: Array.isArray(item.items) ? item.items : [],
       payStatus: item.payStatus,
       orderStatus: normalizeAdminOrderStatus(item.status),
       settlementStatus: item.settlementStatus,
@@ -1321,10 +1350,11 @@ export async function queryAdminStoreOrders(adminUserId: number, storeId: number
       buyer: item.user?.nickname || item.receiverName || "-",
       receiverName: item.receiverName,
       receiverPhone: item.receiverPhone,
-      productName: item.productName,
+      productName: `${item.productName}${Array.isArray(item.items) && item.items.length > 1 ? ` 等 ${item.items.length} 件` : ""}`,
       skuName: item.skuName || "",
       quantity: item.quantity,
       amount: roundMoney(Number(item.amount || 0)),
+      items: Array.isArray(item.items) ? item.items : [],
       payStatus: item.payStatus,
       orderStatus: normalizeAdminOrderStatus(item.status),
       settlementStatus: item.settlementStatus,

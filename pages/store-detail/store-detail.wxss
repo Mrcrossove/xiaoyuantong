@@ -454,6 +454,7 @@
 .goods-body {
   min-width: 0;
   padding-top: 4rpx;
+  position: relative;
 }
 
 .goods-title-row {
@@ -512,6 +513,48 @@
   color: #ff7c4e;
   font-size: 28rpx;
   font-weight: 700;
+}
+
+.goods-cart-control {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.goods-cart-plus,
+.goods-cart-minus {
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34rpx;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.goods-cart-plus {
+  background: #f97316;
+  color: #ffffff;
+  box-shadow: 0 10rpx 22rpx rgba(249, 115, 22, 0.22);
+}
+
+.goods-cart-minus {
+  background: #eef4ff;
+  color: #245fe0;
+  border: 2rpx solid #dbe7ff;
+}
+
+.goods-cart-count {
+  min-width: 28rpx;
+  text-align: center;
+  color: #202534;
+  font-size: 26rpx;
+  font-weight: 800;
 }
 
 .intro-block {
@@ -692,6 +735,31 @@
   color: #6f7c94;
   font-size: 22rpx;
   line-height: 1.6;
+}
+
+.confirm-item {
+  margin-top: 14rpx;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18rpx;
+}
+
+.confirm-item-amount {
+  flex: 0 0 auto;
+  color: #f97316;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.confirm-total {
+  margin-top: 18rpx;
+  padding-top: 16rpx;
+  border-top: 2rpx solid #e7edf7;
+  text-align: right;
+  color: #202534;
+  font-size: 26rpx;
+  font-weight: 800;
 }
 
 .confirm-actions {

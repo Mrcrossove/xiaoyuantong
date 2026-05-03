@@ -109,6 +109,24 @@
   line-height: 1.7;
 }
 
+.order-items {
+  margin-top: 14rpx;
+  padding: 14rpx 16rpx;
+  border-radius: 16rpx;
+  background: #f7f9fc;
+  display: grid;
+  gap: 8rpx;
+}
+
+.order-item-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  color: #5f6f88;
+  font-size: 22rpx;
+}
+
 .order-meta {
   margin-top: 16rpx;
   color: #596885;
