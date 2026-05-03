@@ -6,6 +6,8 @@ import type {
   AdminManagerCreatePayload,
   AdminManagerItem,
   AdminManagerSummary,
+  AdminManagerTransferPayload,
+  AdminManagerTransferResult,
   AdminManagerUpdatePayload,
   AuthManageMeta,
   RoleOptionItem
@@ -17,6 +19,7 @@ import {
   getAdminManagerListApi,
   getAuthManageMetaApi,
   toggleAdminManagerStatusApi,
+  transferSchoolAdminAccountApi,
   updateAdminManagerApi
 } from "../../api/modules/auth-manage";
 import { useAuthStore } from "../../stores/auth";
@@ -27,8 +30,12 @@ const router = useRouter();
 const loading = ref(false);
 const submitting = ref(false);
 const dialogVisible = ref(false);
+const transferSubmitting = ref(false);
+const transferDialogVisible = ref(false);
 const editingId = ref<number | null>(null);
 const formRef = ref<FormInstance>();
+const transferFormRef = ref<FormInstance>();
+const transferTarget = ref<AdminManagerItem | null>(null);
 const list = ref<AdminManagerItem[]>([]);
 const total = ref(0);
 const summary = ref<AdminManagerSummary>({
@@ -63,6 +70,16 @@ const form = reactive({
   roleId: 0,
   schools: [] as string[],
   status: "启用" as "启用" | "停用"
+});
+
+const transferForm = reactive<AdminManagerTransferPayload>({
+  mode: "revoke",
+  school: "",
+  note: "",
+  replacement: {
+    account: "",
+    name: ""
+  }
 });
 
 const currentRole = computed<RoleOptionItem | undefined>(() => meta.value.roleOptions.find((item) => item.id === form.roleId));
@@ -102,6 +119,30 @@ const rules: FormRules<typeof form> = {
         callback();
       },
       trigger: "change"
+    }
+  ]
+};
+
+const transferRules: FormRules<typeof transferForm> = {
+  school: [{ required: true, message: "请选择需要回收的学校", trigger: "change" }],
+  replacement: [
+    {
+      validator: (_rule, value, callback) => {
+        if (transferForm.mode !== "transfer") {
+          callback();
+          return;
+        }
+        if (!value?.account?.trim()) {
+          callback(new Error("请输入新管理员账号"));
+          return;
+        }
+        if (!value?.name?.trim()) {
+          callback(new Error("请输入新管理员姓名"));
+          return;
+        }
+        callback();
+      },
+      trigger: "blur"
     }
   ]
 };
@@ -150,6 +191,18 @@ function openEditDialog(row: AdminManagerItem) {
   form.status = row.status as "启用" | "停用";
   syncSchoolsByRole();
   dialogVisible.value = true;
+}
+
+function openTransferDialog(row: AdminManagerItem) {
+  transferTarget.value = row;
+  transferForm.mode = "revoke";
+  transferForm.school = row.schools[0] || "";
+  transferForm.note = "";
+  transferForm.replacement = {
+    account: "",
+    name: ""
+  };
+  transferDialogVisible.value = true;
 }
 
 async function loadMeta() {
@@ -274,6 +327,60 @@ async function removeRow(row: AdminManagerItem) {
   }
 }
 
+async function showTransferResult(result: AdminManagerTransferResult) {
+  if (!result.replacementAdmin) {
+    ElMessage.success("学校管理员账号已回收并停用");
+    return;
+  }
+
+  await ElMessageBox.alert(
+    `学校：${result.school}<br>新账号：${result.replacementAdmin.account}<br>初始密码：${result.replacementAdmin.initialPassword}<br>请线下发送给接任管理员，并要求首次登录后修改密码。`,
+    "交接账号已创建",
+    {
+      dangerouslyUseHTMLString: true,
+      confirmButtonText: "我已记录"
+    }
+  );
+}
+
+async function submitTransfer() {
+  if (!transferFormRef.value || !transferTarget.value) return;
+  await transferFormRef.value.validate();
+  await ElMessageBox.confirm(
+    transferForm.mode === "transfer"
+      ? "确认回收旧账号并创建新学校管理员账号吗？旧账号将立即停用。"
+      : "确认回收该学校管理员账号吗？账号将立即停用并解除学校绑定。",
+    "回收确认",
+    { type: "warning" }
+  );
+
+  transferSubmitting.value = true;
+  try {
+    const payload: AdminManagerTransferPayload = {
+      mode: transferForm.mode,
+      school: transferForm.school,
+      note: transferForm.note?.trim() || undefined,
+      replacement:
+        transferForm.mode === "transfer" && transferForm.replacement
+          ? {
+              account: transferForm.replacement.account.trim(),
+              name: transferForm.replacement.name.trim()
+            }
+          : undefined
+    };
+    const result = await transferSchoolAdminAccountApi(transferTarget.value.id, payload);
+    transferDialogVisible.value = false;
+    await showTransferResult(result);
+    await loadPage();
+  } catch (error) {
+    if (error !== "cancel") {
+      showApiError(error, "学校管理员账号回收失败");
+    }
+  } finally {
+    transferSubmitting.value = false;
+  }
+}
+
 onMounted(loadPage);
 </script>
 
@@ -321,9 +428,19 @@ onMounted(loadPage);
             <el-tag :type="row.status === '启用' ? 'success' : 'info'">{{ row.status }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="240" fixed="right">
+        <el-table-column label="操作" width="310" fixed="right">
           <template #default="{ row }">
             <el-button v-permission="'auth:admin:edit'" link type="primary" @click="openEditDialog(row)">编辑</el-button>
+            <el-button
+              v-if="row.roleCode === 'school_admin'"
+              v-permission="'auth:admin:edit'"
+              link
+              type="warning"
+              :disabled="row.id === authStore.profile?.id"
+              @click="openTransferDialog(row)"
+            >
+              回收/交接
+            </el-button>
             <el-button
               v-permission="'auth:admin:edit'"
               link
@@ -403,6 +520,44 @@ onMounted(loadPage);
         <el-button type="primary" :loading="submitting" @click="submitForm">保存</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="transferDialogVisible" title="回收/交接学校管理员" width="620px">
+      <el-alert
+        v-if="transferTarget"
+        type="warning"
+        :closable="false"
+        class="transfer-alert"
+        :title="`旧账号：${transferTarget.name}（${transferTarget.account}），回收后将立即停用并解除学校绑定。`"
+      />
+      <el-form ref="transferFormRef" :model="transferForm" :rules="transferRules" label-width="110px">
+        <el-form-item label="回收学校" prop="school">
+          <el-select v-model="transferForm.school" class="full-width" placeholder="请选择学校">
+            <el-option v-for="item in transferTarget?.schools || []" :key="item" :label="item" :value="item" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="处理方式">
+          <el-radio-group v-model="transferForm.mode">
+            <el-radio-button label="revoke">仅回收停用</el-radio-button>
+            <el-radio-button label="transfer">回收并交接</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+        <template v-if="transferForm.mode === 'transfer'">
+          <el-form-item label="新管理员账号" prop="replacement">
+            <el-input v-model="transferForm.replacement!.account" placeholder="例如 school_gzu_02" />
+          </el-form-item>
+          <el-form-item label="新管理员姓名" prop="replacement">
+            <el-input v-model="transferForm.replacement!.name" placeholder="请输入接任管理员姓名" />
+          </el-form-item>
+        </template>
+        <el-form-item label="处理备注">
+          <el-input v-model="transferForm.note" type="textarea" :rows="3" placeholder="例如：原管理员毕业，已线下确认交接" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="transferDialogVisible = false">取消</el-button>
+        <el-button type="warning" :loading="transferSubmitting" @click="submitTransfer">确认回收</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -444,5 +599,8 @@ onMounted(loadPage);
   margin-top: 16px;
   display: flex;
   justify-content: flex-end;
+}
+.transfer-alert {
+  margin-bottom: 16px;
 }
 </style>

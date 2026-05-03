@@ -3,6 +3,8 @@ import type {
   AdminManagerItem,
   AdminManagerListResult,
   AdminManagerQuery,
+  AdminManagerTransferPayload,
+  AdminManagerTransferResult,
   AdminManagerUpdatePayload,
   AdminRoleItem,
   AdminRoleListResult,
@@ -48,6 +50,14 @@ export function toggleAdminManagerStatusApi(id: number) {
   return request<AdminManagerItem>({
     url: `/auth/admin-user/${id}/toggle-status`,
     method: "PATCH"
+  });
+}
+
+export function transferSchoolAdminAccountApi(id: number, payload: AdminManagerTransferPayload) {
+  return request<AdminManagerTransferResult>({
+    url: `/auth/admin-user/${id}/school-transfer`,
+    method: "POST",
+    body: JSON.stringify(payload)
   });
 }
 

@@ -9,6 +9,7 @@ import {
   getCurrentMenuPermissionAction,
   listAdminRoleAction,
   listAdminUserManageAction,
+  transferSchoolAdminAccountAction,
   toggleAdminRoleStatusAction,
   toggleAdminUserManageStatusAction,
   updateAdminRoleAction,
@@ -29,6 +30,7 @@ import {
   adminActivateSchema,
   adminLoginSchema,
   adminManagerCreateSchema,
+  adminManagerTransferSchema,
   adminManagerUpdateSchema,
   adminPasswordUpdateSchema,
   adminRolePayloadSchema,
@@ -83,6 +85,14 @@ router.patch(
   requireAdminMenuAccess("/auth/admin"),
   requireAdminPermission("auth:admin:edit"),
   asyncHandler(toggleAdminUserManageStatusAction)
+);
+router.post(
+  "/admin-user/:id/school-transfer",
+  requireAdminAuth,
+  requireAdminMenuAccess("/auth/admin"),
+  requireAdminPermission("auth:admin:edit"),
+  validateBody(adminManagerTransferSchema),
+  asyncHandler(transferSchoolAdminAccountAction)
 );
 router.delete(
   "/admin-user/:id",

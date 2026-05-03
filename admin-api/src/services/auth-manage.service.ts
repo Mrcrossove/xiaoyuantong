@@ -3,6 +3,7 @@ import { ADMIN_MENU_PATHS, ADMIN_MENU_TREE, ADMIN_PERMISSION_CODES, ADMIN_PERMIS
 import { ERROR_CODES } from "../constants/error-codes";
 import type {
   AdminManagerCreatePayload,
+  AdminManagerTransferPayload,
   AdminManagerUpdatePayload,
   AdminRolePayload,
   RolePermissionAssignPayload
@@ -270,6 +271,15 @@ function mapAdminUser(item: any) {
     status: item.status,
     lastLoginTime: item.lastLoginAt ? formatDateTime(item.lastLoginAt) : "-"
   };
+}
+
+function generateInitialPassword() {
+  const seed = "abcdefghijkmnpqrstuvwxyz23456789";
+  let result = "";
+  for (let i = 0; i < 8; i += 1) {
+    result += seed[Math.floor(Math.random() * seed.length)];
+  }
+  return result;
 }
 
 function mapAdminRole(item: any) {
@@ -543,6 +553,130 @@ export async function toggleAdminUserStatus(adminUserId: number, id: number) {
   });
 
   return mapAdminUser(row);
+}
+
+export async function transferSchoolAdminAccount(adminUserId: number, id: number, payload: AdminManagerTransferPayload) {
+  if (adminUserId === id) {
+    badRequest("cannot revoke current login account");
+  }
+
+  const context = await getOperatorContext(adminUserId);
+  const target = await prisma.adminUser.findUniqueOrThrow({
+    where: { id },
+    include: {
+      role: true
+    }
+  });
+
+  if (!canManageAdmin(context, target)) {
+    forbidden("no permission to manage this admin account");
+  }
+
+  if (target.role.code !== "school_admin") {
+    badRequest("only school_admin account can be revoked here");
+  }
+
+  const school = payload.school.trim();
+  const targetSchools = toStringArray(target.schools);
+  if (!targetSchools.includes(school)) {
+    badRequest("this account is not bound to the selected school");
+  }
+
+  if (!isSchoolsWithinScope(context.scope, [school])) {
+    forbidden("no permission to revoke this school admin");
+  }
+
+  const role = await prisma.adminRole.findFirst({
+    where: {
+      code: "school_admin",
+      status: "\u542f\u7528"
+    }
+  });
+  if (!role) {
+    badRequest("please enable school_admin role first");
+  }
+
+  const replacement = payload.mode === "transfer" ? payload.replacement : undefined;
+  if (payload.mode === "transfer" && !replacement) {
+    badRequest("replacement account is required for transfer");
+  }
+
+  if (replacement) {
+    await ensureUniqueAdminAccount(replacement.account.trim());
+  }
+
+  const now = new Date();
+  const initialPassword = replacement ? generateInitialPassword() : "";
+
+  const result = await prisma.$transaction(async (tx: any) => {
+    const remainingSchools = targetSchools.filter((item) => item !== school);
+    const revoked = await tx.adminUser.update({
+      where: { id: target.id },
+      data: {
+        schools: remainingSchools,
+        status: "\u505c\u7528",
+        mustChangePassword: true
+      },
+      include: {
+        role: true
+      }
+    });
+
+    await tx.schoolAdminApplication.updateMany({
+      where: {
+        assignedAdminUserId: target.id,
+        school
+      },
+      data: {
+        reviewNote: payload.note || "school admin account revoked",
+        reviewedById: adminUserId
+      }
+    });
+
+    let newAdminUser: any = null;
+    if (replacement) {
+      newAdminUser = await tx.adminUser.create({
+        data: {
+          account: replacement.account.trim(),
+          password: hashPassword(initialPassword),
+          name: replacement.name.trim(),
+          status: "\u542f\u7528",
+          schools: [school],
+          mustChangePassword: true,
+          initialPasswordSentAt: now,
+          roleId: role.id
+        },
+        include: {
+          role: true
+        }
+      });
+
+      await tx.schoolAdminApplication.updateMany({
+        where: {
+          school,
+          assignedAdminUserId: target.id
+        },
+        data: {
+          assignedAdminUserId: newAdminUser.id,
+          reviewNote: payload.note || "school admin account transferred",
+          reviewedById: adminUserId
+        }
+      });
+    }
+
+    return {
+      revokedAdmin: mapAdminUser(revoked),
+      replacementAdmin: newAdminUser
+        ? {
+            ...mapAdminUser(newAdminUser),
+            initialPassword
+          }
+        : null,
+      school
+    };
+  });
+
+  return result;
 }
 
 export async function deleteAdminUser(adminUserId: number, id: number) {

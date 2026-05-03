@@ -372,6 +372,23 @@ export const adminManagerUpdateSchema = z.object({
   schools: z.array(z.string().trim().min(1, "高校不能为空")).optional().default([])
 });
 
+export const adminManagerTransferSchema = z.object({
+  mode: z.enum(["revoke", "transfer"]).optional().default("revoke"),
+  school: z.string().trim().min(1, "school is required"),
+  note: z.string().trim().max(100, "note max length is 100").optional().default(""),
+  replacement: z
+    .object({
+      account: z
+        .string()
+        .trim()
+        .min(4, "account min length is 4")
+        .max(30, "account max length is 30")
+        .regex(/^[a-zA-Z0-9_]+$/, "account only supports letters numbers and underscore"),
+      name: z.string().trim().min(2, "name min length is 2").max(20, "name max length is 20")
+    })
+    .optional()
+});
+
 export const adminRolePayloadSchema = z.object({
   code: z
     .string()
@@ -432,6 +449,7 @@ export type DictTypePayload = z.infer<typeof dictTypePayloadSchema>;
 export type DictItemPayload = z.infer<typeof dictItemPayloadSchema>;
 export type AdminManagerCreatePayload = z.infer<typeof adminManagerCreateSchema>;
 export type AdminManagerUpdatePayload = z.infer<typeof adminManagerUpdateSchema>;
+export type AdminManagerTransferPayload = z.infer<typeof adminManagerTransferSchema>;
 export type AdminRolePayload = z.infer<typeof adminRolePayloadSchema>;
 export type RolePermissionAssignPayload = z.infer<typeof rolePermissionAssignSchema>;
 

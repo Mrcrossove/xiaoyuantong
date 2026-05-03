@@ -211,6 +211,22 @@ export interface AdminManagerUpdatePayload {
   schools: string[];
 }
 
+export interface AdminManagerTransferPayload {
+  mode: "revoke" | "transfer";
+  school: string;
+  note?: string;
+  replacement?: {
+    account: string;
+    name: string;
+  };
+}
+
+export interface AdminManagerTransferResult {
+  school: string;
+  revokedAdmin: AdminManagerItem;
+  replacementAdmin: (AdminManagerItem & { initialPassword: string }) | null;
+}
+
 export interface AdminRoleItem {
   id: number;
   name: string;

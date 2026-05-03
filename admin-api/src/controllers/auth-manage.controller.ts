@@ -11,6 +11,7 @@ import {
   queryAdminRoleList,
   queryAdminUserManageList,
   queryAuthManageMeta,
+  transferSchoolAdminAccount,
   toggleAdminRoleStatus,
   toggleAdminUserStatus,
   updateAdminRole,
@@ -43,6 +44,12 @@ export async function toggleAdminUserManageStatusAction(req: Request, res: Respo
   const { id } = idParamSchema.parse(req.params);
   const data = await toggleAdminUserStatus(req.adminAuth!.userId, id);
   return ok(res, data, req.traceId, "管理员状态已更新");
+}
+
+export async function transferSchoolAdminAccountAction(req: Request, res: Response) {
+  const { id } = idParamSchema.parse(req.params);
+  const data = await transferSchoolAdminAccount(req.adminAuth!.userId, id, req.body);
+  return ok(res, data, req.traceId, "学校管理员账号已回收");
 }
 
 export async function deleteAdminUserManageAction(req: Request, res: Response) {
