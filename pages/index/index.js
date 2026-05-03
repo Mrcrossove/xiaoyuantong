@@ -20,6 +20,8 @@ const DEFAULT_EXPANDED_PROVINCES = [];
 const FLOATING_CATEGORY_SHOW_TOP = 520;
 const BACK_TO_FEED_SHOW_TOP = 760;
 
+const allCategoryEntry = { label: "全部", icon: "all", category: "" };
+const displayServices = [allCategoryEntry, ...services];
 const floatingCategories = [
   { label: "全部", category: "" },
   ...services.map((item) => ({
@@ -37,7 +39,7 @@ function mapPostView(post) {
 
 Page({
   data: {
-    services,
+    services: displayServices,
     floatingCategories,
     fabOptions,
     banners: [],
@@ -77,6 +79,9 @@ Page({
   onShow() {
     const businessSchool = getSelectedSchool();
     this.syncProfile();
+    this.setData({
+      activeServiceCategory: ""
+    });
     this.applyFeedScope(getHomeFeedScope(businessSchool), businessSchool);
   },
 

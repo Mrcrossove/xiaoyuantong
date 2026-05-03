@@ -5,6 +5,7 @@
     "pages/storefront/storefront",
     "pages/store-category/store-category",
     "pages/store-detail/store-detail",
+    "pages/store-product-detail/store-product-detail",
     "pages/message/message",
     "pages/profile/profile",
     "pages/login/login",

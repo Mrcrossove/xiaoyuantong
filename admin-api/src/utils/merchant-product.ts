@@ -19,6 +19,9 @@ export type MerchantProductItem = {
   id: string;
   name: string;
   desc: string;
+  detailTitle?: string;
+  detailText?: string;
+  detailItems?: MerchantProductDetailItem[];
   cover?: string;
   recommended?: boolean;
   status?: string;
@@ -30,9 +33,17 @@ export type MerchantProductItem = {
   skus?: MerchantProductSkuItem[];
 };
 
+export type MerchantProductDetailItem = {
+  label: string;
+  value: string;
+};
+
 type ProductPayloadLike = {
   name: string;
   desc: string;
+  detailTitle?: string;
+  detailText?: string;
+  detailItems?: MerchantProductDetailItem[];
   cover?: string;
   recommended?: boolean;
   status?: string;
@@ -76,6 +87,16 @@ function normalizeSku(item: any, index: number): MerchantProductSkuItem {
   };
 }
 
+function normalizeDetailItems(value: unknown): MerchantProductDetailItem[] {
+  return (Array.isArray(value) ? value : [])
+    .map((item: any) => ({
+      label: String(item?.label || "").trim(),
+      value: String(item?.value || "").trim()
+    }))
+    .filter((item) => item.label && item.value)
+    .slice(0, 20);
+}
+
 function buildSingleSkuFromProduct(product: any): MerchantProductSkuItem {
   return {
     id: String(product?.defaultSkuId || product?.id || "sku_default"),
@@ -108,6 +129,9 @@ export function normalizeMerchantProduct(item: any, index = 0): MerchantProductI
     id: String(item?.id || `p${index + 1}`),
     name: String(item?.name || "").trim(),
     desc: String(item?.desc || "").trim(),
+    detailTitle: String(item?.detailTitle || "").trim(),
+    detailText: String(item?.detailText || "").trim(),
+    detailItems: normalizeDetailItems(item?.detailItems),
     cover: String(item?.cover || "poster").trim() || "poster",
     recommended: Boolean(item?.recommended),
     status: productStatus,
@@ -159,6 +183,9 @@ export function normalizeMerchantProductPayload(productId: string, payload: Prod
       id: productId,
       name: payload.name,
       desc: payload.desc,
+      detailTitle: payload.detailTitle || "",
+      detailText: payload.detailText || "",
+      detailItems: payload.detailItems || [],
       cover: payload.cover || "poster",
       recommended: !!payload.recommended,
       status: payload.status || MERCHANT_PRODUCT_STATUS.onSale,

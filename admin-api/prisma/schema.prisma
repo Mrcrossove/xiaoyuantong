@@ -250,6 +250,9 @@ model MiniStoreProduct {
   store        MiniStore @relation(fields: [storeId], references: [id])
   name         String
   desc         String
+  detailTitle  String   @default("")
+  detailText   String   @default("")
+  detailItems  Json?
   cover        String
   recommended  Boolean  @default(false)
   status       String

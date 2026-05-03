@@ -33,6 +33,18 @@ export const miniMerchantStoreUpdateSchema = z.object({
 export const miniMerchantProductSchema = z.object({
   name: z.string().trim().min(2, "商品名称至少 2 个字").max(30, "商品名称最多 30 个字"),
   desc: z.string().trim().min(2, "商品描述至少 2 个字").max(60, "商品描述最多 60 个字"),
+  detailTitle: z.string().trim().max(30, "详情标题最多 30 个字").optional().default(""),
+  detailText: z.string().trim().max(1200, "详情内容最多 1200 个字").optional().default(""),
+  detailItems: z
+    .array(
+      z.object({
+        label: z.string().trim().min(1, "详情项名称不能为空").max(20, "详情项名称最多 20 个字"),
+        value: z.string().trim().min(1, "详情项内容不能为空").max(120, "详情项内容最多 120 个字")
+      })
+    )
+    .max(20, "详情项最多 20 条")
+    .optional()
+    .default([]),
   specMode: z.enum(["single", "multi"]).optional().default("single"),
   price: z.string().trim().min(1, "请输入商品价格"),
   cover: z.string().trim().optional().default("poster"),

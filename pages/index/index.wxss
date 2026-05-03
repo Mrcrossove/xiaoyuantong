@@ -388,6 +388,10 @@
   transform: scale(1.04);
 }
 
+.service-all {
+  background: linear-gradient(180deg, #eef4ff, #fbfdff);
+}
+
 .service-market {
   background: linear-gradient(180deg, #edf5ff, #f8fbff);
 }
@@ -422,6 +426,18 @@
   border: 5rpx solid #2f7cff;
   border-radius: 10rpx;
   box-sizing: border-box;
+}
+
+.service-all::before {
+  content: "";
+  position: absolute;
+  left: 19rpx;
+  top: 19rpx;
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 6rpx;
+  background: #4d75ff;
+  box-shadow: 24rpx 0 0 #4d75ff, 0 24rpx 0 #4d75ff, 24rpx 24rpx 0 #4d75ff;
 }
 
 .service-market::after {

@@ -53,6 +53,9 @@ function createSku(name = "默认规格"): ProductSku {
 const form = reactive({
   name: "",
   desc: "",
+  detailTitle: "",
+  detailText: "",
+  detailItems: [] as Array<{ label: string; value: string }>,
   specMode: "single" as "single" | "multi",
   price: "",
   cover: "",
@@ -102,6 +105,9 @@ function resetForm() {
   editingId.value = "";
   form.name = "";
   form.desc = "";
+  form.detailTitle = "";
+  form.detailText = "";
+  form.detailItems = [];
   form.specMode = "single";
   form.price = "";
   form.cover = "";
@@ -121,6 +127,14 @@ function fillForm(row: any) {
   editingId.value = row.id;
   form.name = row.name;
   form.desc = row.desc;
+  form.detailTitle = row.detailTitle || "";
+  form.detailText = row.detailText || "";
+  form.detailItems = Array.isArray(row.detailItems)
+    ? row.detailItems.map((item: any) => ({
+        label: String(item.label || ""),
+        value: String(item.value || "")
+      }))
+    : [];
   form.specMode = "single";
   form.cover = row.cover || "";
   form.recommended = Boolean(row.recommended);
@@ -203,6 +217,14 @@ function validateForm() {
   syncSingleSkuFromBase();
 }
 
+function addDetailItem() {
+  form.detailItems.push({ label: "", value: "" });
+}
+
+function removeDetailItem(index: number) {
+  form.detailItems.splice(index, 1);
+}
+
 function buildPayload() {
   validateForm();
 
@@ -212,6 +234,14 @@ function buildPayload() {
   return {
     name: form.name,
     desc: form.desc,
+    detailTitle: form.detailTitle,
+    detailText: form.detailText,
+    detailItems: form.detailItems
+      .map((item) => ({
+        label: item.label.trim(),
+        value: item.value.trim()
+      }))
+      .filter((item) => item.label && item.value),
     specMode: "single",
     price: form.price,
     cover: form.cover,
@@ -385,6 +415,32 @@ onMounted(loadData);
           <el-input v-model.trim="form.desc" maxlength="60" />
         </el-form-item>
 
+        <el-form-item label="商品详情标题">
+          <el-input v-model.trim="form.detailTitle" maxlength="30" placeholder="例如 商品详情、购买须知、商品说明" />
+        </el-form-item>
+
+        <el-form-item label="商品详情内容">
+          <el-input
+            v-model="form.detailText"
+            type="textarea"
+            :rows="6"
+            maxlength="1200"
+            show-word-limit
+            placeholder="可填写商品说明、使用方式、配送范围、过敏源、售后规则等，换行会在小程序详情页保留"
+          />
+        </el-form-item>
+
+        <el-form-item label="详情参数">
+          <div class="detail-items">
+            <div v-for="(item, index) in form.detailItems" :key="index" class="detail-item-row">
+              <el-input v-model.trim="item.label" maxlength="20" placeholder="名称，如 过敏源" />
+              <el-input v-model.trim="item.value" maxlength="120" placeholder="内容，如 含乳制品、含蛋类" />
+              <el-button type="danger" plain @click="removeDetailItem(index)">删除</el-button>
+            </div>
+            <el-button :disabled="form.detailItems.length >= 20" @click="addDetailItem">添加参数</el-button>
+          </div>
+        </el-form-item>
+
         <el-form-item label="商品封面">
           <div class="cover-panel">
             <div v-if="form.cover" class="cover-preview">
@@ -498,6 +554,19 @@ onMounted(loadData);
   gap: 12px;
 }
 
+.detail-items {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+
+.detail-item-row {
+  display: grid;
+  grid-template-columns: 180px 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
 .section-title {
   font-size: 15px;
   font-weight: 700;
@@ -515,6 +584,10 @@ onMounted(loadData);
   }
 
   .cover-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-item-row {
     grid-template-columns: 1fr;
   }
 

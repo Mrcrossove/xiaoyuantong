@@ -222,6 +222,17 @@ Page({
     this.setData(buildSelectionState(currentProduct, currentSku && currentSku.id, 1));
   },
 
+  openProductDetail(event) {
+    const { id } = event.currentTarget.dataset;
+    if (!id || !this.storeId) {
+      return;
+    }
+
+    wx.navigateTo({
+      url: `/pages/store-product-detail/store-product-detail?storeId=${encodeURIComponent(this.storeId)}&productId=${encodeURIComponent(String(id))}`
+    });
+  },
+
   decreaseQuantity() {
     const nextQuantity = Math.max(1, Number(this.data.quantity || 1) - 1);
     if (nextQuantity === this.data.quantity) {

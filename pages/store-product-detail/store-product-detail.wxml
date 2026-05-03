@@ -1,0 +1,103 @@
+<view class="product-page" style="padding-top: {{statusBarHeight}}px;" wx:if="{{product && store}}">
+  <view class="product-nav" style="padding-right: {{navRightSafeRpx}}rpx;">
+    <view class="back-btn" bindtap="goBack"></view>
+    <view class="nav-title">商品详情</view>
+  </view>
+
+  <scroll-view class="product-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+    <view class="hero-wrap">
+      <view wx:if="{{product.coverMode === 'class'}}" class="hero-cover cover-{{product.cover}}"></view>
+      <image wx:else class="hero-cover hero-image" src="{{product.cover}}" mode="aspectFill"></image>
+    </view>
+
+    <view class="price-band">
+      <view>
+        <view class="price-label">一口价</view>
+        <view class="price-value">{{product.price}}</view>
+      </view>
+      <view class="saving-text" wx:if="{{product.recommended}}">推荐商品</view>
+    </view>
+
+    <view class="product-summary">
+      <view class="store-line">{{store.storeName}} · {{selectedSchool}}</view>
+      <view class="product-title">{{product.name}}</view>
+      <view class="product-desc">{{product.desc}}</view>
+      <view class="meta-row">
+        <text class="meta-tag">库存 {{product.stock || 0}}</text>
+        <text wx:if="{{product.dailyLimit > 0}}" class="meta-tag">每日限购 {{product.dailyLimit}}</text>
+        <text class="meta-tag">{{store.address || '暂无地址'}}</text>
+      </view>
+    </view>
+
+    <view class="detail-section">
+      <view class="section-title">{{product.detailTitle || '商品详情'}}</view>
+      <view wx:if="{{detailLines.length}}" class="detail-text">
+        <view wx:for="{{detailLines}}" wx:key="*this" class="detail-line">{{item}}</view>
+      </view>
+      <view wx:else class="detail-empty-text">商家暂未填写更多详情。</view>
+    </view>
+
+    <view wx:if="{{product.detailItems.length}}" class="detail-section">
+      <view class="section-title">商品参数</view>
+      <view class="param-row" wx:for="{{product.detailItems}}" wx:key="label">
+        <view class="param-label">{{item.label}}</view>
+        <view class="param-value">{{item.value}}</view>
+      </view>
+    </view>
+
+    <view class="detail-section bottom-space">
+      <view class="section-title">店铺信息</view>
+      <view class="param-row">
+        <view class="param-label">店铺</view>
+        <view class="param-value">{{store.storeName}}</view>
+      </view>
+      <view class="param-row">
+        <view class="param-label">电话</view>
+        <view class="param-value">{{store.phone || '暂无'}}</view>
+      </view>
+      <view class="param-row">
+        <view class="param-label">地址</view>
+        <view class="param-value">{{store.address || '暂无地址'}}</view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="checkout-bar">
+    <view class="checkout-meta">
+      <view class="checkout-amount">{{currentAmountText}}</view>
+      <view class="checkout-count">已选 {{quantity}} 件</view>
+    </view>
+    <view class="quantity-box">
+      <view class="quantity-btn {{quantity <= 1 ? 'disabled' : ''}}" bindtap="decreaseQuantity">-</view>
+      <view class="quantity-value">{{quantity}}</view>
+      <view class="quantity-btn {{quantity >= maxQuantity ? 'disabled' : ''}}" bindtap="increaseQuantity">+</view>
+    </view>
+    <view class="checkout-btn" bindtap="openConfirmModal">{{submittingOrder ? '提交中' : '立即下单'}}</view>
+  </view>
+
+  <view wx:if="{{confirmVisible}}" class="confirm-mask" bindtap="closeConfirmModal"></view>
+  <view wx:if="{{confirmVisible}}" class="confirm-modal">
+    <view class="confirm-title">确认订单</view>
+    <view class="confirm-section">
+      <view class="confirm-label">商品信息</view>
+      <view class="confirm-value">{{product.name}}</view>
+      <view class="confirm-subvalue">数量 {{quantity}}，合计 {{currentAmountText}}</view>
+    </view>
+    <view class="confirm-section">
+      <view class="confirm-row">
+        <view class="confirm-label">收货地址</view>
+        <view class="confirm-link" bindtap="goManageAddress">管理地址</view>
+      </view>
+      <view class="confirm-value">{{addressSummary}}</view>
+    </view>
+    <view class="confirm-actions">
+      <view class="confirm-btn ghost" bindtap="closeConfirmModal">取消</view>
+      <view class="confirm-btn" bindtap="confirmCheckout">{{submittingOrder ? '提交中' : '确认下单'}}</view>
+    </view>
+  </view>
+</view>
+
+<view wx:else class="detail-empty">
+  <view class="detail-empty-title">商品加载失败</view>
+  <view class="detail-empty-desc">请返回重试，或稍后再进入该商品。</view>
+</view>
