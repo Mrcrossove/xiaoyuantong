@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from "element-plus";
 import type { RecommendConfigItem, RecommendConfigPayload } from "../../api/contracts";
 import { ApiRequestError } from "../../api/request";
@@ -10,6 +10,7 @@ import {
   toggleRecommendConfigStatusApi,
   updateRecommendConfigApi
 } from "../../api/modules/operation";
+import { getAdminStoreListApi } from "../../api/modules/store";
 
 const loading = ref(false);
 const submitting = ref(false);
@@ -17,6 +18,7 @@ const dialogVisible = ref(false);
 const editingId = ref<number | null>(null);
 const formRef = ref<FormInstance>();
 const list = ref<RecommendConfigItem[]>([]);
+const storeOptions = ref<{ label: string; value: string; school: string }[]>([]);
 const total = ref(0);
 const enabledCount = ref(0);
 const typeOptions = ref<string[]>([]);
@@ -50,6 +52,8 @@ const rules: FormRules<typeof form> = {
   status: [{ required: true, message: "请选择状态", trigger: "change" }]
 };
 
+const isStoreRecommend = computed(() => form.type.trim() === "store");
+
 function showApiError(error: unknown, fallback: string) {
   if (error instanceof ApiRequestError) {
     ElMessage.error(error.traceId ? `${error.message}（追踪号: ${error.traceId}）` : error.message);
@@ -74,6 +78,7 @@ function resetForm() {
 function openCreateDialog() {
   resetForm();
   dialogVisible.value = true;
+  loadStoreOptions();
 }
 
 function openEditDialog(row: RecommendConfigItem) {
@@ -87,6 +92,7 @@ function openEditDialog(row: RecommendConfigItem) {
   form.status = row.status;
   form.remark = row.remark;
   dialogVisible.value = true;
+  loadStoreOptions();
 }
 
 async function loadData() {
@@ -103,6 +109,31 @@ async function loadData() {
   } finally {
     loading.value = false;
   }
+}
+
+async function loadStoreOptions() {
+  try {
+    const result = await getAdminStoreListApi({
+      page: 1,
+      pageSize: 200,
+      category: ""
+    });
+    storeOptions.value = result.list.map((item) => ({
+      label: `${item.storeName} / ${item.school} / ${item.detailId}`,
+      value: item.detailId,
+      school: item.school
+    }));
+  } catch (error) {
+    showApiError(error, "店铺列表加载失败");
+  }
+}
+
+function handleStoreTargetChange(detailId: string) {
+  const selected = storeOptions.value.find((item) => item.value === detailId);
+  if (!selected) return;
+  form.targetId = selected.value;
+  form.targetName = selected.label.split(" / ")[0] || "";
+  form.school = selected.school || form.school;
 }
 
 function handleSearch() {
@@ -179,6 +210,15 @@ async function removeRow(row: RecommendConfigItem) {
 }
 
 onMounted(loadData);
+
+watch(
+  () => form.type,
+  (value) => {
+    if (String(value || "").trim() === "store" && !storeOptions.value.length) {
+      loadStoreOptions();
+    }
+  }
+);
 </script>
 
 <template>
@@ -258,8 +298,22 @@ onMounted(loadData);
             </el-form-item>
           </el-col>
           <el-col :span="12"><el-form-item label="排序" prop="sort"><el-input-number v-model="form.sort" :min="0" class="full-width" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="关联对象"><el-input v-model="form.targetName" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="关联 ID"><el-input v-model="form.targetId" /></el-form-item></el-col>
+          <el-col :span="12">
+            <el-form-item label="关联对象">
+              <el-select
+                v-if="isStoreRecommend"
+                v-model="form.targetId"
+                class="full-width"
+                filterable
+                placeholder="选择要推荐的店铺"
+                @change="handleStoreTargetChange"
+              >
+                <el-option v-for="item in storeOptions" :key="item.value" :label="item.label" :value="item.value" />
+              </el-select>
+              <el-input v-else v-model="form.targetName" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12"><el-form-item label="关联 ID"><el-input v-model="form.targetId" :disabled="isStoreRecommend" /></el-form-item></el-col>
           <el-col :span="12">
             <el-form-item label="状态" prop="status">
               <el-select v-model="form.status" class="full-width">

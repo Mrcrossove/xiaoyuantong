@@ -43,12 +43,13 @@
           <view class="shop-head">
             <view class="shop-name">{{item.name}}</view>
             <view class="shop-rating">
-              <text class="star">★</text>
-              <text>{{item.rating}}</text>
+              <text>{{item.orderText || "新店"}}</text>
+              <text wx:if="{{item.paidAmountText}}"> · {{item.paidAmountText}}</text>
             </view>
           </view>
           <view class="shop-subtitle">{{item.subtitle}}</view>
           <view class="shop-tags">
+            <text wx:if="{{item.isRecommendedStore}}" class="shop-tag platform-tag">{{item.recommendTitle || "平台推荐"}}</text>
             <text wx:if="{{item.hasRecommendedProduct}}" class="shop-tag recommend-tag">推荐商品</text>
             <text class="shop-tag school-tag">{{selectedSchool}}</text>
             <text class="shop-tag" wx:for="{{item.tags}}" wx:key="*this">{{item}}</text>

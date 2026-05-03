@@ -525,6 +525,11 @@
   color: #d88918;
 }
 
+.platform-tag {
+  background: linear-gradient(135deg, #1f7aff, #20c7a5);
+  color: #ffffff;
+}
+
 .shop-distance {
   color: #ff8b85;
   font-size: 20rpx;

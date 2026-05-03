@@ -129,19 +129,41 @@ function resolveStoreProducts(item: any) {
   return productRows;
 }
 
+function getStoreSalesStats(item: any) {
+  const stats = item.salesStats || {};
+  const paidOrderCount = Number(stats.paidOrderCount || 0);
+  const finishedOrderCount = Number(stats.finishedOrderCount || 0);
+  const paidAmount = roundMoney(Number(stats.paidAmount || 0));
+
+  return {
+    paidOrderCount,
+    finishedOrderCount,
+    paidAmount,
+    orderText: paidOrderCount > 0 ? `${paidOrderCount}单成交` : "新店",
+    amountText: paidAmount > 0 ? `成交 ¥${paidAmount.toFixed(2)}` : ""
+  };
+}
+
 function mapStoreListItem(item: any) {
   const products = resolveStoreProducts(item);
   const availableProducts = products.filter((entry) => String(entry.status || MERCHANT_PRODUCT_STATUS.onSale) === MERCHANT_PRODUCT_STATUS.onSale);
   const recommendedProduct = availableProducts.find((entry) => Boolean(entry.recommended)) || availableProducts[0] || null;
   const defaultSku = recommendedProduct ? getDefaultSku(recommendedProduct) : null;
+  const salesStats = getStoreSalesStats(item);
 
   return {
     id: item.id,
     detailId: item.detailId,
     name: item.name,
     school: item.school,
-    rating: item.rating,
+    rating: null,
+    ratingText: "",
     monthlySales: item.monthlySales,
+    orderText: salesStats.orderText,
+    paidOrderCount: salesStats.paidOrderCount,
+    finishedOrderCount: salesStats.finishedOrderCount,
+    paidAmount: salesStats.paidAmount,
+    paidAmountText: salesStats.amountText,
     distance: item.distance,
     delivery: item.delivery,
     price: recommendedProduct ? buildProductDisplayPrice(recommendedProduct) : item.priceText,
@@ -153,6 +175,9 @@ function mapStoreListItem(item: any) {
     hasRecommendedProduct: Boolean(recommendedProduct?.recommended),
     recommendedProductName: recommendedProduct ? String(recommendedProduct.name || "") : "",
     recommendedProductPrice: recommendedProduct ? buildProductDisplayPrice(recommendedProduct) : "",
+    isRecommendedStore: Boolean(item.recommendMeta),
+    recommendTitle: item.recommendMeta?.title || "",
+    recommendSort: item.recommendMeta?.sort ?? null,
     groupKey: item.groupKey,
     groupLabel: item.groupLabel,
     sectionKey: item.sectionKey,
@@ -590,7 +615,7 @@ export async function queryMiniStores(rawQuery: Record<string, unknown>) {
       : undefined
   };
 
-  const list = await prisma.miniStore.findMany({
+  const stores = await prisma.miniStore.findMany({
     where,
     include: {
       productRows: {
@@ -604,6 +629,97 @@ export async function queryMiniStores(rawQuery: Record<string, unknown>) {
     },
     orderBy: [{ groupKey: "asc" }, { id: "asc" }]
   });
+
+  const detailIds = stores.map((item: any) => String(item.detailId || "")).filter(Boolean);
+  const [recommendRows, paidStats, finishedStats] = await Promise.all([
+    school && detailIds.length
+      ? prisma.adminRecommendConfig.findMany({
+          where: {
+            school,
+            type: "store",
+            status: "\u542f\u7528",
+            targetId: {
+              in: detailIds
+            }
+          },
+          orderBy: [{ sort: "asc" }, { id: "desc" }]
+        })
+      : Promise.resolve([]),
+    detailIds.length
+      ? prisma.miniOrder.groupBy({
+          by: ["storeDetailId"],
+          where: {
+            school: school || undefined,
+            storeDetailId: {
+              in: detailIds
+            },
+            payStatus: MINI_PAY_STATUS.paid
+          },
+          _count: {
+            _all: true
+          },
+          _sum: {
+            amount: true
+          }
+        })
+      : Promise.resolve([]),
+    detailIds.length
+      ? prisma.miniOrder.groupBy({
+          by: ["storeDetailId"],
+          where: {
+            school: school || undefined,
+            storeDetailId: {
+              in: detailIds
+            },
+            status: MINI_ORDER_STATUS.finished
+          },
+          _count: {
+            _all: true
+          }
+        })
+      : Promise.resolve([])
+  ]);
+
+  const recommendMap = new Map<string, any>();
+  recommendRows.forEach((item: any) => {
+    const detailId = String(item.targetId || "");
+    if (!recommendMap.has(detailId)) {
+      recommendMap.set(detailId, {
+        title: item.title,
+        sort: Number(item.sort || 0)
+      });
+    }
+  });
+
+  const statsMap = new Map<string, any>();
+  paidStats.forEach((item: any) => {
+    statsMap.set(item.storeDetailId, {
+      paidOrderCount: Number(item._count?._all || 0),
+      paidAmount: Number(item._sum?.amount || 0)
+    });
+  });
+  finishedStats.forEach((item: any) => {
+    const current = statsMap.get(item.storeDetailId) || {};
+    statsMap.set(item.storeDetailId, {
+      ...current,
+      finishedOrderCount: Number(item._count?._all || 0)
+    });
+  });
+
+  const list = stores
+    .map((item: any) => ({
+      ...item,
+      recommendMeta: recommendMap.get(String(item.detailId || "")) || null,
+      salesStats: statsMap.get(String(item.detailId || "")) || {}
+    }))
+    .sort((a: any, b: any) => {
+      if (a.recommendMeta && b.recommendMeta) {
+        return Number(a.recommendMeta.sort || 0) - Number(b.recommendMeta.sort || 0) || a.id - b.id;
+      }
+      if (a.recommendMeta) return -1;
+      if (b.recommendMeta) return 1;
+      return String(a.groupKey || "").localeCompare(String(b.groupKey || "")) || a.id - b.id;
+    });
 
   return {
     banners: buildBannerList(school || "当前高校"),

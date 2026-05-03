@@ -404,6 +404,11 @@
   color: #d88918;
 }
 
+.platform-tag {
+  background: linear-gradient(135deg, #1f7aff, #20c7a5);
+  color: #ffffff;
+}
+
 .star {
   color: #ffbe2e;
 }
