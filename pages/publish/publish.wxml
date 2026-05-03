@@ -124,9 +124,22 @@
     <view class="form-card">
       <view class="field-label">发布设置</view>
       <view class="switch-row">
-        <text>匿名发布</text>
-        <switch color="#2f68e3" checked="{{anonymous}}" data-field="anonymous" bindchange="onSwitchChange" />
+        <text>自定义展示昵称</text>
+        <switch color="#2f68e3" checked="{{useCustomDisplayName}}" data-field="useCustomDisplayName" bindchange="onSwitchChange" />
       </view>
+      <view wx:if="{{useCustomDisplayName}}" class="display-name-panel">
+        <input
+          class="field-input"
+          value="{{displayName}}"
+          data-field="displayName"
+          bindinput="onInputChange"
+          placeholder="请输入展示昵称，如 可可同学"
+          maxlength="16"
+          placeholder-class="placeholder"
+        />
+        <view class="field-count">{{displayName.length}}/16</view>
+      </view>
+      <view class="field-tip">展示昵称仅用于前台展示，平台仍会记录发布账号用于内容审核。</view>
       <view class="switch-row">
         <text>仅当前高校可见</text>
         <switch color="#2f68e3" checked="{{onlyCampus}}" data-field="onlyCampus" bindchange="onSwitchChange" />

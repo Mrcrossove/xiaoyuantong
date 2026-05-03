@@ -11,7 +11,8 @@ Page({
     type: "tree-hole",
     pageTitle: "情感树洞",
     category: "",
-    anonymous: false,
+    useCustomDisplayName: false,
+    displayName: "",
     onlyCampus: true,
     title: "",
     content: "",
@@ -137,6 +138,7 @@ Page({
     const title = String(this.data.title || "").trim();
     const content = String(this.data.content || "").trim();
     const category = String(this.data.category || "").trim();
+    const displayName = String(this.data.displayName || "").trim();
 
     if (!category) {
       wx.showToast({ title: "请选择分类", icon: "none" });
@@ -150,6 +152,11 @@ Page({
 
     if (content.length < 5) {
       wx.showToast({ title: "内容至少 5 个字", icon: "none" });
+      return;
+    }
+
+    if (this.data.useCustomDisplayName && displayName.length < 2) {
+      wx.showToast({ title: "展示昵称至少 2 个字", icon: "none" });
       return;
     }
 
@@ -171,9 +178,10 @@ Page({
         category,
         title,
         content,
+        displayName: this.data.useCustomDisplayName ? displayName : "",
         images,
         contacts,
-        anonymous: !!this.data.anonymous,
+        anonymous: false,
         onlyCampus: !!this.data.onlyCampus
       });
 

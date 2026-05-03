@@ -134,7 +134,8 @@ onMounted(loadData);
       <template #header>帖子列表</template>
       <el-table :data="list" stripe v-loading="loading">
         <el-table-column prop="title" label="帖子标题" min-width="240" />
-        <el-table-column prop="author" label="作者" width="140" />
+        <el-table-column prop="displayName" label="展示昵称" width="140" />
+        <el-table-column prop="authorName" label="真实作者" width="140" />
         <el-table-column prop="school" label="高校" min-width="160" />
         <el-table-column prop="category" label="分类" width="120" />
         <el-table-column label="状态" width="120">

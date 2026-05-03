@@ -779,6 +779,9 @@ export interface AdminPostItem {
   id: number;
   title: string;
   author: string;
+  displayName?: string;
+  authorName?: string;
+  userId?: number;
   school: string;
   category: string;
   status: string;

@@ -53,6 +53,7 @@ export const miniPostPayloadSchema = z.object({
   category: requiredText("分类"),
   title: z.string().trim().min(2, "标题至少 2 个字").max(30, "标题最多 30 个字"),
   content: z.string().trim().min(5, "内容至少 5 个字").max(500, "内容最多 500 个字"),
+  displayName: z.string().trim().max(16, "展示昵称最多 16 个字").optional().default(""),
   images: z.array(z.string().trim()).max(9, "最多 9 张图片").optional().default([]),
   contacts: z
     .array(

@@ -17,6 +17,7 @@ const LABELS = {
 
 const HOT_POST_FETCH_LIMIT = 240;
 const HOT_POST_POOL_LIMIT = 120;
+const DISPLAY_NAME_BLOCKED_WORDS = ["官方", "管理员", "客服", "校园通", "平台", "系统"];
 const POST_CATEGORY_GROUPS: Record<string, string[]> = {
   "\u6811\u6d1e": [
     "\u6811\u6d1e",
@@ -90,6 +91,18 @@ function toArray(value: Prisma.JsonValue | null | undefined) {
   return Array.isArray(value) ? value : [];
 }
 
+function normalizePostDisplayName(rawValue: unknown, fallback: string) {
+  const value = String(rawValue || "").trim();
+  if (!value) return fallback;
+  if (/(\d{5,}|1\d{10}|[a-zA-Z][-_a-zA-Z0-9]{5,})/.test(value)) {
+    throw new ApiError("展示昵称不能包含手机号、账号或联系方式", ERROR_CODES.BAD_REQUEST, 400);
+  }
+  if (DISPLAY_NAME_BLOCKED_WORDS.some((word) => value.includes(word))) {
+    throw new ApiError("展示昵称不能使用官方、管理员等易误导身份的词", ERROR_CODES.BAD_REQUEST, 400);
+  }
+  return value;
+}
+
 function mapComment(item: any) {
   return {
     id: item.id,
@@ -103,12 +116,14 @@ function mapComment(item: any) {
 
 function mapPost(item: any, options?: { liked?: boolean; comments?: any[] }) {
   const comments = options?.comments || [];
-  const authorAvatar = item.isAnonymous ? "" : item.user?.avatarUrl || "";
+  const publicAuthor = String(item.displayName || item.authorName || LABELS.campusUser);
+  const authorAvatar = item.user?.avatarUrl || "";
   return {
     id: item.id,
     userId: item.userId,
-    author: item.isAnonymous ? LABELS.anonymousUser : item.authorName,
+    author: publicAuthor,
     authorName: item.authorName,
+    displayName: item.displayName || "",
     authorAvatar,
     school: item.school,
     category: item.category,
@@ -319,6 +334,10 @@ export async function getMiniPostDetail(id: number, userId?: number) {
 }
 
 export async function createMiniPost(userId: number, payload: MiniPostPayload) {
+  const user = await prisma.miniUser.findUniqueOrThrow({ where: { id: userId } });
+  const authorName = user.nickname || LABELS.campusUser;
+  const displayName = normalizePostDisplayName(payload.displayName, authorName);
+
   await assertRiskPassed({
     userId,
     scene: "post_create",
@@ -327,22 +346,23 @@ export async function createMiniPost(userId: number, payload: MiniPostPayload) {
       payload.category,
       payload.title,
       payload.content,
+      displayName,
       ...(payload.contacts || []).flatMap((item) => [item.label, item.value])
     ]
   });
 
-  const user = await prisma.miniUser.findUniqueOrThrow({ where: { id: userId } });
   const row = await prisma.miniPost.create({
     data: {
       userId,
       school: payload.school,
-      authorName: user.nickname || LABELS.campusUser,
+      authorName,
+      displayName,
       category: payload.category,
       title: payload.title,
       content: payload.content,
       images: payload.images,
       contacts: payload.contacts,
-      isAnonymous: payload.anonymous,
+      isAnonymous: false,
       onlyCampus: payload.onlyCampus,
       status: LABELS.pending
     }

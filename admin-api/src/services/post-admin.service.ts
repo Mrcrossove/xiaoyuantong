@@ -30,7 +30,10 @@ function mapPost(item: any) {
   return {
     id: item.id,
     title: item.title,
-    author: item.authorName,
+    author: item.displayName || item.authorName,
+    displayName: item.displayName || "",
+    authorName: item.authorName,
+    userId: item.userId,
     school: item.school,
     category: item.category,
     status: item.status,
@@ -66,7 +69,12 @@ export async function queryAdminPostList(adminUserId: number, rawQuery: Record<s
   const mapped = rows.map(mapPost);
 
   const filtered = mapped.filter((item: any) => {
-    const matchKeyword = !keyword || item.title.includes(keyword) || item.author.includes(keyword);
+    const matchKeyword =
+      !keyword ||
+      item.title.includes(keyword) ||
+      item.author.includes(keyword) ||
+      item.authorName.includes(keyword) ||
+      String(item.userId).includes(keyword);
     const matchStatus = !status || item.status === status;
     return matchKeyword && matchStatus;
   });

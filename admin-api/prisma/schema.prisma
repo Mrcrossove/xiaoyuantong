@@ -151,6 +151,7 @@ model MiniPost {
   user         MiniUser   @relation(fields: [userId], references: [id])
   school       String
   authorName   String
+  displayName  String?
   category     String
   title        String
   content      String
