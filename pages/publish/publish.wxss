@@ -56,18 +56,21 @@
 .publish-bottom-btn {
   height: 92rpx;
   border-radius: 999rpx;
-  background: #eff3fa;
+  background: #f4f7fb;
+  border: 2rpx solid #e5ebf5;
   color: #a3abbb;
   font-size: 30rpx;
-  font-weight: 700;
+  font-weight: 900;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .publish-bottom-btn.active {
-  background: linear-gradient(120deg, #2f68e3, #36a86e);
+  background: #2563eb;
+  border-color: #2563eb;
   color: #ffffff;
+  box-shadow: 0 18rpx 34rpx rgba(37, 99, 235, 0.24);
 }
 
 .publish-bottom-btn.loading {

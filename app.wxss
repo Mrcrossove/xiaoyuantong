@@ -48,11 +48,12 @@ page {
 .circle-btn,
 .ring-btn,
 .back-btn {
-  width: 64rpx;
-  height: 64rpx;
+  width: 68rpx;
+  height: 68rpx;
   border-radius: 50%;
   background: #ffffff;
-  box-shadow: 0 12rpx 30rpx rgba(53, 88, 163, 0.12);
+  border: 2rpx solid rgba(228, 234, 245, 0.92);
+  box-shadow: 0 12rpx 28rpx rgba(36, 55, 96, 0.1);
   position: relative;
 }
 
@@ -315,23 +316,23 @@ page {
   bottom: 24rpx;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  padding: 14rpx 10rpx 12rpx;
+  padding: 12rpx 10rpx 10rpx;
   border-radius: 34rpx;
-  border: 2rpx solid rgba(230, 237, 248, 0.9);
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 18rpx 46rpx rgba(40, 57, 96, 0.12);
+  border: 2rpx solid rgba(226, 233, 244, 0.96);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 18rpx 42rpx rgba(32, 47, 82, 0.13);
   backdrop-filter: blur(18rpx);
   z-index: 20;
 }
 
 .tab {
-  min-height: 86rpx;
+  min-height: 84rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 6rpx;
-  color: #aab3c4;
+  color: #9da8bc;
   font-size: 22rpx;
   font-weight: 600;
   border-radius: 26rpx;
@@ -339,9 +340,9 @@ page {
 }
 
 .tab.active {
-  color: #2f6df0;
+  color: #245fe0;
   font-weight: 800;
-  background: linear-gradient(180deg, #f2f7ff, #e7f0ff);
+  background: #edf4ff;
   transform: translateY(-2rpx);
 }
 

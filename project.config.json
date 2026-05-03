@@ -3,48 +3,48 @@
   "packOptions": {
     "ignore": [
       {
-        "type": "folder",
-        "value": "admin-api"
+        "value": "admin-api",
+        "type": "folder"
       },
       {
-        "type": "folder",
-        "value": "admin-web"
+        "value": "admin-web",
+        "type": "folder"
       },
       {
-        "type": "folder",
-        "value": "merchant-web"
+        "value": "merchant-web",
+        "type": "folder"
       },
       {
-        "type": "folder",
-        "value": ".git"
+        "value": ".git",
+        "type": "folder"
       },
       {
-        "type": "folder",
-        "value": "scripts"
+        "value": "scripts",
+        "type": "folder"
       },
       {
-        "type": "folder",
-        "value": "tasks"
+        "value": "tasks",
+        "type": "folder"
       },
       {
-        "type": "folder",
-        "value": "高校清单"
+        "value": "高校清单",
+        "type": "folder"
       },
       {
-        "type": "file",
-        "value": "CLAUDE.md"
+        "value": "CLAUDE.md",
+        "type": "file"
       },
       {
-        "type": "file",
-        "value": "project.md"
+        "value": "project.md",
+        "type": "file"
       },
       {
-        "type": "file",
-        "value": "开发规则.md"
+        "value": "开发规则.md",
+        "type": "file"
       },
       {
-        "type": "file",
-        "value": "管理后台开发需求文档.md"
+        "value": "管理后台开发需求文档.md",
+        "type": "file"
       }
     ],
     "include": []
@@ -77,7 +77,7 @@
   },
   "compileType": "miniprogram",
   "libVersion": "3.15.1",
-  "appid": "wxcfe00e0137d8bbd4",
+  "appid": "wx3817383af5bf0c95",
   "projectname": "campus-link",
   "condition": {},
   "simulatorPluginLibVersion": {},

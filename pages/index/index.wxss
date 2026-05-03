@@ -175,12 +175,18 @@
 }
 
 .primary-btn {
-  padding: 18rpx 24rpx;
+  min-width: 104rpx;
+  height: 68rpx;
+  padding: 0 26rpx;
   border-radius: 999rpx;
-  background: linear-gradient(135deg, #3f83ff, #6ea7ff);
+  background: #2563eb;
   color: #ffffff;
   font-size: 24rpx;
-  font-weight: 700;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12rpx 24rpx rgba(37, 99, 235, 0.22);
 }
 
 .floating-category-bar {
@@ -358,9 +364,9 @@
 }
 
 .service-item.active {
-  color: #2469ef;
-  font-weight: 700;
-  transform: translateY(-3rpx);
+  color: #1f5fd8;
+  font-weight: 800;
+  transform: translateY(-2rpx);
 }
 
 .service-icon {
@@ -375,9 +381,9 @@
 }
 
 .service-item.active .service-icon {
-  background: linear-gradient(180deg, #eef5ff, #dceaff);
-  border-color: rgba(63, 131, 255, 0.28);
-  box-shadow: 0 14rpx 30rpx rgba(63, 131, 255, 0.18);
+  background: #edf4ff;
+  border-color: rgba(37, 99, 235, 0.26);
+  box-shadow: 0 12rpx 26rpx rgba(37, 99, 235, 0.14);
   transform: scale(1.04);
 }
 
@@ -558,17 +564,24 @@
 
 .empty-feed-btn {
   min-width: 176rpx;
-  padding: 18rpx 24rpx;
+  height: 72rpx;
+  padding: 0 28rpx;
   border-radius: 999rpx;
-  background: #f0f4fb;
-  color: #51607b;
+  background: #f3f6fb;
+  border: 2rpx solid #e5ebf5;
+  color: #55637a;
   font-size: 24rpx;
-  font-weight: 700;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .empty-feed-btn.primary {
-  background: #2f68e3;
+  background: #2563eb;
+  border-color: #2563eb;
   color: #ffffff;
+  box-shadow: 0 12rpx 24rpx rgba(37, 99, 235, 0.2);
 }
 
 .post-card {
@@ -672,20 +685,20 @@
   position: fixed;
   right: 36rpx;
   bottom: 246rpx;
-  width: 110rpx;
-  height: 110rpx;
+  width: 104rpx;
+  height: 104rpx;
   border-radius: 50%;
-  background: linear-gradient(180deg, #57a4ff, #316df0);
+  background: #2563eb;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 18rpx 34rpx rgba(49, 109, 240, 0.38);
+  box-shadow: 0 18rpx 34rpx rgba(37, 99, 235, 0.34);
   z-index: 40;
 }
 
 .fab text {
   color: #ffffff;
-  font-size: 64rpx;
+  font-size: 58rpx;
   line-height: 1;
 }
 
@@ -696,8 +709,9 @@
   width: 72rpx;
   height: 72rpx;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 14rpx 30rpx rgba(49, 67, 103, 0.18);
+  background: rgba(255, 255, 255, 0.98);
+  border: 2rpx solid #e5ebf5;
+  box-shadow: 0 14rpx 28rpx rgba(32, 47, 82, 0.14);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -733,22 +747,25 @@
 
 .fab-item {
   min-width: 220rpx;
-  padding: 18rpx 24rpx;
+  min-height: 76rpx;
+  padding: 0 26rpx;
   border-radius: 999rpx;
-  color: #ffffff;
+  color: #20304f;
+  background: rgba(255, 255, 255, 0.98);
+  border: 2rpx solid #e5ebf5;
   display: flex;
   align-items: center;
   gap: 14rpx;
-  box-shadow: 0 24rpx 60rpx rgba(53, 88, 163, 0.12);
-  font-size: 28rpx;
-  font-weight: 700;
+  box-shadow: 0 16rpx 34rpx rgba(32, 47, 82, 0.14);
+  font-size: 27rpx;
+  font-weight: 800;
 }
 
 .fab-badge {
-  width: 28rpx;
-  height: 28rpx;
+  width: 24rpx;
+  height: 24rpx;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.24);
+  background: #2563eb;
 }
 
 .school-overlay {
@@ -814,15 +831,17 @@
   justify-content: center;
   min-height: 88rpx;
   border-radius: 22rpx;
-  border: 3rpx solid #80aef7;
-  background: #ffffff;
-  color: #3f83ff;
+  border: 2rpx solid #e5ebf5;
+  background: #f5f7fb;
+  color: #536179;
   font-size: 28rpx;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .school-all-btn.active {
-  background: rgba(63, 131, 255, 0.12);
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
 }
 
 .school-list {

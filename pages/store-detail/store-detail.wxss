@@ -28,13 +28,14 @@
 }
 
 .action-chip {
-  height: 56rpx;
-  min-width: 104rpx;
-  padding: 0 18rpx;
+  height: 60rpx;
+  min-width: 112rpx;
+  padding: 0 22rpx;
   border-radius: 999rpx;
   background: #ffffff;
-  box-shadow: 0 10rpx 24rpx rgba(50, 77, 132, 0.1);
-  color: #2f68e3;
+  border: 2rpx solid #e5ebf5;
+  box-shadow: 0 10rpx 22rpx rgba(32, 47, 82, 0.1);
+  color: #245fe0;
   font-size: 24rpx;
   font-weight: 700;
   display: flex;
@@ -375,11 +376,12 @@
 
 .goods-tab {
   min-width: 120rpx;
-  height: 52rpx;
-  padding: 0 18rpx;
-  border-radius: 12rpx;
-  background: #eef3ff;
-  color: #5d78b0;
+  height: 56rpx;
+  padding: 0 22rpx;
+  border-radius: 999rpx;
+  background: #f4f7fb;
+  border: 2rpx solid #e6edf7;
+  color: #5f6f88;
   font-size: 22rpx;
   font-weight: 700;
   display: flex;
@@ -388,8 +390,9 @@
 }
 
 .goods-tab.active {
-  background: linear-gradient(135deg, #4f87ff, #2f6df0);
-  color: #ffffff;
+  background: #eaf2ff;
+  border-color: rgba(37, 99, 235, 0.28);
+  color: #245fe0;
 }
 
 .goods-list {
@@ -532,11 +535,13 @@
   position: fixed;
   left: 14rpx;
   right: 14rpx;
-  bottom: 12rpx;
-  min-height: 88rpx;
+  bottom: 14rpx;
+  min-height: 96rpx;
   padding: 0 18rpx;
-  border-radius: 16rpx;
-  background: linear-gradient(90deg, #c9ef7d, #c7ef7d 70%, #b8ea71);
+  border-radius: 28rpx;
+  background: rgba(255, 255, 255, 0.98);
+  border: 2rpx solid #e6edf7;
+  box-shadow: 0 18rpx 42rpx rgba(32, 47, 82, 0.16);
   display: grid;
   grid-template-columns: 52rpx 1fr auto auto;
   align-items: center;
@@ -552,7 +557,7 @@
   width: 52rpx;
   height: 52rpx;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.42);
+  background: #eef4ff;
   position: relative;
 }
 
@@ -563,20 +568,20 @@
   top: 16rpx;
   width: 24rpx;
   height: 14rpx;
-  border: 4rpx solid #6ba238;
+  border: 4rpx solid #2563eb;
   border-top: 0;
   border-radius: 0 0 8rpx 8rpx;
 }
 
 .checkout-meta {
-  color: #ff7c4e;
+  color: #1f2937;
   font-size: 22rpx;
   line-height: 1.5;
   font-weight: 700;
 }
 
 .checkout-count {
-  color: #7d9c35;
+  color: #667085;
 }
 
 .quantity-box {
@@ -599,8 +604,8 @@
 }
 
 .quantity-btn {
-  background: rgba(255, 255, 255, 0.7);
-  color: #6f8a2d;
+  background: #eef4ff;
+  color: #245fe0;
 }
 
 .quantity-btn.disabled {
@@ -608,18 +613,18 @@
 }
 
 .quantity-value {
-  background: rgba(255, 255, 255, 0.42);
-  color: #6b7a2c;
+  background: #f5f7fb;
+  color: #1f2937;
 }
 
 .checkout-btn {
-  height: 58rpx;
-  padding: 0 28rpx;
+  height: 64rpx;
+  padding: 0 32rpx;
   border-radius: 999rpx;
-  background: linear-gradient(135deg, #ff7d69, #ff5f6f);
+  background: #f97316;
   color: #ffffff;
   font-size: 24rpx;
-  font-weight: 700;
+  font-weight: 800;
   display: flex;
   align-items: center;
 }
@@ -699,16 +704,19 @@
 .confirm-btn {
   min-height: 88rpx;
   border-radius: 999rpx;
-  background: linear-gradient(135deg, #ff7d69, #ff5f6f);
+  background: #f97316;
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 28rpx;
-  font-weight: 700;
+  font-weight: 800;
+  box-shadow: 0 14rpx 28rpx rgba(249, 115, 22, 0.22);
 }
 
 .confirm-btn.ghost {
-  background: #eef2f8;
-  color: #5f6f8d;
+  background: #f4f7fb;
+  border: 2rpx solid #e5ebf5;
+  color: #5f6f88;
+  box-shadow: none;
 }

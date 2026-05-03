@@ -136,17 +136,19 @@
   align-items: center;
   justify-content: center;
   font-size: 24rpx;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .order-action.primary {
-  background: #2f68e3;
+  background: #2563eb;
   color: #ffffff;
+  box-shadow: 0 12rpx 24rpx rgba(37, 99, 235, 0.18);
 }
 
 .order-action.ghost {
-  background: #eef2f8;
-  color: #5f6f8d;
+  background: #f4f7fb;
+  border: 2rpx solid #e5ebf5;
+  color: #5f6f88;
 }
 
 .empty-shell {

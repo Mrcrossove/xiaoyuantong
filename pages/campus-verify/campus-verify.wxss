@@ -339,14 +339,14 @@
 .submit-btn {
   height: 94rpx;
   border-radius: 999rpx;
-  background: linear-gradient(135deg, #276ff2, #22b77a);
+  background: #2563eb;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
   font-size: 31rpx;
   font-weight: 900;
-  box-shadow: 0 18rpx 34rpx rgba(39, 111, 242, 0.22);
+  box-shadow: 0 18rpx 34rpx rgba(37, 99, 235, 0.24);
 }
 
 .submit-btn.disabled {
