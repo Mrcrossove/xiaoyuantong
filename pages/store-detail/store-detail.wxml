@@ -28,6 +28,18 @@
       </view>
 
       <view class="address-row {{detail.latitude && detail.longitude ? 'can-navigate' : ''}}" bindtap="openStoreLocation">
+        <view class="address-icon"></view>
+        <view class="address-content">
+          <view class="address-title-row">
+            <text class="address-label">店铺地址</text>
+            <text wx:if="{{detail.latitude && detail.longitude}}" class="address-hint">点击导航</text>
+          </view>
+          <view class="address-text">{{detail.address || '暂无地址'}}</view>
+        </view>
+        <view wx:if="{{detail.latitude && detail.longitude}}" class="address-action">
+          <text>导航</text>
+          <view class="address-arrow"></view>
+        </view>
         <view class="address-label">店铺地址：</view>
         <view class="address-text">{{detail.address || '暂无地址'}}</view>
       </view>

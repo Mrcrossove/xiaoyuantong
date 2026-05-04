@@ -75,7 +75,6 @@
             <text wx:if="{{item.recommendedProductPrice}}" class="recommend-preview-price">{{item.recommendedProductPrice}}</text>
           </view>
         </view>
-        <view class="shop-distance">{{item.distance}}</view>
       </view>
     </view>
 
