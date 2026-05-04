@@ -9,6 +9,7 @@ const { HOME_FEED_ALL, getHomeFeedScope, setHomeFeedScope } = require("../../uti
 const { getProvinceSchoolGroups, filterProvinceSchoolGroups } = require("../../utils/school-catalog");
 const { buildPostCategoryView } = require("../../utils/post-category-view");
 const { redirectToLoginIfNeeded } = require("../../utils/login-guard");
+const { refreshMessageBadge } = require("../../utils/message-badge");
 
 const DEFAULT_HOME_BANNER = {
   id: "default-recruit",
@@ -85,7 +86,9 @@ Page({
     bannerCurrent: 0,
     showFloatingCategories: false,
     showBackToFeed: false,
-    userAvatar: buildAvatarView("")
+    userAvatar: buildAvatarView(""),
+    messageBadgeCount: 0,
+    messageBadgeText: ""
   },
 
   onLoad() {
@@ -109,6 +112,7 @@ Page({
 
     const businessSchool = getSelectedSchool();
     this.syncProfile();
+    refreshMessageBadge(this, { school: businessSchool });
     this.setData({
       activeServiceCategory: ""
     });

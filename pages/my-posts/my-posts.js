@@ -1,6 +1,6 @@
 const { getSelectedSchool } = require("../../utils/school-state");
 const { ensureMiniSession } = require("../../utils/mini-auth");
-const { fetchMyPosts } = require("../../utils/posts-api");
+const { deletePost, fetchMyPosts } = require("../../utils/posts-api");
 
 Page({
   data: {
@@ -45,6 +45,41 @@ Page({
     wx.navigateTo({
       url: `/pages/post-detail/post-detail?id=${id}`
     });
+  },
+
+  async deletePost(event) {
+    const { id } = event.currentTarget.dataset;
+    if (!id) {
+      return;
+    }
+
+    const { confirm } = await wx.showModal({
+      title: "\u5220\u9664\u5e16\u5b50",
+      content: "\u5220\u9664\u540e\u5c06\u65e0\u6cd5\u6062\u590d\uff0c\u786e\u5b9a\u5220\u9664\u8fd9\u6761\u5e16\u5b50\u5417\uff1f",
+      confirmText: "\u5220\u9664",
+      confirmColor: "#e5484d",
+      cancelText: "\u53d6\u6d88"
+    });
+    if (!confirm) {
+      return;
+    }
+
+    try {
+      await ensureMiniSession();
+      await deletePost(id);
+      this.setData({
+        posts: (this.data.posts || []).filter((item) => String(item.id) !== String(id))
+      });
+      wx.showToast({
+        title: "\u5df2\u5220\u9664",
+        icon: "success"
+      });
+    } catch (error) {
+      wx.showToast({
+        title: error.message || "\u5220\u9664\u5931\u8d25",
+        icon: "none"
+      });
+    }
   },
 
   goBack() {

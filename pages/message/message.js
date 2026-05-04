@@ -1,6 +1,7 @@
 const { ensureMiniSession } = require("../../utils/mini-auth");
 const { getSelectedSchool } = require("../../utils/school-state");
-const { fetchMessageList, markAllMessagesRead, markMessageRead } = require("../../utils/messages-api");
+const { calcUnreadTotal, formatBadgeCount } = require("../../utils/message-badge");
+const { deleteMessage, fetchMessageList, markAllMessagesRead, markMessageRead } = require("../../utils/messages-api");
 
 const LABELS = {
   pageTitle: "消息",
@@ -54,6 +55,8 @@ Page({
       system: 0,
       interactive: 0
     },
+    messageBadgeCount: 0,
+    messageBadgeText: "",
     loadFailed: false
   },
 
@@ -93,6 +96,8 @@ Page({
         systemMessages: remote.systemMessages || [],
         interactiveMessages: remote.interactiveMessages || [],
         unreadCount: remote.unreadCount || { system: 0, interactive: 0 },
+        messageBadgeCount: calcUnreadTotal(remote.unreadCount || {}),
+        messageBadgeText: formatBadgeCount(calcUnreadTotal(remote.unreadCount || {})),
         loadFailed: false
       });
     } catch (error) {
@@ -101,6 +106,8 @@ Page({
         systemMessages: [],
         interactiveMessages: [],
         unreadCount: { system: 0, interactive: 0 },
+        messageBadgeCount: 0,
+        messageBadgeText: "",
         loadFailed: true
       });
     }
@@ -134,7 +141,9 @@ Page({
         await markMessageRead(id);
         this.setData({
           [`${targetKey}[${index}].read`]: true,
-          [`unreadCount.${unreadKey}`]: Math.max(0, Number(this.data.unreadCount[unreadKey] || 0) - 1)
+          [`unreadCount.${unreadKey}`]: Math.max(0, Number(this.data.unreadCount[unreadKey] || 0) - 1),
+          messageBadgeCount: Math.max(0, Number(this.data.messageBadgeCount || 0) - 1),
+          messageBadgeText: formatBadgeCount(Math.max(0, Number(this.data.messageBadgeCount || 0) - 1))
         });
       } catch (error) {}
     }
@@ -142,6 +151,52 @@ Page({
     const url = getTargetUrl(current);
     if (url) {
       wx.navigateTo({ url });
+    }
+  },
+
+  async deleteMessage(event) {
+    const { id, type } = event.currentTarget.dataset;
+    if (!id) {
+      return;
+    }
+
+    const { confirm } = await wx.showModal({
+      title: "\u5220\u9664\u6d88\u606f",
+      content: "\u5220\u9664\u540e\u5c06\u4e0d\u518d\u5c55\u793a\u8fd9\u6761\u6d88\u606f\uff0c\u786e\u5b9a\u5220\u9664\u5417\uff1f",
+      confirmText: "\u5220\u9664",
+      confirmColor: "#e5484d",
+      cancelText: "\u53d6\u6d88"
+    });
+    if (!confirm) {
+      return;
+    }
+
+    const targetKey = type === "interactive" ? "interactiveMessages" : "systemMessages";
+    const unreadKey = type === "interactive" ? "interactive" : "system";
+    const list = this.data[targetKey] || [];
+    const current = list.find((item) => String(item.id) === String(id));
+    const unreadDelta = current && !current.read ? 1 : 0;
+
+    try {
+      await ensureMiniSession();
+      await deleteMessage(id);
+      const nextUnread = Math.max(0, Number(this.data.unreadCount[unreadKey] || 0) - unreadDelta);
+      const nextBadgeCount = Math.max(0, Number(this.data.messageBadgeCount || 0) - unreadDelta);
+      this.setData({
+        [targetKey]: list.filter((item) => String(item.id) !== String(id)),
+        [`unreadCount.${unreadKey}`]: nextUnread,
+        messageBadgeCount: nextBadgeCount,
+        messageBadgeText: formatBadgeCount(nextBadgeCount)
+      });
+      wx.showToast({
+        title: "\u5df2\u5220\u9664",
+        icon: "success"
+      });
+    } catch (error) {
+      wx.showToast({
+        title: error.message || LABELS.actionFailed,
+        icon: "none"
+      });
     }
   },
 
@@ -157,7 +212,9 @@ Page({
       }));
       this.setData({
         [key]: current,
-        [`unreadCount.${type === "interactive" ? "interactive" : "system"}`]: 0
+        [`unreadCount.${type === "interactive" ? "interactive" : "system"}`]: 0,
+        messageBadgeCount: type === "interactive" ? Number(this.data.unreadCount.system || 0) : Number(this.data.unreadCount.interactive || 0),
+        messageBadgeText: formatBadgeCount(type === "interactive" ? Number(this.data.unreadCount.system || 0) : Number(this.data.unreadCount.interactive || 0))
       });
       wx.showToast({
         title: LABELS.markReadSuccess,

@@ -4,6 +4,7 @@ import { idParamSchema } from "./schemas";
 import {
   createMiniPost,
   createMiniPostComment,
+  deleteMiniPost,
   getMiniPostDetail,
   queryMiniPostComments,
   queryMiniPosts,
@@ -30,6 +31,12 @@ export async function createMiniPostAction(req: Request, res: Response) {
 export async function listMyMiniPostAction(req: Request, res: Response) {
   const data = await queryMyMiniPosts(req.miniAuth!.userId);
   return ok(res, data, req.traceId);
+}
+
+export async function deleteMiniPostAction(req: Request, res: Response) {
+  const { id } = idParamSchema.parse(req.params);
+  const data = await deleteMiniPost(req.miniAuth!.userId, id);
+  return ok(res, data, req.traceId, "\u5e16\u5b50\u5df2\u5220\u9664");
 }
 
 export async function toggleMiniPostLikeAction(req: Request, res: Response) {

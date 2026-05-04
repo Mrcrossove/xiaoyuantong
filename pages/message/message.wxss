@@ -241,8 +241,25 @@
 }
 
 .message-action-line {
-  margin-top: 14rpx;
   color: #2f68e3;
+  font-size: 22rpx;
+  font-weight: 800;
+}
+
+.message-card-actions {
+  margin-top: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+}
+
+.message-delete-btn {
+  margin-left: auto;
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  background: #fff0f0;
+  color: #e5484d;
   font-size: 22rpx;
   font-weight: 800;
 }

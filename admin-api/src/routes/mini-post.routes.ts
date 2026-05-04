@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   createMiniPostAction,
   createMiniPostCommentAction,
+  deleteMiniPostAction,
   getMiniPostDetailAction,
   listMiniPostAction,
   listMiniPostCommentAction,
@@ -22,5 +23,6 @@ router.get("/my", requireMiniAuth, asyncHandler(listMyMiniPostAction));
 router.post("/", requireMiniAuth, validateBody(miniPostPayloadSchema), asyncHandler(createMiniPostAction));
 router.post("/:id/like", requireMiniAuth, asyncHandler(toggleMiniPostLikeAction));
 router.post("/:id/comment", requireMiniAuth, validateBody(miniPostCommentCreateSchema), asyncHandler(createMiniPostCommentAction));
+router.delete("/:id", requireMiniAuth, asyncHandler(deleteMiniPostAction));
 
 export default router;

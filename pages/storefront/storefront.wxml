@@ -99,6 +99,7 @@
     </view>
     <view class="tab" bindtap="goMessage">
       <view class="tab-icon message"></view>
+      <view class="tab-badge" wx:if="{{messageBadgeText}}">{{messageBadgeText}}</view>
       <text>消息</text>
     </view>
     <view class="tab" bindtap="goProfile">

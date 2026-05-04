@@ -17,8 +17,11 @@
       <view class="post-title">{{item.title}}</view>
       <view class="post-content">{{item.content}}</view>
       <view class="post-footer">
-        <text>{{item.time}}</text>
-        <text>{{item.school}}</text>
+        <view class="post-footer-meta">
+          <text>{{item.time}}</text>
+          <text>{{item.school}}</text>
+        </view>
+        <view class="post-delete-btn" data-id="{{item.id}}" catchtap="deletePost">删除</view>
       </view>
     </view>
 

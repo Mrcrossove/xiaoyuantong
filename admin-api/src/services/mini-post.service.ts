@@ -410,6 +410,47 @@ export async function queryMyMiniPosts(userId: number) {
   }));
 }
 
+export async function deleteMiniPost(userId: number, id: number) {
+  const post = await findPostOrThrow(id);
+  if (post.userId !== userId) {
+    throw new ApiError("\u53ea\u80fd\u5220\u9664\u81ea\u5df1\u53d1\u5e03\u7684\u5e16\u5b50", ERROR_CODES.FORBIDDEN, 403);
+  }
+
+  await prisma.$transaction([
+    prisma.miniPostLike.deleteMany({ where: { postId: id } }),
+    prisma.miniPostComment.deleteMany({ where: { postId: id } }),
+    prisma.miniPostReport.deleteMany({ where: { postId: id } }),
+    prisma.miniMessageRead.deleteMany({
+      where: {
+        message: {
+          targetType: "post",
+          targetId: String(id)
+        }
+      }
+    }),
+    prisma.miniMessageDelete.deleteMany({
+      where: {
+        message: {
+          targetType: "post",
+          targetId: String(id)
+        }
+      }
+    }),
+    prisma.miniMessage.deleteMany({
+      where: {
+        targetType: "post",
+        targetId: String(id)
+      }
+    }),
+    prisma.miniPost.delete({ where: { id } })
+  ]);
+
+  return {
+    id,
+    deleted: true
+  };
+}
+
 export async function toggleMiniPostLike(userId: number, id: number) {
   const post = await findPostOrThrow(id);
 

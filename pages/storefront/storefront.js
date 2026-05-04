@@ -3,6 +3,7 @@ const { fetchStoreList } = require("../../utils/stores-api");
 const { getStorefrontSchool, setStorefrontSchool } = require("../../utils/school-state");
 const { getProvinceSchoolGroups, filterProvinceSchoolGroups } = require("../../utils/school-catalog");
 const { normalizeStoreList } = require("../../utils/store-cover");
+const { refreshMessageBadge } = require("../../utils/message-badge");
 
 const DEFAULT_EXPANDED_PROVINCES = [];
 
@@ -19,7 +20,9 @@ Page({
     categories: shopCategories,
     banners: [],
     shops: [],
-    loadErrorText: ""
+    loadErrorText: "",
+    messageBadgeCount: 0,
+    messageBadgeText: ""
   },
 
   onLoad() {
@@ -33,7 +36,9 @@ Page({
   },
 
   async onShow() {
-    await this.loadStores(getStorefrontSchool());
+    const selectedSchool = getStorefrontSchool();
+    refreshMessageBadge(this, { school: selectedSchool });
+    await this.loadStores(selectedSchool);
   },
 
   buildDisplayGroups(keyword, sourceGroups = this.data.provinceSchoolGroups, expandedProvinces = this.data.expandedProvinces) {

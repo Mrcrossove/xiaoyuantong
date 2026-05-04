@@ -85,6 +85,7 @@ model MiniUser {
   postReports   MiniPostReport[]   @relation("MiniPostReportReporter")
   messages      MiniMessage[]     @relation("MiniMessageReceiver")
   messageReads  MiniMessageRead[]
+  messageDeletes MiniMessageDelete[]
   ownedStores   MiniStore[]       @relation("MiniStoreOwner")
   merchantAccount MerchantAccount?
   schoolAdminApplications SchoolAdminApplication[]
@@ -429,6 +430,7 @@ model MiniMessage {
   targetType     String?
   targetId       String?
   reads          MiniMessageRead[]
+  deletes        MiniMessageDelete[]
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 }
@@ -444,6 +446,20 @@ model MiniMessageRead {
   updatedAt DateTime    @updatedAt
 
   @@unique([messageId, userId])
+}
+
+model MiniMessageDelete {
+  id        Int         @id @default(autoincrement())
+  messageId Int
+  message   MiniMessage @relation(fields: [messageId], references: [id])
+  userId    Int
+  user      MiniUser    @relation(fields: [userId], references: [id])
+  deletedAt DateTime    @default(now())
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@unique([messageId, userId])
+  @@index([userId, deletedAt])
 }
 
 model MiniShopApply {

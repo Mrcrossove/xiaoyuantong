@@ -4,6 +4,7 @@ const { getVerificationInfo, setVerificationInfo, clearVerificationInfo } = requ
 const { getToken, ensureMiniSession, clearSession, getProfile, setProfile } = require("../../utils/mini-auth");
 const { fetchCurrentVerification } = require("../../utils/verification-api");
 const { fetchMiniProfile } = require("../../utils/profile-api");
+const { refreshMessageBadge } = require("../../utils/message-badge");
 
 const contentRouteMap = {
   order: "/pages/my-orders/my-orders",
@@ -41,6 +42,8 @@ Page({
       { label: "我要开店", icon: "shop" },
       { label: "我的地址", icon: "address" }
     ],
+    messageBadgeCount: 0,
+    messageBadgeText: "",
     supportItems: [
       { label: "联系客服", icon: "service", arrow: false },
       { label: "关于我们", icon: "about", arrow: true }
@@ -62,12 +65,15 @@ Page({
     });
 
     if (isLoggedIn) {
+      refreshMessageBadge(this, { school: getSelectedSchool() });
       await this.syncVerification();
       return;
     }
 
     this.setData({
-      user: buildGuestUser()
+      user: buildGuestUser(),
+      messageBadgeCount: 0,
+      messageBadgeText: ""
     });
   },
 

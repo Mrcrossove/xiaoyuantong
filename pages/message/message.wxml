@@ -43,7 +43,10 @@
       </view>
       <view wx:if="{{item.targetType === 'order'}}" class="message-order-tag">{{labels.orderNotice}}</view>
       <text class="message-card-content">{{item.content}}</text>
-      <view wx:if="{{item.targetType === 'order'}}" class="message-action-line">{{labels.orderAction}}</view>
+      <view class="message-card-actions">
+        <view wx:if="{{item.targetType === 'order'}}" class="message-action-line">{{labels.orderAction}}</view>
+        <view class="message-delete-btn" data-id="{{item.id}}" data-type="system" catchtap="deleteMessage">删除</view>
+      </view>
     </view>
     <view class="empty-text" wx:if="{{!systemMessages.length}}">{{loadFailed ? labels.loadFailed : labels.noSystemMessage}}</view>
   </view>
@@ -63,7 +66,10 @@
       </view>
       <view wx:if="{{item.targetType === 'order'}}" class="message-order-tag">{{labels.orderNotice}}</view>
       <text class="message-card-content">{{item.content}}</text>
-      <view wx:if="{{item.targetType === 'order'}}" class="message-action-line">{{labels.orderAction}}</view>
+      <view class="message-card-actions">
+        <view wx:if="{{item.targetType === 'order'}}" class="message-action-line">{{labels.orderAction}}</view>
+        <view class="message-delete-btn" data-id="{{item.id}}" data-type="interactive" catchtap="deleteMessage">删除</view>
+      </view>
     </view>
     <view class="empty-text" wx:if="{{!interactiveMessages.length}}">{{loadFailed ? labels.loadFailed : labels.noInteractiveMessage}}</view>
   </view>
@@ -79,6 +85,7 @@
     </view>
     <view class="tab active">
       <view class="tab-icon message"></view>
+      <view class="tab-badge" wx:if="{{messageBadgeText}}">{{messageBadgeText}}</view>
       <text>{{labels.pageTitle}}</text>
     </view>
     <view class="tab" bindtap="goProfile">

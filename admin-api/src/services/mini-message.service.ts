@@ -59,6 +59,24 @@ async function buildReadMap(userId: number, messageIds: number[]) {
   return new Set(reads.map((item: any) => item.messageId));
 }
 
+async function buildDeletedMessageIds(userId: number, messageIds: number[]) {
+  if (!messageIds.length) {
+    return new Set<number>();
+  }
+  const deletedRows = await prisma.miniMessageDelete.findMany({
+    where: {
+      userId,
+      messageId: {
+        in: messageIds
+      }
+    },
+    select: {
+      messageId: true
+    }
+  });
+  return new Set(deletedRows.map((item: any) => item.messageId));
+}
+
 export async function queryMiniMessages(userId: number, rawQuery: Record<string, unknown>) {
   const school = String(rawQuery.school || "");
   const keyword = String(rawQuery.keyword || "").trim();
@@ -107,13 +125,19 @@ export async function queryMiniMessages(userId: number, rawQuery: Record<string,
     userId,
     list.map((item: any) => item.id)
   );
-
-  const mapped = list.map((item: any) =>
-    mapMessage({
-      ...item,
-      read: readMap.has(item.id)
-    })
+  const deletedMap = await buildDeletedMessageIds(
+    userId,
+    list.map((item: any) => item.id)
   );
+
+  const mapped = list
+    .filter((item: any) => !deletedMap.has(item.id))
+    .map((item: any) =>
+      mapMessage({
+        ...item,
+        read: readMap.has(item.id)
+      })
+    );
 
   const systemMessages = mapped.filter((item: any) => item.type === "system");
   const interactiveMessages = mapped.filter((item: any) => item.type === "interactive");
@@ -159,6 +183,40 @@ export async function markMiniMessageRead(userId: number, id: number) {
   return {
     id,
     read: true
+  };
+}
+
+export async function deleteMiniMessageForUser(userId: number, id: number) {
+  const message = await prisma.miniMessage.findFirst({
+    where: {
+      id,
+      OR: [{ receiverUserId: userId }, { receiverUserId: null }]
+    }
+  });
+
+  if (!message) {
+    throw new ApiError("\u6d88\u606f\u4e0d\u5b58\u5728", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  await prisma.miniMessageDelete.upsert({
+    where: {
+      messageId_userId: {
+        messageId: id,
+        userId
+      }
+    },
+    update: {
+      deletedAt: new Date()
+    },
+    create: {
+      messageId: id,
+      userId
+    }
+  });
+
+  return {
+    id,
+    deleted: true
   };
 }
 

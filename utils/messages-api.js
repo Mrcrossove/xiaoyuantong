@@ -23,6 +23,13 @@ function markMessageRead(id) {
   });
 }
 
+function deleteMessage(id) {
+  return authRequest({
+    url: `/mini/message/${id}`,
+    method: "DELETE"
+  });
+}
+
 function markAllMessagesRead(payload, params) {
   const school = params && params.school ? `?school=${encodeURIComponent(params.school)}` : "";
   return authRequest({
@@ -36,5 +43,6 @@ module.exports = {
   fetchMessageList,
   fetchMessageUnreadSummary,
   markMessageRead,
+  deleteMessage,
   markAllMessagesRead
 };

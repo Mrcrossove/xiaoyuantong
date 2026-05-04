@@ -346,6 +346,7 @@ page {
   font-weight: 700;
   border-radius: 24rpx;
   transition: color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+  position: relative;
 }
 
 .tab.active {
@@ -360,6 +361,26 @@ page {
   width: 42rpx;
   height: 40rpx;
   position: relative;
+}
+
+.tab-badge {
+  position: absolute;
+  top: 7rpx;
+  left: 50%;
+  margin-left: 16rpx;
+  min-width: 30rpx;
+  height: 30rpx;
+  padding: 0 8rpx;
+  border-radius: 999rpx;
+  background: #e5484d;
+  color: #ffffff;
+  font-size: 18rpx;
+  font-weight: 900;
+  line-height: 30rpx;
+  text-align: center;
+  box-sizing: border-box;
+  box-shadow: 0 4rpx 10rpx rgba(229, 72, 77, 0.28);
+  z-index: 2;
 }
 
 .tab-icon.home::before {

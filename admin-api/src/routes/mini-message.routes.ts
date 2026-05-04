@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  deleteMiniMessageAction,
   getMiniMessageUnreadSummaryAction,
   listMiniMessageAction,
   markAllMiniMessageReadAction,
@@ -15,6 +16,7 @@ const router = Router();
 router.get("/list", requireMiniAuth, asyncHandler(listMiniMessageAction));
 router.get("/unread-summary", requireMiniAuth, asyncHandler(getMiniMessageUnreadSummaryAction));
 router.post("/:id/read", requireMiniAuth, asyncHandler(markMiniMessageReadAction));
+router.delete("/:id", requireMiniAuth, asyncHandler(deleteMiniMessageAction));
 router.post("/read-all", requireMiniAuth, validateBody(miniMessageReadAllSchema), asyncHandler(markAllMiniMessageReadAction));
 
 export default router;

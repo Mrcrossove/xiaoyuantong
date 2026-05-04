@@ -32,6 +32,13 @@ function createPost(payload) {
   });
 }
 
+function deletePost(id) {
+  return authRequest({
+    url: `/mini/post/${id}`,
+    method: "DELETE"
+  });
+}
+
 function togglePostLike(id) {
   return authRequest({
     url: `/mini/post/${id}/like`,
@@ -59,6 +66,7 @@ module.exports = {
   fetchPostDetail,
   fetchMyPosts,
   createPost,
+  deletePost,
   togglePostLike,
   fetchPostComments,
   createPostComment
