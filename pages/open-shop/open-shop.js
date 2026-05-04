@@ -90,6 +90,10 @@ function getInitialMerchantForm() {
     notice: "",
     phone: "",
     address: "",
+    latitude: null,
+    longitude: null,
+    locationName: "",
+    locationAddress: "",
     cover: "",
     banners: []
   };
@@ -198,6 +202,10 @@ Page({
               notice: merchantStore.notice || "",
               phone: merchantStore.phone || "",
               address: merchantStore.address || "",
+              latitude: typeof merchantStore.latitude === "number" ? merchantStore.latitude : null,
+              longitude: typeof merchantStore.longitude === "number" ? merchantStore.longitude : null,
+              locationName: merchantStore.locationName || "",
+              locationAddress: merchantStore.locationAddress || "",
               cover: merchantStore.cover || "",
               banners: merchantStore.banners || []
             }
@@ -229,6 +237,35 @@ Page({
   onMerchantInput(event) {
     const { field } = event.currentTarget.dataset;
     this.setData({ [`merchantForm.${field}`]: event.detail.value });
+  },
+
+  chooseMerchantLocation() {
+    wx.chooseLocation({
+      latitude: Number(this.data.merchantForm.latitude || 0) || undefined,
+      longitude: Number(this.data.merchantForm.longitude || 0) || undefined,
+      keyword: this.data.merchantForm.address || this.data.merchantForm.name || "",
+      success: (res) => {
+        this.setData({
+          "merchantForm.latitude": res.latitude,
+          "merchantForm.longitude": res.longitude,
+          "merchantForm.locationName": res.name || "",
+          "merchantForm.locationAddress": res.address || "",
+          "merchantForm.address": res.address || this.data.merchantForm.address
+        });
+      },
+      fail: () => {
+        wx.showToast({ title: "地图选点失败", icon: "none" });
+      }
+    });
+  },
+
+  clearMerchantLocation() {
+    this.setData({
+      "merchantForm.latitude": null,
+      "merchantForm.longitude": null,
+      "merchantForm.locationName": "",
+      "merchantForm.locationAddress": ""
+    });
   },
 
   async submitApply() {
@@ -296,6 +333,10 @@ Page({
       notice: String(this.data.merchantForm.notice || "").trim(),
       phone: String(this.data.merchantForm.phone || "").trim(),
       address: String(this.data.merchantForm.address || "").trim(),
+      latitude: this.data.merchantForm.latitude,
+      longitude: this.data.merchantForm.longitude,
+      locationName: String(this.data.merchantForm.locationName || "").trim(),
+      locationAddress: String(this.data.merchantForm.locationAddress || "").trim(),
       cover: String(this.data.merchantForm.cover || "").trim(),
       banners: (this.data.merchantForm.banners || []).slice(0, 5)
     };
@@ -320,6 +361,10 @@ Page({
           notice: merchantStore.notice || "",
           phone: merchantStore.phone || "",
           address: merchantStore.address || "",
+          latitude: typeof merchantStore.latitude === "number" ? merchantStore.latitude : null,
+          longitude: typeof merchantStore.longitude === "number" ? merchantStore.longitude : null,
+          locationName: merchantStore.locationName || "",
+          locationAddress: merchantStore.locationAddress || "",
           cover: merchantStore.cover || "",
           banners: merchantStore.banners || []
         }

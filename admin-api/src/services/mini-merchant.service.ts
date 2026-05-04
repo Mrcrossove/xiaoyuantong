@@ -138,6 +138,10 @@ function mapStore(store: any) {
     notice: store.notice,
     phone: store.phone,
     address: store.address,
+    latitude: store.latitude ?? null,
+    longitude: store.longitude ?? null,
+    locationName: store.locationName || "",
+    locationAddress: store.locationAddress || "",
     cover: store.cover || "",
     status: store.status,
     groupLabel: store.groupLabel,
@@ -205,11 +209,26 @@ export async function getCurrentMerchantStore(userId: number) {
 
 export async function updateCurrentMerchantStore(userId: number, payload: MiniMerchantStoreUpdatePayload) {
   const tags = normalizeStoreTags(payload.tags);
+  const hasLatitude = payload.latitude !== undefined && payload.latitude !== null;
+  const hasLongitude = payload.longitude !== undefined && payload.longitude !== null;
+
+  if (hasLatitude !== hasLongitude) {
+    throw new ApiError("店铺导航位置需要同时填写经纬度", ERROR_CODES.BAD_REQUEST, 400);
+  }
 
   await assertRiskPassed({
     userId,
     scene: "merchant_store",
-    texts: [payload.name, payload.subtitle, payload.notice, payload.phone, payload.address, ...tags]
+    texts: [
+      payload.name,
+      payload.subtitle,
+      payload.notice,
+      payload.phone,
+      payload.address,
+      payload.locationName || "",
+      payload.locationAddress || "",
+      ...tags
+    ]
   });
 
   const store = await findOwnedStore(userId);
@@ -221,6 +240,10 @@ export async function updateCurrentMerchantStore(userId: number, payload: MiniMe
       notice: payload.notice,
       phone: payload.phone,
       address: payload.address,
+      latitude: hasLatitude ? payload.latitude : null,
+      longitude: hasLongitude ? payload.longitude : null,
+      locationName: payload.locationName || "",
+      locationAddress: payload.locationAddress || "",
       cover: payload.cover !== undefined ? payload.cover : store.cover,
       tags,
       banners: (Array.isArray(payload.banners) ? payload.banners : toArray(store.banners)).slice(0, 5)

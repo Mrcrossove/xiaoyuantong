@@ -155,6 +155,18 @@
   align-items: center;
 }
 
+.location-summary {
+  margin-top: 12rpx;
+  min-height: 84rpx;
+  padding: 18rpx 22rpx;
+  box-sizing: border-box;
+  border-radius: 18rpx;
+  background: #f6f8fc;
+  color: #4f5d77;
+  font-size: 26rpx;
+  line-height: 1.5;
+}
+
 .field-input {
   padding-top: 24rpx;
 }

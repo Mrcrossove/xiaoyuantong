@@ -1,12 +1,14 @@
 import { z } from "zod";
 
+const requiredText = (label: string) => z.string().trim().min(1, `${label}不能为空`);
+const storeLatitudeSchema = z.number().min(-90).max(90).nullable().optional();
+const storeLongitudeSchema = z.number().min(-180).max(180).nullable().optional();
+
 const miniOrderItemSchema = z.object({
   productId: z.string().trim().min(1, "商品 ID 不能为空"),
   skuId: z.string().trim().optional().default(""),
   quantity: z.number().int().min(1).max(99).optional().default(1)
 });
-
-const requiredText = (label: string) => z.string().trim().min(1, `${label}不能为空`);
 
 export const miniOrderCreateSchema = z.object({
   school: requiredText("学校"),
@@ -33,9 +35,28 @@ export const miniMerchantStoreUpdateSchema = z.object({
   notice: z.string().trim().min(5, "店铺公告至少 5 个字").max(120, "店铺公告最多 120 个字"),
   phone: z.string().trim().min(6, "联系电话至少 6 位").max(20, "联系电话最多 20 位"),
   address: z.string().trim().min(5, "店铺地址至少 5 个字").max(100, "店铺地址最多 100 个字"),
+  latitude: storeLatitudeSchema,
+  longitude: storeLongitudeSchema,
+  locationName: z.string().trim().max(60, "定位名称最多 60 个字").optional().default(""),
+  locationAddress: z.string().trim().max(120, "定位地址最多 120 个字").optional().default(""),
   cover: z.string().trim().optional().default(""),
   tags: z.array(z.string().trim().min(1).max(8)).max(6).optional().default([]),
   banners: z.array(z.string().trim()).max(5, "店铺轮播图最多 5 张").optional().default([])
+});
+
+const detailItemSchema = z.object({
+  label: z.string().trim().min(1, "详情项名称不能为空").max(20, "详情项名称最多 20 个字"),
+  value: z.string().trim().min(1, "详情项内容不能为空").max(120, "详情项内容最多 120 个字")
+});
+
+const productSkuSchema = z.object({
+  id: z.string().trim().optional(),
+  name: z.string().trim().min(1, "规格名称不能为空").max(30, "规格名称最多 30 个字"),
+  price: z.string().trim().min(1, "请输入规格价格"),
+  stock: z.number().int().min(0).max(99999).optional().default(0),
+  dailyLimit: z.number().int().min(0).max(9999).optional().default(0),
+  status: z.enum(["已上架", "已下架"]).optional().default("已上架"),
+  isDefault: z.boolean().optional().default(false)
 });
 
 export const miniMerchantProductSchema = z.object({
@@ -44,16 +65,7 @@ export const miniMerchantProductSchema = z.object({
   desc: z.string().trim().min(2, "商品描述至少 2 个字").max(60, "商品描述最多 60 个字"),
   detailTitle: z.string().trim().max(30, "详情标题最多 30 个字").optional().default(""),
   detailText: z.string().trim().max(1200, "详情内容最多 1200 个字").optional().default(""),
-  detailItems: z
-    .array(
-      z.object({
-        label: z.string().trim().min(1, "详情项名称不能为空").max(20, "详情项名称最多 20 个字"),
-        value: z.string().trim().min(1, "详情项内容不能为空").max(120, "详情项内容最多 120 个字")
-      })
-    )
-    .max(20, "详情项最多 20 条")
-    .optional()
-    .default([]),
+  detailItems: z.array(detailItemSchema).max(20, "详情项最多 20 条").optional().default([]),
   specMode: z.enum(["single", "multi"]).optional().default("single"),
   price: z.string().trim().min(1, "请输入商品价格"),
   cover: z.string().trim().optional().default("poster"),
@@ -61,20 +73,7 @@ export const miniMerchantProductSchema = z.object({
   dailyLimit: z.number().int().min(0).max(9999).optional().default(0),
   recommended: z.boolean().optional().default(false),
   status: z.enum(["已上架", "已下架"]).optional().default("已上架"),
-  skus: z
-    .array(
-      z.object({
-        id: z.string().trim().optional(),
-        name: z.string().trim().min(1, "规格名称不能为空").max(30, "规格名称最多 30 个字"),
-        price: z.string().trim().min(1, "请输入规格价格"),
-        stock: z.number().int().min(0).max(99999).optional().default(0),
-        dailyLimit: z.number().int().min(0).max(9999).optional().default(0),
-        status: z.enum(["已上架", "已下架"]).optional().default("已上架"),
-        isDefault: z.boolean().optional().default(false)
-      })
-    )
-    .optional()
-    .default([])
+  skus: z.array(productSkuSchema).optional().default([])
 });
 
 export const adminProductMutationControlSchema = z.object({
@@ -85,9 +84,10 @@ export const adminProductMutationControlSchema = z.object({
 
 export const adminStoreProductMutationSchema = miniMerchantProductSchema.merge(adminProductMutationControlSchema);
 export const adminStoreProductConflictSchema = adminProductMutationControlSchema;
+
 export const storeProductApprovalReviewSchema = z.object({
   status: z.enum(["approved", "rejected"]),
-  reviewNote: z.string().trim().max(200, "审批备注最多 200 个字").optional().default("")
+  reviewNote: z.string().trim().max(200, "审核备注最多 200 个字").optional().default("")
 });
 
 export const miniMerchantMoveSchema = z.object({

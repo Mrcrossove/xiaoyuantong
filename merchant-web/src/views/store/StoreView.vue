@@ -17,6 +17,10 @@ const form = reactive({
   notice: "",
   phone: "",
   address: "",
+  latitude: null as number | null,
+  longitude: null as number | null,
+  locationName: "",
+  locationAddress: "",
   cover: "",
   tags: [] as string[],
   banners: [] as string[]
@@ -50,6 +54,10 @@ async function loadData() {
     form.notice = result.notice || "";
     form.phone = result.phone || "";
     form.address = result.address || "";
+    form.latitude = typeof result.latitude === "number" ? result.latitude : null;
+    form.longitude = typeof result.longitude === "number" ? result.longitude : null;
+    form.locationName = result.locationName || "";
+    form.locationAddress = result.locationAddress || "";
     form.cover = result.cover || "";
     form.tags = Array.isArray(result.tags) ? normalizeStoreTags(result.tags) : [];
     form.banners = Array.isArray(result.banners) ? result.banners : [];
@@ -134,6 +142,13 @@ async function removeBanner(index: number) {
 }
 
 async function saveStore(successMessage = "店铺信息已更新") {
+  const hasLatitude = form.latitude !== null && form.latitude !== undefined;
+  const hasLongitude = form.longitude !== null && form.longitude !== undefined;
+  if (hasLatitude !== hasLongitude) {
+    ElMessage.warning("请同时填写导航纬度和经度");
+    return;
+  }
+
   saving.value = true;
   try {
     await updateStoreApi({
@@ -142,6 +157,10 @@ async function saveStore(successMessage = "店铺信息已更新") {
       notice: form.notice,
       phone: form.phone,
       address: form.address,
+      latitude: hasLatitude ? Number(form.latitude) : null,
+      longitude: hasLongitude ? Number(form.longitude) : null,
+      locationName: form.locationName,
+      locationAddress: form.locationAddress,
       cover: form.cover,
       tags: normalizeStoreTags(form.tags),
       banners: form.banners
@@ -157,6 +176,18 @@ async function saveStore(successMessage = "店铺信息已更新") {
 
 async function handleSave() {
   await saveStore();
+}
+
+function openTencentLocationPicker() {
+  const query = encodeURIComponent(form.address || form.name || "");
+  window.open(`https://apis.map.qq.com/tools/locpicker?search=1&type=1&keyword=${query}`, "_blank");
+}
+
+function clearLocation() {
+  form.latitude = null;
+  form.longitude = null;
+  form.locationName = "";
+  form.locationAddress = "";
 }
 
 onMounted(loadData);
@@ -216,6 +247,48 @@ onMounted(loadData);
           </el-col>
         </el-row>
 
+        <el-form-item label="导航定位">
+          <div class="location-panel">
+            <el-row :gutter="12">
+              <el-col :xs="24" :md="12">
+                <el-input v-model.trim="form.locationName" maxlength="60" placeholder="定位名称，例如 贵州大学西区商业街" />
+              </el-col>
+              <el-col :xs="24" :md="12">
+                <el-input v-model.trim="form.locationAddress" maxlength="120" placeholder="地图定位地址，可与店铺地址不同" />
+              </el-col>
+            </el-row>
+            <el-row :gutter="12">
+              <el-col :xs="24" :md="12">
+                <el-input-number
+                  v-model="form.latitude"
+                  :precision="6"
+                  :min="-90"
+                  :max="90"
+                  controls-position="right"
+                  placeholder="纬度"
+                  style="width: 100%"
+                />
+              </el-col>
+              <el-col :xs="24" :md="12">
+                <el-input-number
+                  v-model="form.longitude"
+                  :precision="6"
+                  :min="-180"
+                  :max="180"
+                  controls-position="right"
+                  placeholder="经度"
+                  style="width: 100%"
+                />
+              </el-col>
+            </el-row>
+            <div class="location-actions">
+              <el-button @click="openTencentLocationPicker">打开腾讯地图取点</el-button>
+              <el-button @click="clearLocation">清空定位</el-button>
+            </div>
+            <div class="form-tip">小程序导航必须有经纬度。打开腾讯地图取点后，将页面里显示的纬度、经度填回这里。</div>
+          </div>
+        </el-form-item>
+
         <el-form-item label="店铺封面">
           <div class="upload-panel">
             <div v-if="form.cover" class="image-card">
@@ -246,14 +319,7 @@ onMounted(loadData);
       </el-form>
 
       <input ref="coverInputRef" class="hidden-input" type="file" accept="image/*" @change="handleCoverChange" />
-      <input
-        ref="bannerInputRef"
-        class="hidden-input"
-        type="file"
-        accept="image/*"
-        multiple
-        @change="handleBannerChange"
-      />
+      <input ref="bannerInputRef" class="hidden-input" type="file" accept="image/*" multiple @change="handleBannerChange" />
     </el-card>
   </div>
 </template>
@@ -269,6 +335,17 @@ onMounted(loadData);
   grid-template-columns: 180px 1fr;
   gap: 16px;
   align-items: start;
+}
+
+.location-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.location-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .image-card,
@@ -329,12 +406,7 @@ onMounted(loadData);
   background: #f8fafc;
 }
 
-.banner-tip {
-  margin-top: 8px;
-  color: #667085;
-  font-size: 12px;
-}
-
+.banner-tip,
 .form-tip {
   margin-top: 8px;
   color: #667085;

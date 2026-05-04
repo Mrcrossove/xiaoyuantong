@@ -353,12 +353,38 @@
 .address-row {
   margin-top: 16rpx;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr;
   gap: 8rpx;
   align-items: start;
   color: #7c8598;
   font-size: 22rpx;
 }
+
+.address-row.can-navigate {
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+}
+
+.address-row.can-navigate::after {
+  content: ">";
+  min-width: 72rpx;
+  height: 42rpx;
+  padding: 0 16rpx;
+  border-radius: 999rpx;
+  background: #eef6ff;
+  color: #1677ff;
+  font-size: 22rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.address-row.can-navigate .address-text {
+  color: #344054;
+  font-weight: 600;
+}
+
 
 .address-label,
 .copy-text {

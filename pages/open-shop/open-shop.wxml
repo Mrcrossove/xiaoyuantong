@@ -130,6 +130,17 @@
         <input class="field-input" value="{{merchantForm.address}}" data-field="address" bindinput="onMerchantInput" placeholder="{{labels.placeholders.address}}" />
       </view>
 
+      <view class="field-item">
+        <view class="field-label">导航定位</view>
+        <view class="location-summary">
+          {{merchantForm.latitude && merchantForm.longitude ? (merchantForm.locationName || merchantForm.locationAddress || '已选择导航位置') : '暂未选择导航位置'}}
+        </view>
+        <view class="merchant-web-actions">
+          <view class="mini-action-btn" bindtap="chooseMerchantLocation">地图选点</view>
+          <view class="mini-action-btn secondary" bindtap="clearMerchantLocation">清空定位</view>
+        </view>
+      </view>
+
       <view class="submit-inline-btn" bindtap="saveMerchantStore">{{savingStore ? labels.saveStoreLoading : labels.saveStore}}</view>
     </view>
 

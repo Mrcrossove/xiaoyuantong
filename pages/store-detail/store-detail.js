@@ -137,6 +137,12 @@ function buildDetailState(detail) {
   };
 }
 
+function hasStoreLocation(detail) {
+  const latitude = Number(detail && detail.latitude);
+  const longitude = Number(detail && detail.longitude);
+  return Number.isFinite(latitude) && Number.isFinite(longitude);
+}
+
 function pickDefaultAddress(addressList) {
   const list = addressList || [];
   return list.find((item) => item.isDefault) || list[0] || null;
@@ -266,6 +272,31 @@ Page({
 
   goBack() {
     wx.navigateBack();
+  },
+
+  openStoreLocation() {
+    const detail = this.data.detail || {};
+    if (!hasStoreLocation(detail)) {
+      wx.showToast({
+        title: "暂无导航位置",
+        icon: "none"
+      });
+      return;
+    }
+
+    wx.openLocation({
+      latitude: Number(detail.latitude),
+      longitude: Number(detail.longitude),
+      name: detail.locationName || detail.storeName || "Store",
+      address: detail.locationAddress || detail.address || "",
+      scale: 16,
+      fail: () => {
+        wx.showToast({
+          title: "地图打开失败",
+          icon: "none"
+        });
+      }
+    });
   },
 
   switchTab(event) {

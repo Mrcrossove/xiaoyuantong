@@ -224,6 +224,10 @@ model MiniStore {
   notice       String
   phone        String
   address      String
+  latitude     Float?
+  longitude    Float?
+  locationName String?
+  locationAddress String?
   soldText     String
   amountText   String
   productCount Int
