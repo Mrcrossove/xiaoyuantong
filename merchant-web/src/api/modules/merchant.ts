@@ -94,7 +94,7 @@ export const readAllMessagesApi = (payload?: { type?: "system" | "interactive" }
 
 export const getStatApi = () => request<any>({ url: "/merchant/stat/overview", method: "GET" });
 export const getAccountProfileApi = () => request<any>({ url: "/merchant/account/profile", method: "GET" });
-export const updateAccountProfileApi = (payload: { name: string; withdrawRealName?: string; acceptWithdrawAgreement?: boolean }) =>
+export const updateAccountProfileApi = (payload: { name: string; storeName?: string; withdrawRealName?: string; acceptWithdrawAgreement?: boolean }) =>
   request<any>({ url: "/merchant/account/profile", method: "PUT", body: JSON.stringify(payload) });
 export const updateAccountPasswordApi = (payload: { oldPassword: string; newPassword: string }) =>
   request<any>({ url: "/merchant/account/password", method: "PUT", body: JSON.stringify(payload) });

@@ -21,6 +21,7 @@ export const merchantActivateSchema = z.object({
 
 export const merchantProfileUpdateSchema = z.object({
   name: z.string().trim().min(2, "姓名至少 2 个字").max(20, "姓名最多 20 个字"),
+  storeName: z.string().trim().min(2, "店铺名称至少 2 个字").max(30, "店铺名称最多 30 个字").optional(),
   withdrawRealName: z.string().trim().max(20, "提现真实姓名最多 20 个字").optional().default(""),
   acceptWithdrawAgreement: z.boolean().optional().default(false)
 });

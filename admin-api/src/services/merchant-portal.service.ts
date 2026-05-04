@@ -55,6 +55,7 @@ import {
   getMerchantWithdrawProfile,
   updateMerchantWithdrawProfile
 } from "./merchant-withdraw-profile.service";
+import { assertRiskPassed } from "./risk-control.service";
 
 const REFUND_STATUS = {
   pending: "待审核",
@@ -810,12 +811,30 @@ export async function getMerchantAccountProfile(accountId: number) {
 }
 
 export async function updateMerchantAccountProfile(accountId: number, payload: MerchantProfileUpdatePayload) {
-  const row = await prisma.merchantAccount.update({
-    where: { id: accountId },
-    data: {
-      name: payload.name
-    }
+  const context = await getMerchantContext(accountId);
+  const nextStoreName = String(payload.storeName || context.store.name || "").trim();
+
+  await assertRiskPassed({
+    userId: context.miniUserId,
+    scene: "merchant_store",
+    texts: [payload.name, nextStoreName]
   });
+
+  const [row, store] = await prisma.$transaction([
+    prisma.merchantAccount.update({
+      where: { id: accountId },
+      data: {
+        name: payload.name
+      }
+    }),
+    prisma.miniStore.update({
+      where: { id: context.storeId },
+      data: {
+        name: nextStoreName
+      }
+    })
+  ]);
+
   const withdrawProfile = await updateMerchantWithdrawProfile(accountId, {
     withdrawRealName: payload.withdrawRealName,
     acceptWithdrawAgreement: payload.acceptWithdrawAgreement
@@ -829,6 +848,8 @@ export async function updateMerchantAccountProfile(accountId: number, payload: M
     isActivated: Boolean(row.activatedAt),
     mustChangePassword: Boolean(row.mustChangePassword),
     lastLoginAt: row.lastLoginAt ? formatDateTime(row.lastLoginAt) : "",
+    storeName: store.name,
+    school: store.school,
     withdrawProfile
   };
 }

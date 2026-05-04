@@ -12,6 +12,7 @@ const profile = ref<any>(null);
 
 const profileForm = reactive({
   name: "",
+  storeName: "",
   withdrawRealName: "",
   acceptWithdrawAgreement: false
 });
@@ -30,6 +31,7 @@ async function loadData() {
     const result = await getAccountProfileApi();
     profile.value = result;
     profileForm.name = result.name || "";
+    profileForm.storeName = result.storeName || "";
     profileForm.withdrawRealName = result.withdrawProfile?.realName || "";
     profileForm.acceptWithdrawAgreement = Boolean(result.withdrawProfile?.agreementAccepted);
   } catch (error) {
@@ -40,10 +42,20 @@ async function loadData() {
 }
 
 async function handleUpdateProfile() {
+  if (profileForm.storeName.trim().length < 2) {
+    ElMessage.warning("店铺名称至少 2 个字");
+    return;
+  }
+  if (profileForm.name.trim().length < 2) {
+    ElMessage.warning("联系人姓名至少 2 个字");
+    return;
+  }
+
   savingProfile.value = true;
   try {
     await updateAccountProfileApi({
       name: profileForm.name,
+      storeName: profileForm.storeName,
       withdrawRealName: profileForm.withdrawRealName,
       acceptWithdrawAgreement: profileForm.acceptWithdrawAgreement
     });
@@ -109,6 +121,9 @@ onMounted(loadData);
       <el-divider />
 
       <el-form label-position="top">
+        <el-form-item label="店铺名称">
+          <el-input v-model.trim="profileForm.storeName" maxlength="30" placeholder="请输入店铺名称" />
+        </el-form-item>
         <el-form-item label="联系人姓名">
           <el-input v-model.trim="profileForm.name" maxlength="20" />
         </el-form-item>
