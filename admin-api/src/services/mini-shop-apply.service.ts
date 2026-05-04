@@ -8,6 +8,7 @@ import { assertRiskPassed } from "./risk-control.service";
 import { createMiniMessage } from "./mini-message.service";
 import { env } from "../config/env";
 import { hashPassword } from "../utils/password";
+import { assertSchoolInScope, buildScopedSchoolWhere, getAdminSchoolScope } from "./admin-scope.service";
 
 const STATUS = {
   pending: "待审核",
@@ -237,14 +238,15 @@ export async function createMiniShopApply(userId: number, payload: MiniShopApply
   return mapApply(row);
 }
 
-export async function queryAdminShopApplyList(rawQuery: Record<string, unknown>) {
+export async function queryAdminShopApplyList(adminUserId: number, rawQuery: Record<string, unknown>) {
   const { page, pageSize, skip } = parsePageParams(rawQuery);
-  const school = String(rawQuery.school || "");
+  const scope = await getAdminSchoolScope(adminUserId);
+  const school = String(rawQuery.school || "").trim();
   const status = String(rawQuery.status || "");
   const keyword = String(rawQuery.keyword || "").trim();
 
   const where = {
-    school: school || undefined,
+    school: buildScopedSchoolWhere(scope, school),
     status: status || undefined,
     OR: keyword
       ? [
@@ -274,7 +276,13 @@ export async function queryAdminShopApplyList(rawQuery: Record<string, unknown>)
   };
 }
 
-export async function reviewMiniShopApply(id: number, payload: MiniShopApplyReviewPayload) {
+export async function reviewMiniShopApply(adminUserId: number, id: number, payload: MiniShopApplyReviewPayload) {
+  const scope = await getAdminSchoolScope(adminUserId);
+  const current = await prisma.miniShopApply.findUniqueOrThrow({
+    where: { id }
+  });
+  assertSchoolInScope(scope, current.school);
+
   const reviewedAt = new Date();
   const row = await prisma.miniShopApply.update({
     where: { id },

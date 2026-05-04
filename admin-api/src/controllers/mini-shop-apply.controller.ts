@@ -20,7 +20,7 @@ export async function submitMiniShopApplyAction(req: Request, res: Response) {
 }
 
 export async function listAdminShopApplyAction(req: Request, res: Response) {
-  const data = await queryAdminShopApplyList(req.query as Record<string, unknown>);
+  const data = await queryAdminShopApplyList(req.adminAuth!.userId, req.query as Record<string, unknown>);
   return ok(res, data, req.traceId);
 }
 
@@ -28,6 +28,6 @@ export async function reviewMiniShopApplyAction(req: Request, res: Response) {
   const status = String(req.body?.status || "");
   const requiredPermissions = status === "已通过" ? ["store:apply:approve"] : ["store:apply:reject"];
   await assertRequestAdminPermission(req, ...requiredPermissions);
-  const data = await reviewMiniShopApply(Number(req.params.id), req.body as MiniShopApplyReviewPayload);
+  const data = await reviewMiniShopApply(req.adminAuth!.userId, Number(req.params.id), req.body as MiniShopApplyReviewPayload);
   return ok(res, data, req.traceId);
 }
