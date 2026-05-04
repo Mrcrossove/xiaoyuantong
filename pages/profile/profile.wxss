@@ -335,20 +335,32 @@
   justify-content: space-between;
 }
 
-.contact-service-button {
+.support-row {
   width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 28rpx;
+  column-gap: 18rpx;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.contact-service-row {
+  position: relative;
+}
+
+.contact-service-hit {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
   padding: 0;
   margin: 0;
   background: transparent;
   border: 0;
   border-radius: 0;
-  color: inherit;
-  font: inherit;
-  line-height: normal;
-  text-align: left;
+  opacity: 0;
 }
 
-.contact-service-button::after {
+.contact-service-hit::after {
   border: 0;
 }
 
@@ -369,6 +381,7 @@
 }
 
 .setting-left {
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 20rpx;
@@ -378,6 +391,7 @@
 }
 
 .setting-arrow {
+  justify-self: center;
   width: 18rpx;
   height: 18rpx;
   border-top: 4rpx solid #b3bbca;

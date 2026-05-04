@@ -56,21 +56,24 @@
   <view class="profile-card">
     <view class="section-title">设置与支持</view>
     <block wx:for="{{supportItems}}" wx:key="label">
-      <button
+      <view
         wx:if="{{item.icon == 'service'}}"
-        class="setting-row contact-service-button"
-        open-type="contact"
-        send-message-title="校园通客服"
-        send-message-path="/pages/profile/profile"
-        show-message-card="true"
+        class="setting-row support-row contact-service-row"
       >
         <view class="setting-left">
           <view class="setting-icon icon-{{item.icon}}"></view>
           <text>{{item.label}}</text>
         </view>
         <view class="setting-arrow"></view>
-      </button>
-      <view wx:else class="setting-row" data-icon="{{item.icon}}" bindtap="onSupportTap">
+        <button
+          class="contact-service-hit"
+          open-type="contact"
+          send-message-title="校园通客服"
+          send-message-path="/pages/profile/profile"
+          show-message-card="true"
+        ></button>
+      </view>
+      <view wx:else class="setting-row support-row" data-icon="{{item.icon}}" bindtap="onSupportTap">
         <view class="setting-left">
           <view class="setting-icon icon-{{item.icon}}"></view>
           <text>{{item.label}}</text>

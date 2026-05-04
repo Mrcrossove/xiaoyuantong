@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 import { ElMessage } from "element-plus";
 import { getStoreApi, updateStoreApi, uploadMerchantImageApi } from "../../api/modules/merchant";
 import { readFileAsDataUrl } from "../../utils/file";
@@ -10,9 +10,13 @@ const coverUploading = ref(false);
 const bannerUploading = ref(false);
 const coverInputRef = ref<HTMLInputElement | null>(null);
 const bannerInputRef = ref<HTMLInputElement | null>(null);
+const mapPickerVisible = ref(false);
+const mapPickerUrl = ref("");
 const serviceSchoolLabel = "\u53ef\u670d\u52a1\u9ad8\u6821";
 const serviceSchoolPlaceholder = "\u8f93\u5165\u9ad8\u6821\u540d\u79f0\u540e\u56de\u8f66\u6dfb\u52a0";
 const serviceSchoolTip = "\u5e97\u94fa\u5f52\u5c5e\u9ad8\u6821\u4f1a\u81ea\u52a8\u4fdd\u7559\uff1b\u6dfb\u52a0\u540e\uff0c\u7528\u6237\u5728\u8fd9\u4e9b\u9ad8\u6821\u4e5f\u80fd\u770b\u5230\u8be5\u5e97\u94fa\u5e76\u4e0b\u5355\u3002";
+const tencentMapKey = import.meta.env.VITE_TENCENT_MAP_KEY || "";
+const tencentMapReferer = import.meta.env.VITE_TENCENT_MAP_REFERER || "campus-merchant-web";
 
 const form = reactive({
   name: "",
@@ -28,6 +32,13 @@ const form = reactive({
   tags: [] as string[],
   serviceSchools: [] as string[],
   banners: [] as string[]
+});
+
+const selectedLocationText = computed(() => {
+  if (form.latitude === null || form.longitude === null) {
+    return "未选择导航定位";
+  }
+  return `${form.locationName || "已选择定位"} / ${form.locationAddress || form.address || "暂无详细地址"}`;
 });
 
 function normalizeStoreTags(tags: string[]) {
@@ -169,7 +180,7 @@ async function saveStore(successMessage = "店铺信息已更新") {
   const hasLatitude = form.latitude !== null && form.latitude !== undefined;
   const hasLongitude = form.longitude !== null && form.longitude !== undefined;
   if (hasLatitude !== hasLongitude) {
-    ElMessage.warning("请同时填写导航纬度和经度");
+    ElMessage.warning("请重新通过地图选点保存完整导航定位");
     return;
   }
 
@@ -204,8 +215,26 @@ async function handleSave() {
 }
 
 function openTencentLocationPicker() {
-  const query = encodeURIComponent(form.address || form.name || "");
-  window.open(`https://apis.map.qq.com/tools/locpicker?search=1&type=1&keyword=${query}`, "_blank");
+  if (!tencentMapKey) {
+    ElMessage.warning("请先配置 VITE_TENCENT_MAP_KEY，否则腾讯地图会拒绝打开选点页。");
+    return;
+  }
+
+  const params = new URLSearchParams({
+    search: "1",
+    type: "1",
+    key: tencentMapKey,
+    referer: tencentMapReferer
+  });
+  const keyword = String(form.locationAddress || form.address || form.name || "").trim();
+  if (keyword) {
+    params.set("keyword", keyword);
+  }
+  if (form.latitude !== null && form.longitude !== null) {
+    params.set("coord", `${form.latitude},${form.longitude}`);
+  }
+  mapPickerUrl.value = `https://apis.map.qq.com/tools/locpicker?${params.toString()}`;
+  mapPickerVisible.value = true;
 }
 
 function clearLocation() {
@@ -215,7 +244,38 @@ function clearLocation() {
   form.locationAddress = "";
 }
 
-onMounted(loadData);
+function handleMapMessage(event: MessageEvent) {
+  const loc = event.data;
+  if (!loc || loc.module !== "locationPicker") {
+    return;
+  }
+
+  const lat = Number(loc.latlng?.lat);
+  const lng = Number(loc.latlng?.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    ElMessage.warning("未获取到有效的导航坐标，请重新选点");
+    return;
+  }
+
+  form.latitude = lat;
+  form.longitude = lng;
+  form.locationName = String(loc.poiname || loc.poiaddress || form.name || "").trim();
+  form.locationAddress = String(loc.poiaddress || loc.addr || loc.cityname || "").trim();
+  if (!form.address && form.locationAddress) {
+    form.address = form.locationAddress;
+  }
+  mapPickerVisible.value = false;
+  ElMessage.success("导航定位已更新");
+}
+
+onMounted(() => {
+  loadData();
+  window.addEventListener("message", handleMapMessage, false);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("message", handleMapMessage, false);
+});
 </script>
 
 <template>
@@ -298,35 +358,17 @@ onMounted(loadData);
                 <el-input v-model.trim="form.locationAddress" maxlength="120" placeholder="地图定位地址，可与店铺地址不同" />
               </el-col>
             </el-row>
-            <el-row :gutter="12">
-              <el-col :xs="24" :md="12">
-                <el-input-number
-                  v-model="form.latitude"
-                  :precision="6"
-                  :min="-90"
-                  :max="90"
-                  controls-position="right"
-                  placeholder="纬度"
-                  style="width: 100%"
-                />
-              </el-col>
-              <el-col :xs="24" :md="12">
-                <el-input-number
-                  v-model="form.longitude"
-                  :precision="6"
-                  :min="-180"
-                  :max="180"
-                  controls-position="right"
-                  placeholder="经度"
-                  style="width: 100%"
-                />
-              </el-col>
-            </el-row>
+            <div class="location-summary">
+              <div class="location-summary-title">{{ selectedLocationText }}</div>
+              <div v-if="form.latitude !== null && form.longitude !== null" class="location-summary-meta">
+                坐标已保存，用户点击小程序地址时可直接唤起地图导航。
+              </div>
+            </div>
             <div class="location-actions">
-              <el-button @click="openTencentLocationPicker">打开腾讯地图取点</el-button>
+              <el-button @click="openTencentLocationPicker">打开腾讯地图选点</el-button>
               <el-button @click="clearLocation">清空定位</el-button>
             </div>
-            <div class="form-tip">小程序导航必须有经纬度。打开腾讯地图取点后，将页面里显示的纬度、经度填回这里。</div>
+            <div class="form-tip">小程序导航需要地图定位。商家只需要点击地图选点，系统会自动保存导航坐标。</div>
           </div>
         </el-form-item>
 
@@ -362,6 +404,13 @@ onMounted(loadData);
       <input ref="coverInputRef" class="hidden-input" type="file" accept="image/*" @change="handleCoverChange" />
       <input ref="bannerInputRef" class="hidden-input" type="file" accept="image/*" multiple @change="handleBannerChange" />
     </el-card>
+
+    <el-dialog v-model="mapPickerVisible" title="地图选点" width="920px" class="map-picker-dialog">
+      <iframe v-if="mapPickerVisible" class="map-picker-frame" :src="mapPickerUrl"></iframe>
+      <template #footer>
+        <el-button @click="mapPickerVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -383,10 +432,37 @@ onMounted(loadData);
   gap: 12px;
 }
 
+.location-summary {
+  padding: 12px 14px;
+  border: 1px solid #dbe4f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.location-summary-title {
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.location-summary-meta {
+  margin-top: 4px;
+  color: #667085;
+  font-size: 12px;
+}
+
 .location-actions {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.map-picker-frame {
+  width: 100%;
+  height: 560px;
+  border: 0;
+  border-radius: 8px;
+  background: #f8fafc;
 }
 
 .image-card,
