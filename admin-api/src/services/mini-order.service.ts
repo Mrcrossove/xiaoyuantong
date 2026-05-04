@@ -729,7 +729,12 @@ export async function queryAdminOrderList(rawQuery: Record<string, unknown>) {
       : undefined
   };
 
-  const [total, list] = await prisma.$transaction([
+  const paidSummaryWhere = {
+    ...where,
+    payStatus: MINI_PAY_STATUS.paid
+  };
+
+  const [total, list, paidAggregate] = await prisma.$transaction([
     prisma.miniOrder.count({ where }),
     prisma.miniOrder.findMany({
       where,
@@ -746,6 +751,12 @@ export async function queryAdminOrderList(rawQuery: Record<string, unknown>) {
       orderBy: { id: "desc" },
       skip,
       take: pageSize
+    }),
+    prisma.miniOrder.aggregate({
+      where: paidSummaryWhere,
+      _sum: {
+        amount: true
+      }
     })
   ]);
 
@@ -753,7 +764,10 @@ export async function queryAdminOrderList(rawQuery: Record<string, unknown>) {
     list: list.map((item: any) => mapAdminOrder(item)),
     page,
     pageSize,
-    total
+    total,
+    summary: {
+      paidAmount: roundMoney(Number(paidAggregate._sum.amount || 0))
+    }
   };
 }
 

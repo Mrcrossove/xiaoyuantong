@@ -9,6 +9,9 @@ import { exportTableToCsv } from "../../utils/export";
 const loading = ref(false);
 const list = ref<AdminOrderItem[]>([]);
 const total = ref(0);
+const summary = ref({
+  paidAmount: 0
+});
 const query = reactive({
   page: 1,
   pageSize: 10,
@@ -20,7 +23,7 @@ const query = reactive({
 
 const schoolOptions = computed(() => [...new Set(list.value.map((item) => item.school).filter(Boolean))]);
 const paidCount = computed(() => list.value.filter((item) => item.payStatus === "已支付").length);
-const amountTotal = computed(() => list.value.reduce((sum, item) => sum + Number(item.amount || 0), 0));
+const amountTotal = computed(() => Number(summary.value.paidAmount || 0));
 const pendingSettlementCount = computed(() => list.value.filter((item) => item.settlementStatus === "待结算").length);
 
 function showApiError(error: unknown, fallback: string) {
@@ -41,6 +44,9 @@ async function loadData() {
     const result = await getAdminOrderListApi(query);
     list.value = result.list;
     total.value = result.total;
+    summary.value = {
+      paidAmount: Number((result as any).summary?.paidAmount || 0)
+    };
   } catch (error) {
     showApiError(error, "订单列表加载失败");
   } finally {

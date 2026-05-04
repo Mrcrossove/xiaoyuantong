@@ -18,6 +18,7 @@ export interface PageResult<T> {
   page: number;
   pageSize: number;
   total: number;
+  summary?: Record<string, unknown>;
 }
 
 export interface BatchIdsPayload {
