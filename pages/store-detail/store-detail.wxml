@@ -44,9 +44,17 @@
       </view>
 
       <view wx:if="{{activeTab === 'goods'}}" class="goods-list">
-        <view wx:if="{{detail.products.length}}">
+        <view wx:if="{{detail.products.length}}" class="goods-menu-layout">
+          <scroll-view scroll-y class="goods-category-nav" enhanced show-scrollbar="{{false}}">
+            <view class="goods-category-item {{activeProductCategoryId === item.id ? 'active' : ''}}" wx:for="{{productSections}}" wx:key="id" data-id="{{item.id}}" bindtap="switchProductCategory">
+              <view class="goods-category-name">{{item.name}}</view>
+              <view class="goods-category-count">{{item.productCount}}</view>
+            </view>
+          </scroll-view>
+          <scroll-view scroll-y class="goods-section-scroll" enhanced show-scrollbar="{{false}}">
           <view class="goods-tip">点击商品卡片查看详情、参数和购买须知。</view>
-          <view class="goods-card {{selectedProductId == item.id ? 'active' : ''}}" wx:for="{{detail.products}}" wx:key="id" data-id="{{item.id}}" bindtap="openProductDetail">
+          <view class="goods-section-title">{{activeProductCategoryName}}</view>
+          <view class="goods-card {{selectedProductId == item.id ? 'active' : ''}}" wx:for="{{displayedProducts}}" wx:key="id" data-id="{{item.id}}" bindtap="openProductDetail">
             <view wx:if="{{item.coverMode === 'class'}}" class="goods-cover cover-{{item.cover}}"></view>
             <image wx:else class="goods-cover hero-image" src="{{item.cover}}" mode="aspectFill"></image>
             <view class="goods-body">
@@ -70,6 +78,7 @@
               </view>
             </view>
           </view>
+          </scroll-view>
         </view>
         <view wx:else class="goods-empty">
           <view class="goods-empty-title">商家正在上架商品</view>

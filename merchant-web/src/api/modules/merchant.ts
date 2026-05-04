@@ -51,6 +51,14 @@ export const uploadMerchantImageApi = (payload: { fileName: string; base64: stri
   });
 
 export const getProductListApi = () => request<any>({ url: "/merchant/product/list", method: "GET" });
+export const getProductCategoryListApi = () => request<any>({ url: "/merchant/product/category/list", method: "GET" });
+export const createProductCategoryApi = (payload: { name: string }) =>
+  request<any>({ url: "/merchant/product/category", method: "POST", body: JSON.stringify(payload) });
+export const updateProductCategoryApi = (id: number, payload: { name: string }) =>
+  request<any>({ url: `/merchant/product/category/${id}`, method: "PUT", body: JSON.stringify(payload) });
+export const deleteProductCategoryApi = (id: number) => request<any>({ url: `/merchant/product/category/${id}`, method: "DELETE" });
+export const moveProductCategoryApi = (id: number, direction: "up" | "down") =>
+  request<any>({ url: `/merchant/product/category/${id}/move`, method: "POST", body: JSON.stringify({ direction }) });
 export const createProductApi = (payload: any) =>
   request<any>({ url: "/merchant/product", method: "POST", body: JSON.stringify(payload) });
 export const updateProductApi = (id: string, payload: any) =>

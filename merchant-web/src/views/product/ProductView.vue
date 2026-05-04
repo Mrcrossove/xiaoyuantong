@@ -4,11 +4,16 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import {
   batchDeleteProductsApi,
   batchDownProductsApi,
+  createProductCategoryApi,
   createProductApi,
+  deleteProductCategoryApi,
   deleteProductApi,
+  getProductCategoryListApi,
   getProductListApi,
+  moveProductCategoryApi,
   moveProductApi,
   toggleProductStatusApi,
+  updateProductCategoryApi,
   updateProductApi,
   uploadMerchantImageApi
 } from "../../api/modules/merchant";
@@ -37,7 +42,9 @@ const coverInputRef = ref<HTMLInputElement | null>(null);
 const editingId = ref("");
 const selectionIds = ref<string[]>([]);
 const list = ref<any[]>([]);
+const categories = ref<any[]>([]);
 const summary = ref<any>({});
+const categoryName = ref("");
 
 function createSku(name = "默认规格"): ProductSku {
   return {
@@ -51,6 +58,7 @@ function createSku(name = "默认规格"): ProductSku {
 }
 
 const form = reactive({
+  categoryId: null as number | null,
   name: "",
   desc: "",
   detailTitle: "",
@@ -103,6 +111,7 @@ function syncBaseFromSingleSku() {
 
 function resetForm() {
   editingId.value = "";
+  form.categoryId = categories.value[0]?.id || null;
   form.name = "";
   form.desc = "";
   form.detailTitle = "";
@@ -125,6 +134,7 @@ function handleSpecModeChange(value: "single" | "multi") {
 
 function fillForm(row: any) {
   editingId.value = row.id;
+  form.categoryId = Number(row.categoryId || categories.value[0]?.id || 0) || null;
   form.name = row.name;
   form.desc = row.desc;
   form.detailTitle = row.detailTitle || "";
@@ -167,11 +177,23 @@ async function loadData() {
   try {
     const result = await getProductListApi();
     list.value = result.list || [];
+    categories.value = result.categories || [];
     summary.value = result.summary || {};
+    if (!form.categoryId && categories.value.length) {
+      form.categoryId = categories.value[0].id;
+    }
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : "商品列表加载失败");
   } finally {
     loading.value = false;
+  }
+}
+
+async function loadCategories() {
+  const result = await getProductCategoryListApi();
+  categories.value = result.list || [];
+  if (!form.categoryId && categories.value.length) {
+    form.categoryId = categories.value[0].id;
   }
 }
 
@@ -210,6 +232,10 @@ function validateForm() {
     throw new Error("请输入商品描述");
   }
 
+  if (!form.categoryId) {
+    throw new Error("请选择商品分类");
+  }
+
   if (!String(form.price || "").trim()) {
     throw new Error("请输入商品价格");
   }
@@ -232,6 +258,7 @@ function buildPayload() {
   syncSingleSkuFromBase();
 
   return {
+    categoryId: form.categoryId,
     name: form.name,
     desc: form.desc,
     detailTitle: form.detailTitle,
@@ -259,6 +286,41 @@ function buildPayload() {
       isDefault: Boolean(sku.isDefault)
     }))
   };
+}
+
+async function handleCreateCategory() {
+  const name = categoryName.value.trim();
+  if (!name) {
+    ElMessage.warning("请输入分类名称");
+    return;
+  }
+  await createProductCategoryApi({ name });
+  categoryName.value = "";
+  ElMessage.success("分类已新增");
+  await loadData();
+}
+
+async function handleRenameCategory(row: any) {
+  const { value } = await ElMessageBox.prompt("请输入新的分类名称", "编辑分类", {
+    inputValue: row.name,
+    inputPattern: /^.{2,10}$/,
+    inputErrorMessage: "分类需为 2-10 个字"
+  });
+  await updateProductCategoryApi(Number(row.id), { name: String(value || "").trim() });
+  ElMessage.success("分类已更新");
+  await loadData();
+}
+
+async function handleDeleteCategory(row: any) {
+  await ElMessageBox.confirm("删除前请确认该分类下没有商品。", "删除分类", { type: "warning" });
+  await deleteProductCategoryApi(Number(row.id));
+  ElMessage.success("分类已删除");
+  await loadData();
+}
+
+async function handleMoveCategory(row: any, direction: "up" | "down") {
+  await moveProductCategoryApi(Number(row.id), direction);
+  await loadCategories();
 }
 
 async function handleSave() {
@@ -354,6 +416,32 @@ onMounted(loadData);
     <el-card>
       <template #header>
         <div class="card-header">
+          <span>商品分类</span>
+          <div class="header-actions">
+            <el-input v-model.trim="categoryName" maxlength="10" placeholder="新增分类" style="width: 180px" />
+            <el-button v-if="canCreate" type="primary" @click="handleCreateCategory">新增分类</el-button>
+          </div>
+        </div>
+      </template>
+      <div class="category-list">
+        <div v-for="item in categories" :key="item.id" class="category-row">
+          <div>
+            <div class="category-name">{{ item.name }}</div>
+            <div class="category-count">{{ item.productCount || 0 }} 个商品</div>
+          </div>
+          <div class="category-actions">
+            <el-button v-if="canSort" link @click="handleMoveCategory(item, 'up')">上移</el-button>
+            <el-button v-if="canSort" link @click="handleMoveCategory(item, 'down')">下移</el-button>
+            <el-button v-if="canEdit" link type="primary" @click="handleRenameCategory(item)">编辑</el-button>
+            <el-button v-if="canDelete" link type="danger" @click="handleDeleteCategory(item)">删除</el-button>
+          </div>
+        </div>
+      </div>
+    </el-card>
+
+    <el-card>
+      <template #header>
+        <div class="card-header">
           <span>商品列表</span>
           <div class="header-actions">
             <el-button v-if="canStatus" @click="handleBatchDown">批量下架</el-button>
@@ -366,6 +454,7 @@ onMounted(loadData);
       <el-table :data="list" empty-text="暂无商品" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="48" />
         <el-table-column prop="name" label="商品名称" min-width="160" />
+        <el-table-column prop="categoryName" label="商品分类" width="120" />
         <el-table-column prop="desc" label="商品描述" min-width="180" />
         <el-table-column prop="price" label="售价" width="120" />
         <el-table-column label="规格" width="120">
@@ -407,6 +496,13 @@ onMounted(loadData);
           <el-col :xs="24" :sm="12">
             <el-form-item label="商品名称">
               <el-input v-model.trim="form.name" maxlength="30" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="商品分类">
+              <el-select v-model="form.categoryId" placeholder="请选择商品分类" style="width: 100%">
+                <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
+              </el-select>
             </el-form-item>
           </el-col>
         </el-row>
@@ -507,6 +603,39 @@ onMounted(loadData);
 }
 
 .header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.category-list {
+  display: grid;
+  gap: 10px;
+}
+
+.category-row {
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+}
+
+.category-name {
+  font-weight: 700;
+  color: #111827;
+}
+
+.category-count {
+  margin-top: 4px;
+  color: #667085;
+  font-size: 12px;
+}
+
+.category-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;

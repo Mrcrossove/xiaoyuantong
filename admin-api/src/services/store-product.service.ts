@@ -12,6 +12,7 @@ type DbClient = any;
 
 function productInclude() {
   return {
+    category: true,
     skus: {
       orderBy: [{ sortOrder: "asc" as const }, { id: "asc" as const }]
     }
@@ -33,6 +34,8 @@ function mapProductRow(row: any): MerchantProductItem {
 
   return {
     id: String(row.productKey),
+    categoryId: row.categoryId ? Number(row.categoryId) : null,
+    categoryName: String(row.category?.name || row.categoryName || "默认分类"),
     name: String(row.name || ""),
     desc: String(row.desc || ""),
     detailTitle: String(row.detailTitle || ""),
@@ -117,6 +120,180 @@ async function getNextSortOrder(db: DbClient, storeId: number) {
   return Number(row?.sortOrder || 0) + 1;
 }
 
+function mapProductCategory(row: any, productCount = 0) {
+  return {
+    id: Number(row.id),
+    name: String(row.name || ""),
+    sortOrder: Number(row.sortOrder || 0),
+    status: String(row.status || "enabled"),
+    productCount
+  };
+}
+
+async function getNextCategorySortOrder(db: DbClient, storeId: number) {
+  const row = await db.miniStoreProductCategory.findFirst({
+    where: { storeId },
+    orderBy: [{ sortOrder: "desc" }, { id: "desc" }],
+    select: { sortOrder: true }
+  });
+  return Number(row?.sortOrder || 0) + 1;
+}
+
+export async function ensureDefaultStoreProductCategory(db: DbClient, storeId: number) {
+  const current = await db.miniStoreProductCategory.findFirst({
+    where: { storeId, status: "enabled" },
+    orderBy: [{ sortOrder: "asc" }, { id: "asc" }]
+  });
+  if (current) return current;
+
+  return db.miniStoreProductCategory.create({
+    data: {
+      storeId,
+      name: "默认分类",
+      sortOrder: 1,
+      status: "enabled"
+    }
+  });
+}
+
+async function resolveProductCategory(db: DbClient, storeId: number, categoryId?: number | null) {
+  if (categoryId) {
+    const row = await db.miniStoreProductCategory.findFirst({
+      where: {
+        id: Number(categoryId),
+        storeId,
+        status: "enabled"
+      }
+    });
+    if (!row) {
+      throw new ApiError("商品分类不存在", ERROR_CODES.BAD_REQUEST, 400);
+    }
+    return row;
+  }
+
+  return ensureDefaultStoreProductCategory(db, storeId);
+}
+
+export async function listStoreProductCategoriesByStoreId(db: DbClient, storeId: number) {
+  await ensureDefaultStoreProductCategory(db, storeId);
+  const rows = await db.miniStoreProductCategory.findMany({
+    where: { storeId, status: "enabled" },
+    orderBy: [{ sortOrder: "asc" }, { id: "asc" }]
+  });
+  const counts = await db.miniStoreProduct.groupBy({
+    by: ["categoryId"],
+    where: { storeId },
+    _count: { _all: true }
+  });
+  const countMap = new Map<number, number>();
+  counts.forEach((item: any) => {
+    countMap.set(Number(item.categoryId || 0), Number(item._count?._all || 0));
+  });
+  return rows.map((row: any) => mapProductCategory(row, countMap.get(Number(row.id)) || 0));
+}
+
+export async function createStoreProductCategoryRecord(db: DbClient, storeId: number, name: string) {
+  const cleanName = String(name || "").trim();
+  const exists = await db.miniStoreProductCategory.findFirst({
+    where: { storeId, name: cleanName, status: "enabled" }
+  });
+  if (exists) {
+    throw new ApiError("商品分类已存在", ERROR_CODES.BAD_REQUEST, 400);
+  }
+
+  const sortOrder = await getNextCategorySortOrder(db, storeId);
+  const row = await db.miniStoreProductCategory.create({
+    data: {
+      storeId,
+      name: cleanName,
+      sortOrder,
+      status: "enabled"
+    }
+  });
+  return mapProductCategory(row, 0);
+}
+
+export async function updateStoreProductCategoryRecord(db: DbClient, storeId: number, categoryId: number, name: string) {
+  const cleanName = String(name || "").trim();
+  const current = await db.miniStoreProductCategory.findFirst({
+    where: { id: Number(categoryId), storeId, status: "enabled" }
+  });
+  if (!current) {
+    throw new ApiError("商品分类不存在", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  const duplicate = await db.miniStoreProductCategory.findFirst({
+    where: {
+      storeId,
+      name: cleanName,
+      status: "enabled",
+      id: { not: Number(categoryId) }
+    }
+  });
+  if (duplicate) {
+    throw new ApiError("商品分类已存在", ERROR_CODES.BAD_REQUEST, 400);
+  }
+
+  const row = await db.miniStoreProductCategory.update({
+    where: { id: current.id },
+    data: { name: cleanName }
+  });
+  await db.miniStoreProduct.updateMany({
+    where: { storeId, categoryId: current.id },
+    data: { categoryName: cleanName }
+  });
+  await syncStoreProductSnapshot(db, storeId);
+  const count = await db.miniStoreProduct.count({ where: { storeId, categoryId: current.id } });
+  return mapProductCategory(row, count);
+}
+
+export async function deleteStoreProductCategoryRecord(db: DbClient, storeId: number, categoryId: number) {
+  const current = await db.miniStoreProductCategory.findFirst({
+    where: { id: Number(categoryId), storeId, status: "enabled" }
+  });
+  if (!current) {
+    throw new ApiError("商品分类不存在", ERROR_CODES.NOT_FOUND, 404);
+  }
+  const productCount = await db.miniStoreProduct.count({ where: { storeId, categoryId: current.id } });
+  if (productCount > 0) {
+    throw new ApiError("该分类下还有商品，请先调整商品分类", ERROR_CODES.BAD_REQUEST, 400);
+  }
+
+  await db.miniStoreProductCategory.delete({ where: { id: current.id } });
+  return true;
+}
+
+export async function moveStoreProductCategoryRecord(
+  db: DbClient,
+  storeId: number,
+  categoryId: number,
+  direction: "up" | "down"
+) {
+  const rows = await db.miniStoreProductCategory.findMany({
+    where: { storeId, status: "enabled" },
+    orderBy: [{ sortOrder: "asc" }, { id: "asc" }]
+  });
+  const index = rows.findIndex((item: any) => Number(item.id) === Number(categoryId));
+  if (index === -1) {
+    throw new ApiError("商品分类不存在", ERROR_CODES.NOT_FOUND, 404);
+  }
+  const targetIndex = direction === "up" ? index - 1 : index + 1;
+  if (targetIndex < 0 || targetIndex >= rows.length) {
+    return mapProductCategory(rows[index]);
+  }
+
+  await db.miniStoreProductCategory.update({
+    where: { id: rows[index].id },
+    data: { sortOrder: rows[targetIndex].sortOrder }
+  });
+  await db.miniStoreProductCategory.update({
+    where: { id: rows[targetIndex].id },
+    data: { sortOrder: rows[index].sortOrder }
+  });
+
+  return mapProductCategory(rows[index]);
+}
+
 async function replaceProductSkus(
   db: DbClient,
   productId: number,
@@ -151,11 +328,14 @@ export async function createStoreProductRecord(
   productKey: string
 ) {
   const normalized = normalizeMerchantProductPayload(String(productKey), payload);
+  const category = await resolveProductCategory(db, storeId, normalized.categoryId);
   const sortOrder = await getNextSortOrder(db, storeId);
   const created = await db.miniStoreProduct.create({
     data: {
       productKey: normalized.id,
       storeId,
+      categoryId: category.id,
+      categoryName: category.name,
       name: normalized.name,
       desc: normalized.desc,
       detailTitle: normalized.detailTitle || "",
@@ -186,11 +366,14 @@ export async function updateStoreProductRecord(
 ) {
   const current = await findStoreProductRow(db, storeId, productKey);
   const normalized = normalizeMerchantProductPayload(String(productKey), payload);
+  const category = await resolveProductCategory(db, storeId, normalized.categoryId || current.categoryId);
 
   await db.miniStoreProduct.update({
     where: { id: current.id },
     data: {
       name: normalized.name,
+      categoryId: category.id,
+      categoryName: category.name,
       desc: normalized.desc,
       detailTitle: normalized.detailTitle || "",
       detailText: normalized.detailText || "",

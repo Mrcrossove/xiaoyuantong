@@ -3,9 +3,11 @@ import {
   acceptMerchantOrderAction,
   batchDeleteMerchantProductsAction,
   batchDownMerchantProductsAction,
+  createMerchantProductCategoryAction,
   createMerchantProductAction,
   createMerchantWithdrawAction,
   deleteMerchantProductAction,
+  deleteMerchantProductCategoryAction,
   finishMerchantOrderAction,
   getMerchantAccountProfileAction,
   getMerchantDashboardAction,
@@ -17,8 +19,10 @@ import {
   listMerchantMessagesAction,
   listMerchantOrdersAction,
   listMerchantProductsAction,
+  listMerchantProductCategoriesAction,
   listMerchantRefundsAction,
   moveMerchantProductAction,
+  moveMerchantProductCategoryAction,
   readAllMerchantMessagesAction,
   readMerchantMessageAction,
   reviewMerchantRefundAction,
@@ -26,6 +30,7 @@ import {
   updateMerchantAccountProfileAction,
   updateMerchantPasswordAction,
   updateMerchantProductAction,
+  updateMerchantProductCategoryAction,
   updateMerchantStoreAction,
   uploadMerchantImageAction
 } from "../controllers/merchant-portal.controller";
@@ -34,6 +39,7 @@ import {
   miniMessageReadAllSchema,
   miniMerchantBatchIdsSchema,
   miniMerchantMoveSchema,
+  miniMerchantProductCategorySchema,
   miniMerchantProductSchema,
   miniMerchantStoreUpdateSchema,
   miniUploadImageSchema,
@@ -84,6 +90,39 @@ router.get(
   requireMerchantMenuAccess("/product"),
   requireMerchantPermission("product:view"),
   asyncHandler(listMerchantProductsAction)
+);
+router.get(
+  "/product/category/list",
+  requireMerchantMenuAccess("/product"),
+  requireMerchantPermission("product:view"),
+  asyncHandler(listMerchantProductCategoriesAction)
+);
+router.post(
+  "/product/category",
+  requireMerchantMenuAccess("/product"),
+  requireMerchantPermission("product:create"),
+  validateBody(miniMerchantProductCategorySchema),
+  asyncHandler(createMerchantProductCategoryAction)
+);
+router.put(
+  "/product/category/:id",
+  requireMerchantMenuAccess("/product"),
+  requireMerchantPermission("product:edit"),
+  validateBody(miniMerchantProductCategorySchema),
+  asyncHandler(updateMerchantProductCategoryAction)
+);
+router.delete(
+  "/product/category/:id",
+  requireMerchantMenuAccess("/product"),
+  requireMerchantPermission("product:delete"),
+  asyncHandler(deleteMerchantProductCategoryAction)
+);
+router.post(
+  "/product/category/:id/move",
+  requireMerchantMenuAccess("/product"),
+  requireMerchantPermission("product:sort"),
+  validateBody(miniMerchantMoveSchema),
+  asyncHandler(moveMerchantProductCategoryAction)
 );
 router.post(
   "/product",

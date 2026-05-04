@@ -219,6 +219,8 @@ function mapStoreDetail(item: any) {
       const defaultSku = getDefaultSku(entry);
       return {
         id: entry.id,
+        categoryId: entry.categoryId || null,
+        categoryName: entry.categoryName || "默认分类",
         name: entry.name,
         desc: entry.desc,
         detailTitle: entry.detailTitle || "",
@@ -235,6 +237,22 @@ function mapStoreDetail(item: any) {
         skus: (entry.skus || []).filter((sku) => String(sku.status || MERCHANT_PRODUCT_STATUS.onSale) === MERCHANT_PRODUCT_STATUS.onSale)
       };
     });
+  const sectionMap = new Map<string, { id: string; name: string; productCount: number; products: any[] }>();
+  products.forEach((product: any) => {
+    const key = product.categoryId ? `cat_${product.categoryId}` : `name_${product.categoryName || "默认分类"}`;
+    if (!sectionMap.has(key)) {
+      sectionMap.set(key, {
+        id: key,
+        name: product.categoryName || "默认分类",
+        productCount: 0,
+        products: []
+      });
+    }
+    const section = sectionMap.get(key)!;
+    section.products.push(product);
+    section.productCount += 1;
+  });
+  const productSections = Array.from(sectionMap.values());
 
   return {
     title: item.title,
@@ -249,7 +267,8 @@ function mapStoreDetail(item: any) {
       count: products.length
     },
     banners: (cover ? [cover] : []).concat(toArray(item.banners).map((entry) => String(entry))),
-    products
+    products,
+    productSections
   };
 }
 

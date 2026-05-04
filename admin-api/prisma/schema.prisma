@@ -241,8 +241,23 @@ model MiniStore {
   updatedAt    DateTime @updatedAt
   merchantAccount MerchantAccount?
   productRows  MiniStoreProduct[]
+  productCategories MiniStoreProductCategory[]
   changeLogs   AdminStoreChangeLog[]
   productApprovals StoreProductApproval[]
+}
+
+model MiniStoreProductCategory {
+  id        Int      @id @default(autoincrement())
+  storeId   Int
+  store     MiniStore @relation(fields: [storeId], references: [id])
+  name      String
+  sortOrder Int      @default(0)
+  status    String   @default("enabled")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  products  MiniStoreProduct[]
+
+  @@index([storeId, sortOrder])
 }
 
 model MiniStoreProduct {
@@ -250,6 +265,9 @@ model MiniStoreProduct {
   productKey   String   @unique
   storeId      Int
   store        MiniStore @relation(fields: [storeId], references: [id])
+  categoryId   Int?
+  category     MiniStoreProductCategory? @relation(fields: [categoryId], references: [id])
+  categoryName String   @default("默认分类")
   name         String
   desc         String
   detailTitle  String   @default("")
@@ -269,6 +287,7 @@ model MiniStoreProduct {
   skus         MiniStoreProductSku[]
 
   @@index([storeId, sortOrder])
+  @@index([categoryId, sortOrder])
 }
 
 model MiniStoreProductSku {

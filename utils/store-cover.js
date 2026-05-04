@@ -74,13 +74,31 @@ function normalizeStoreDetail(detail) {
       coverMode: isRemoteImage(productCover) ? "image" : "class"
     };
   });
+  const productMap = products.reduce((map, item) => {
+    map[String(item.id)] = item;
+    return map;
+  }, {});
+  const productSections = (detail.productSections || []).map((section) => ({
+    ...section,
+    products: (section.products || []).map((item) => {
+      const product = productMap[String(item.id)];
+      if (product) return product;
+      const productCover = pickGoodsFallback(item, cover);
+      return {
+        ...item,
+        cover: productCover,
+        coverMode: isRemoteImage(productCover) ? "image" : "class"
+      };
+    })
+  })).filter((section) => section.products.length);
 
   return {
     ...detail,
     cover,
     coverMode: isRemoteImage(cover) ? "image" : "class",
     banners,
-    products
+    products,
+    productSections
   };
 }
 

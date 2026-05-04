@@ -121,9 +121,17 @@ function buildDetailState(detail) {
   const normalizedDetail = normalizeStoreDetail(detail);
   const currentProduct = pickDefaultProduct(normalizedDetail);
   const currentSku = pickDefaultSku(currentProduct);
+  const productSections = (normalizedDetail && normalizedDetail.productSections) || [];
+  const activeProductCategoryId = productSections[0] ? productSections[0].id : "";
+  const displayedProducts = productSections[0] ? productSections[0].products : (normalizedDetail.products || []);
+  const activeProductCategoryName = productSections[0] ? productSections[0].name : "";
 
   return {
     detail: normalizedDetail,
+    productSections,
+    activeProductCategoryId,
+    activeProductCategoryName,
+    displayedProducts,
     ...buildSelectionState(currentProduct, currentSku && currentSku.id, 1),
     ...buildCartState([])
   };
@@ -152,6 +160,10 @@ Page({
     navRightSafeRpx: 24,
     selectedSchool: "",
     detail: null,
+    productSections: [],
+    activeProductCategoryId: "",
+    activeProductCategoryName: "",
+    displayedProducts: [],
     activeTab: "goods",
     favorite: false,
     submittingOrder: false,
@@ -264,6 +276,16 @@ Page({
 
     this.setData({
       activeTab: key
+    });
+  },
+
+  switchProductCategory(event) {
+    const { id } = event.currentTarget.dataset;
+    const section = (this.data.productSections || []).find((item) => String(item.id) === String(id));
+    this.setData({
+      activeProductCategoryId: String(id || ""),
+      activeProductCategoryName: section ? section.name : "",
+      displayedProducts: section ? section.products : []
     });
   },
 

@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import type {
   MiniMerchantBatchIdsPayload,
   MiniMerchantMovePayload,
+  MiniMerchantProductCategoryPayload,
   MiniMerchantProductPayload,
   MiniMerchantStoreUpdatePayload,
   MiniMessageReadAllPayload,
@@ -16,12 +17,17 @@ import { formatDateTime } from "../utils/time";
 import {
   batchDeleteMerchantProducts,
   batchDownMerchantProducts,
+  createMerchantProductCategory,
   createMerchantProduct,
+  deleteMerchantProductCategory,
   deleteMerchantProduct,
   getCurrentMerchantOrderBoard,
   getCurrentMerchantStore,
+  listMerchantProductCategories,
+  moveMerchantProductCategory,
   moveMerchantProduct,
   toggleMerchantProductStatus,
+  updateMerchantProductCategory,
   updateCurrentMerchantStore,
   updateMerchantProduct
 } from "./mini-merchant.service";
@@ -373,10 +379,15 @@ export async function queryMerchantDashboard(accountId: number) {
 
 export async function queryMerchantProductList(accountId: number) {
   const context = await getMerchantContext(accountId);
-  const products = (await listStoreProductsByStoreId(prisma, context.store.id)).map(mapMerchantProduct);
+  const [productRows, categoriesResult] = await Promise.all([
+    listStoreProductsByStoreId(prisma, context.store.id),
+    listMerchantProductCategories(context.miniUserId)
+  ]);
+  const products = productRows.map(mapMerchantProduct);
 
   return {
     list: products,
+    categories: categoriesResult.list,
     total: products.length,
     summary: {
       total: products.length,
@@ -661,6 +672,11 @@ export async function queryMerchantWallet(accountId: number) {
   };
 }
 
+export async function queryMerchantProductCategoryList(accountId: number) {
+  const context = await getMerchantContext(accountId);
+  return listMerchantProductCategories(context.miniUserId);
+}
+
 export async function merchantCreateWithdraw(accountId: number, payload: MiniWithdrawCreatePayload) {
   const context = await getMerchantContext(accountId);
   await ensureMerchantWithdrawProfileReady(accountId);
@@ -843,6 +859,26 @@ export async function updateMerchantPassword(accountId: number, payload: Merchan
 export async function merchantGetStore(accountId: number) {
   const context = await getMerchantContext(accountId);
   return getCurrentMerchantStore(context.miniUserId);
+}
+
+export async function merchantCreateProductCategory(accountId: number, payload: MiniMerchantProductCategoryPayload) {
+  const context = await getMerchantContext(accountId);
+  return createMerchantProductCategory(context.miniUserId, payload);
+}
+
+export async function merchantUpdateProductCategory(accountId: number, categoryId: number, payload: MiniMerchantProductCategoryPayload) {
+  const context = await getMerchantContext(accountId);
+  return updateMerchantProductCategory(context.miniUserId, categoryId, payload);
+}
+
+export async function merchantDeleteProductCategory(accountId: number, categoryId: number) {
+  const context = await getMerchantContext(accountId);
+  return deleteMerchantProductCategory(context.miniUserId, categoryId);
+}
+
+export async function merchantMoveProductCategory(accountId: number, categoryId: number, direction: "up" | "down") {
+  const context = await getMerchantContext(accountId);
+  return moveMerchantProductCategory(context.miniUserId, categoryId, direction);
 }
 
 export async function merchantUpdateStore(accountId: number, payload: MiniMerchantStoreUpdatePayload) {

@@ -8,7 +8,9 @@ import {
   merchantAcceptOrder,
   merchantBatchDeleteProducts,
   merchantBatchDownProducts,
+  merchantCreateProductCategory,
   merchantCreateProduct,
+  merchantDeleteProductCategory,
   merchantCreateWithdraw,
   merchantDeleteProduct,
   merchantFinishOrder,
@@ -16,15 +18,18 @@ import {
   merchantMarkAllMessagesRead,
   merchantMarkMessageRead,
   merchantMoveProduct,
+  merchantMoveProductCategory,
   merchantReviewRefund,
   merchantToggleProductStatus,
   merchantUpdateProduct,
+  merchantUpdateProductCategory,
   merchantUpdateStore,
   queryMerchantDashboard,
   queryMerchantMessageList,
   queryMerchantOrderDetail,
   queryMerchantOrderList,
   queryMerchantProductList,
+  queryMerchantProductCategoryList,
   queryMerchantRefundDetail,
   queryMerchantRefundList,
   queryMerchantStat,
@@ -56,6 +61,36 @@ export async function listMerchantProductsAction(req: Request, res: Response) {
   const auth = getMerchantAuth(req);
   const data = await queryMerchantProductList(auth.accountId);
   return ok(res, data, req.traceId);
+}
+
+export async function listMerchantProductCategoriesAction(req: Request, res: Response) {
+  const auth = getMerchantAuth(req);
+  const data = await queryMerchantProductCategoryList(auth.accountId);
+  return ok(res, data, req.traceId);
+}
+
+export async function createMerchantProductCategoryAction(req: Request, res: Response) {
+  const auth = getMerchantAuth(req);
+  const data = await merchantCreateProductCategory(auth.accountId, req.body);
+  return ok(res, data, req.traceId, "商品分类已新增");
+}
+
+export async function updateMerchantProductCategoryAction(req: Request, res: Response) {
+  const auth = getMerchantAuth(req);
+  const data = await merchantUpdateProductCategory(auth.accountId, Number(req.params.id), req.body);
+  return ok(res, data, req.traceId, "商品分类已更新");
+}
+
+export async function deleteMerchantProductCategoryAction(req: Request, res: Response) {
+  const auth = getMerchantAuth(req);
+  const data = await merchantDeleteProductCategory(auth.accountId, Number(req.params.id));
+  return ok(res, data, req.traceId, "商品分类已删除");
+}
+
+export async function moveMerchantProductCategoryAction(req: Request, res: Response) {
+  const auth = getMerchantAuth(req);
+  const data = await merchantMoveProductCategory(auth.accountId, Number(req.params.id), req.body.direction);
+  return ok(res, data, req.traceId, "商品分类顺序已更新");
 }
 
 export async function createMerchantProductAction(req: Request, res: Response) {

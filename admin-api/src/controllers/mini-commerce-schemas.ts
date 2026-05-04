@@ -39,6 +39,7 @@ export const miniMerchantStoreUpdateSchema = z.object({
 });
 
 export const miniMerchantProductSchema = z.object({
+  categoryId: z.number().int().positive().optional(),
   name: z.string().trim().min(2, "商品名称至少 2 个字").max(30, "商品名称最多 30 个字"),
   desc: z.string().trim().min(2, "商品描述至少 2 个字").max(60, "商品描述最多 60 个字"),
   detailTitle: z.string().trim().max(30, "详情标题最多 30 个字").optional().default(""),
@@ -93,6 +94,10 @@ export const miniMerchantMoveSchema = z.object({
   direction: z.enum(["up", "down"])
 });
 
+export const miniMerchantProductCategorySchema = z.object({
+  name: z.string().trim().min(2, "分类至少 2 个字").max(10, "分类最多 10 个字")
+});
+
 export const miniMerchantBatchIdsSchema = z.object({
   ids: z.array(z.string().trim().min(1)).min(1, "至少选择一个商品")
 });
@@ -120,6 +125,7 @@ export type MiniRefundApplyPayload = z.infer<typeof miniRefundApplySchema>;
 export type MiniMessageReadAllPayload = z.infer<typeof miniMessageReadAllSchema>;
 export type MiniMerchantStoreUpdatePayload = z.infer<typeof miniMerchantStoreUpdateSchema>;
 export type MiniMerchantProductPayload = z.infer<typeof miniMerchantProductSchema>;
+export type MiniMerchantProductCategoryPayload = z.infer<typeof miniMerchantProductCategorySchema>;
 export type AdminStoreProductMutationPayload = z.infer<typeof adminStoreProductMutationSchema>;
 export type AdminStoreProductConflictPayload = z.infer<typeof adminStoreProductConflictSchema>;
 export type MiniMerchantMovePayload = z.infer<typeof miniMerchantMoveSchema>;

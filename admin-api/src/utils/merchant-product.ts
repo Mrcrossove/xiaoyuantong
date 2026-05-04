@@ -17,6 +17,8 @@ export type MerchantProductSkuItem = {
 
 export type MerchantProductItem = {
   id: string;
+  categoryId?: number | null;
+  categoryName?: string;
   name: string;
   desc: string;
   detailTitle?: string;
@@ -39,6 +41,7 @@ export type MerchantProductDetailItem = {
 };
 
 type ProductPayloadLike = {
+  categoryId?: number;
   name: string;
   desc: string;
   detailTitle?: string;
@@ -127,6 +130,8 @@ export function normalizeMerchantProduct(item: any, index = 0): MerchantProductI
 
   return {
     id: String(item?.id || `p${index + 1}`),
+    categoryId: item?.categoryId ? Number(item.categoryId) : null,
+    categoryName: String(item?.categoryName || "默认分类").trim() || "默认分类",
     name: String(item?.name || "").trim(),
     desc: String(item?.desc || "").trim(),
     detailTitle: String(item?.detailTitle || "").trim(),
@@ -181,6 +186,7 @@ export function normalizeMerchantProductPayload(productId: string, payload: Prod
   const normalized = normalizeMerchantProduct(
     {
       id: productId,
+      categoryId: payload.categoryId,
       name: payload.name,
       desc: payload.desc,
       detailTitle: payload.detailTitle || "",

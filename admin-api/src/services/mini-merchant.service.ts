@@ -1,5 +1,9 @@
 import { Prisma } from "@prisma/client";
-import type { MiniMerchantProductPayload, MiniMerchantStoreUpdatePayload } from "../controllers/mini-commerce-schemas";
+import type {
+  MiniMerchantProductCategoryPayload,
+  MiniMerchantProductPayload,
+  MiniMerchantStoreUpdatePayload
+} from "../controllers/mini-commerce-schemas";
 import { ERROR_CODES } from "../constants/error-codes";
 import { prisma } from "../lib/prisma";
 import { ApiError } from "../utils/api-error";
@@ -8,10 +12,15 @@ import { assertRiskPassed } from "./risk-control.service";
 import {
   batchDeleteStoreProducts,
   batchDownStoreProducts,
+  createStoreProductCategoryRecord,
   createStoreProductRecord,
+  deleteStoreProductCategoryRecord,
+  listStoreProductCategoriesByStoreId,
   mapStoreProductForApi,
+  moveStoreProductCategoryRecord,
   moveStoreProductRecord,
   toggleStoreProductStatusRecord,
+  updateStoreProductCategoryRecord,
   updateStoreProductRecord,
   deleteStoreProductRecord
 } from "./store-product.service";
@@ -39,6 +48,7 @@ const STORE_TAG_BLOCKED_WORDS = [
   "wx"
 ];
 const STORE_TAG_CONTACT_PATTERN = /(1\d{10}|\d{6,}|微信|电话|手机号|联系方式|联系我|加我|QQ|VX|V信|wx)/i;
+const PRODUCT_CATEGORY_BLOCKED_PATTERN = /(1\d{10}|\d{6,}|微信|电话|手机号|联系方式|联系我|加我|QQ|VX|V信|wx)/i;
 
 const ORDER_STATUS = {
   pending: "待支付",
@@ -73,6 +83,17 @@ function normalizeStoreTags(tags: unknown) {
   }
 
   return result;
+}
+
+function normalizeProductCategoryName(name: string) {
+  const text = String(name || "").trim();
+  if (text.length < 2 || text.length > 10) {
+    throw new ApiError("商品分类需为 2-10 个字", ERROR_CODES.BAD_REQUEST, 400);
+  }
+  if (PRODUCT_CATEGORY_BLOCKED_PATTERN.test(text)) {
+    throw new ApiError("商品分类不能包含联系方式或引流内容", ERROR_CODES.BAD_REQUEST, 400);
+  }
+  return text;
 }
 
 function formatTime(value: Date | null | undefined) {
@@ -206,6 +227,45 @@ export async function updateCurrentMerchantStore(userId: number, payload: MiniMe
     }
   });
   return mapStore(row);
+}
+
+export async function listMerchantProductCategories(userId: number) {
+  const store = await findOwnedStore(userId);
+  return {
+    list: await listStoreProductCategoriesByStoreId(prisma, store.id)
+  };
+}
+
+export async function createMerchantProductCategory(userId: number, payload: MiniMerchantProductCategoryPayload) {
+  const name = normalizeProductCategoryName(payload.name);
+  await assertRiskPassed({
+    userId,
+    scene: "merchant_product",
+    texts: [name]
+  });
+  const store = await findOwnedStore(userId);
+  return createStoreProductCategoryRecord(prisma, store.id, name);
+}
+
+export async function updateMerchantProductCategory(userId: number, categoryId: number, payload: MiniMerchantProductCategoryPayload) {
+  const name = normalizeProductCategoryName(payload.name);
+  await assertRiskPassed({
+    userId,
+    scene: "merchant_product",
+    texts: [name]
+  });
+  const store = await findOwnedStore(userId);
+  return updateStoreProductCategoryRecord(prisma, store.id, categoryId, name);
+}
+
+export async function deleteMerchantProductCategory(userId: number, categoryId: number) {
+  const store = await findOwnedStore(userId);
+  return deleteStoreProductCategoryRecord(prisma, store.id, categoryId);
+}
+
+export async function moveMerchantProductCategory(userId: number, categoryId: number, direction: "up" | "down") {
+  const store = await findOwnedStore(userId);
+  return moveStoreProductCategoryRecord(prisma, store.id, categoryId, direction);
 }
 
 export async function createMerchantProduct(userId: number, payload: MiniMerchantProductPayload) {
