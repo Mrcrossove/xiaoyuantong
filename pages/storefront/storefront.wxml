@@ -65,15 +65,9 @@
             <text wx:if="{{item.paidAmountText}}">|</text>
             <text wx:if="{{item.paidAmountText}}">{{item.paidAmountText}}</text>
           </view>
-          <view class="shop-service">
-            <text>{{item.delivery}}</text>
-            <text>{{item.price}}</text>
-          </view>
+          <view wx:if="{{item.subtitle}}" class="shop-service">{{item.subtitle}}</view>
           <view class="shop-tags">
-            <text wx:if="{{item.isRecommendedStore}}" class="shop-tag platform-tag">{{item.recommendTitle || "平台推荐"}}</text>
-            <text wx:if="{{item.hasRecommendedProduct}}" class="shop-tag recommend-tag">推荐商品</text>
-            <text class="shop-tag school-tag">{{item.school}}</text>
-            <text class="shop-tag" wx:for="{{item.tags}}" wx:key="*this">{{item}}</text>
+            <text class="shop-tag {{tag.className}}" wx:for="{{item.displayTags}}" wx:for-item="tag" wx:key="label">{{tag.label}}</text>
           </view>
           <view wx:if="{{item.recommendedProductName}}" class="recommend-preview">
             <text class="recommend-preview-label">主推</text>

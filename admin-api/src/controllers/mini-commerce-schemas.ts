@@ -34,6 +34,7 @@ export const miniMerchantStoreUpdateSchema = z.object({
   phone: z.string().trim().min(6, "联系电话至少 6 位").max(20, "联系电话最多 20 位"),
   address: z.string().trim().min(5, "店铺地址至少 5 个字").max(100, "店铺地址最多 100 个字"),
   cover: z.string().trim().optional().default(""),
+  tags: z.array(z.string().trim().min(1).max(8)).max(6).optional().default([]),
   banners: z.array(z.string().trim()).max(5, "店铺轮播图最多 5 张").optional().default([])
 });
 

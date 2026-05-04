@@ -18,6 +18,28 @@ import {
 
 type MerchantOrderTone = "new" | "pending" | "finished";
 
+const STORE_TAG_LIMIT = 6;
+const STORE_TAG_MAX_LENGTH = 8;
+const STORE_TAG_BLOCKED_WORDS = [
+  "官方",
+  "平台",
+  "校方",
+  "学校",
+  "认证",
+  "推荐",
+  "置顶",
+  "客服",
+  "微信",
+  "电话",
+  "手机号",
+  "联系",
+  "加我",
+  "QQ",
+  "VX",
+  "wx"
+];
+const STORE_TAG_CONTACT_PATTERN = /(1\d{10}|\d{6,}|微信|电话|手机号|联系方式|联系我|加我|QQ|VX|V信|wx)/i;
+
 const ORDER_STATUS = {
   pending: "待支付",
   processing: "进行中",
@@ -27,6 +49,30 @@ const ORDER_STATUS = {
 
 function toArray(value: Prisma.JsonValue | null | undefined) {
   return Array.isArray(value) ? value : [];
+}
+
+function normalizeStoreTags(tags: unknown) {
+  if (!Array.isArray(tags)) return [];
+
+  const result: string[] = [];
+  const seen = new Set<string>();
+  for (const rawTag of tags) {
+    const tag = String(rawTag || "").trim();
+    if (!tag) continue;
+    if (tag.length > STORE_TAG_MAX_LENGTH) {
+      throw new ApiError("店铺标签最多 8 个字", ERROR_CODES.BAD_REQUEST, 400);
+    }
+    if (STORE_TAG_CONTACT_PATTERN.test(tag) || STORE_TAG_BLOCKED_WORDS.some((word) => tag.toLowerCase().includes(word.toLowerCase()))) {
+      throw new ApiError("店铺标签不能包含平台背书、联系方式或引流内容", ERROR_CODES.BAD_REQUEST, 400);
+    }
+    const key = tag.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(tag);
+    if (result.length >= STORE_TAG_LIMIT) break;
+  }
+
+  return result;
 }
 
 function formatTime(value: Date | null | undefined) {
@@ -77,6 +123,7 @@ function mapStore(store: any) {
     sectionLabel: store.sectionLabel,
     soldText: store.soldText,
     amountText: store.amountText,
+    tags: toArray(store.tags).map((item) => String(item)),
     banners: toArray(store.banners).map((item) => String(item)),
     products
   };
@@ -136,10 +183,12 @@ export async function getCurrentMerchantStore(userId: number) {
 }
 
 export async function updateCurrentMerchantStore(userId: number, payload: MiniMerchantStoreUpdatePayload) {
+  const tags = normalizeStoreTags(payload.tags);
+
   await assertRiskPassed({
     userId,
     scene: "merchant_store",
-    texts: [payload.name, payload.subtitle, payload.notice, payload.phone, payload.address]
+    texts: [payload.name, payload.subtitle, payload.notice, payload.phone, payload.address, ...tags]
   });
 
   const store = await findOwnedStore(userId);
@@ -152,6 +201,7 @@ export async function updateCurrentMerchantStore(userId: number, payload: MiniMe
       phone: payload.phone,
       address: payload.address,
       cover: payload.cover !== undefined ? payload.cover : store.cover,
+      tags,
       banners: (Array.isArray(payload.banners) ? payload.banners : toArray(store.banners)).slice(0, 5)
     }
   });

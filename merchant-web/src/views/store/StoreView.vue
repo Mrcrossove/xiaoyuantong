@@ -18,8 +18,28 @@ const form = reactive({
   phone: "",
   address: "",
   cover: "",
+  tags: [] as string[],
   banners: [] as string[]
 });
+
+function normalizeStoreTags(tags: string[]) {
+  const result: string[] = [];
+  const seen = new Set<string>();
+  for (const rawTag of tags) {
+    const tag = String(rawTag || "").trim();
+    if (!tag) continue;
+    if (tag.length > 8) {
+      ElMessage.warning("店铺标签最多 8 个字");
+      continue;
+    }
+    const key = tag.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(tag);
+    if (result.length >= 6) break;
+  }
+  return result;
+}
 
 async function loadData() {
   loading.value = true;
@@ -31,6 +51,7 @@ async function loadData() {
     form.phone = result.phone || "";
     form.address = result.address || "";
     form.cover = result.cover || "";
+    form.tags = Array.isArray(result.tags) ? normalizeStoreTags(result.tags) : [];
     form.banners = Array.isArray(result.banners) ? result.banners : [];
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : "店铺信息加载失败");
@@ -122,6 +143,7 @@ async function saveStore(successMessage = "店铺信息已更新") {
       phone: form.phone,
       address: form.address,
       cover: form.cover,
+      tags: normalizeStoreTags(form.tags),
       banners: form.banners
     });
     ElMessage.success(successMessage);
@@ -163,6 +185,22 @@ onMounted(loadData);
 
         <el-form-item label="店铺公告">
           <el-input v-model.trim="form.notice" type="textarea" :rows="3" maxlength="120" show-word-limit />
+        </el-form-item>
+
+        <el-form-item label="店铺标签">
+          <el-select
+            v-model="form.tags"
+            multiple
+            filterable
+            allow-create
+            default-first-option
+            :multiple-limit="6"
+            placeholder="输入后回车添加，例如 当日现做"
+            style="width: 100%"
+          >
+            <el-option v-for="tag in form.tags" :key="tag" :label="tag" :value="tag" />
+          </el-select>
+          <div class="form-tip">最多 6 个，每个最多 8 个字；不能填写联系方式、平台背书或引流内容。</div>
         </el-form-item>
 
         <el-row :gutter="16">
@@ -295,6 +333,13 @@ onMounted(loadData);
   margin-top: 8px;
   color: #667085;
   font-size: 12px;
+}
+
+.form-tip {
+  margin-top: 8px;
+  color: #667085;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .hidden-input {

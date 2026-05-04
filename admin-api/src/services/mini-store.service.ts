@@ -144,12 +144,37 @@ function getStoreSalesStats(item: any) {
   };
 }
 
+function buildStoreDisplayTags(item: any, customTags: string[], recommendedProduct: any) {
+  const result: { label: string; className: string }[] = [];
+  const seen = new Set<string>();
+  const pushTag = (label: string, className: string) => {
+    const text = String(label || "").trim();
+    if (!text) return;
+    const key = text.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    result.push({ label: text, className });
+  };
+
+  customTags.forEach((label) => pushTag(label, "custom-tag"));
+  if (item.recommendMeta) {
+    pushTag(item.recommendMeta?.title || "平台推荐", "platform-tag");
+  }
+  if (recommendedProduct?.recommended) {
+    pushTag("推荐商品", "recommend-tag");
+  }
+  pushTag(item.school, "school-tag");
+
+  return result.slice(0, 6);
+}
+
 function mapStoreListItem(item: any) {
   const products = resolveStoreProducts(item);
   const availableProducts = products.filter((entry) => String(entry.status || MERCHANT_PRODUCT_STATUS.onSale) === MERCHANT_PRODUCT_STATUS.onSale);
   const recommendedProduct = availableProducts.find((entry) => Boolean(entry.recommended)) || availableProducts[0] || null;
   const defaultSku = recommendedProduct ? getDefaultSku(recommendedProduct) : null;
   const salesStats = getStoreSalesStats(item);
+  const tags = toArray(item.tags).map((entry) => String(entry).trim()).filter(Boolean);
 
   return {
     id: item.id,
@@ -168,7 +193,8 @@ function mapStoreListItem(item: any) {
     delivery: item.delivery,
     price: recommendedProduct ? buildProductDisplayPrice(recommendedProduct) : item.priceText,
     priceValue: defaultSku ? parseMoneyNumber(defaultSku.price) : parseMoneyNumber(item.priceText),
-    tags: toArray(item.tags).map((entry) => String(entry)),
+    tags,
+    displayTags: buildStoreDisplayTags(item, tags, recommendedProduct),
     badge: item.badge,
     cover: item.cover,
     subtitle: item.subtitle,

@@ -737,7 +737,8 @@
 }
 
 .shop-service {
-  color: #ff8a56;
+  color: #59647a;
+  line-height: 1.45;
 }
 
 .shop-tags {
@@ -785,6 +786,11 @@
   background: #edf4ff;
   color: #5e88d9;
   font-size: 20rpx;
+}
+
+.custom-tag {
+  background: #fff2e8;
+  color: #df6f22;
 }
 
 .school-tag {
