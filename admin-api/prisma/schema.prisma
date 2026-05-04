@@ -246,8 +246,23 @@ model MiniStore {
   merchantAccount MerchantAccount?
   productRows  MiniStoreProduct[]
   productCategories MiniStoreProductCategory[]
+  serviceSchools MiniStoreServiceSchool[]
   changeLogs   AdminStoreChangeLog[]
   productApprovals StoreProductApproval[]
+}
+
+model MiniStoreServiceSchool {
+  id        Int      @id @default(autoincrement())
+  storeId   Int
+  store     MiniStore @relation(fields: [storeId], references: [id])
+  school    String
+  status    String   @default("enabled")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([storeId, school])
+  @@index([school, status])
+  @@index([storeId, status])
 }
 
 model MiniStoreProductCategory {

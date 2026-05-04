@@ -85,6 +85,67 @@ function normalizeStoreTags(tags: unknown) {
   return result;
 }
 
+function normalizeServiceSchools(homeSchool: string, schools: unknown) {
+  const result: string[] = [];
+  const seen = new Set<string>();
+  const push = (value: unknown) => {
+    const school = String(value || "").trim();
+    if (!school) return;
+    if (school.length > 40) {
+      throw new ApiError("\u670d\u52a1\u9ad8\u6821\u540d\u79f0\u6700\u591a 40 \u4e2a\u5b57", ERROR_CODES.BAD_REQUEST, 400);
+    }
+    const key = school.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    result.push(school);
+  };
+
+  push(homeSchool);
+  if (Array.isArray(schools)) {
+    schools.forEach(push);
+  }
+  if (result.length > 10) {
+    throw new ApiError("\u670d\u52a1\u9ad8\u6821\u6700\u591a 10 \u4e2a", ERROR_CODES.BAD_REQUEST, 400);
+  }
+  return result;
+}
+
+async function syncStoreServiceSchools(storeId: number, homeSchool: string, schools: unknown) {
+  const nextSchools = normalizeServiceSchools(homeSchool, schools);
+  await prisma.$transaction(async (tx) => {
+    await tx.miniStoreServiceSchool.updateMany({
+      where: {
+        storeId,
+        school: {
+          notIn: nextSchools
+        }
+      },
+      data: {
+        status: "disabled"
+      }
+    });
+
+    for (const school of nextSchools) {
+      await tx.miniStoreServiceSchool.upsert({
+        where: {
+          storeId_school: {
+            storeId,
+            school
+          }
+        },
+        create: {
+          storeId,
+          school,
+          status: "enabled"
+        },
+        update: {
+          status: "enabled"
+        }
+      });
+    }
+  });
+}
+
 function normalizeProductCategoryName(name: string) {
   const text = String(name || "").trim();
   if (text.length < 2 || text.length > 10) {
@@ -132,10 +193,18 @@ function mapProduct(item: any) {
 
 function mapStore(store: any) {
   const products = toMerchantProducts(store.products).map(mapProduct);
+  const serviceSchools = normalizeServiceSchools(
+    store.school,
+    (store.serviceSchools || [])
+      .filter((item: any) => String(item.status || "enabled") === "enabled")
+      .map((item: any) => item.school)
+  );
   return {
     id: store.id,
     detailId: store.detailId,
     school: store.school,
+    homeSchool: store.school,
+    serviceSchools,
     name: store.name,
     subtitle: store.subtitle,
     notice: store.notice,
@@ -182,6 +251,9 @@ async function findOwnedStore(userId: number) {
   const store = await prisma.miniStore.findFirst({
     where: {
       ownerUserId: userId
+    },
+    include: {
+      serviceSchools: true
     },
     orderBy: { id: "desc" }
   });
@@ -252,7 +324,10 @@ export async function updateCurrentMerchantStore(userId: number, payload: MiniMe
       banners: (Array.isArray(payload.banners) ? payload.banners : toArray(store.banners)).slice(0, 5)
     }
   });
-  return mapStore(row);
+  await syncStoreServiceSchools(row.id, row.school, payload.serviceSchools);
+
+  const synced = await findOwnedStore(userId);
+  return mapStore(synced);
 }
 
 export async function listMerchantProductCategories(userId: number) {

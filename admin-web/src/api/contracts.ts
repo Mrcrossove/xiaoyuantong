@@ -984,6 +984,7 @@ export interface AdminStoreItem {
   owner: string;
   ownerPhone: string;
   school: string;
+  serviceSchools?: string[];
   category: string;
   section: string;
   status: string;
@@ -1176,6 +1177,7 @@ export interface AdminStoreDashboardResult {
     detailId: string;
     storeName: string;
     school: string;
+    serviceSchools?: string[];
     category: string;
     section: string;
     status: string;

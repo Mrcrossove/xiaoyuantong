@@ -39,6 +39,7 @@ const exportLoading = ref(false);
 
 const data = ref<AdminStoreDashboardResult | null>(null);
 const orderList = ref<AdminStoreDashboardOrderItem[]>([]);
+const serviceSchoolLabel = "\u53ef\u670d\u52a1\u9ad8\u6821";
 const orderTotal = ref(0);
 
 const productDialogVisible = ref(false);
@@ -606,6 +607,7 @@ onMounted(loadAll);
             <div class="store-main__top">
               <div>
                 <div class="store-name">{{ data.store.storeName }}</div>
+                <div class="store-meta" v-if="data.store.serviceSchools?.length">{{ serviceSchoolLabel }}: {{ data.store.serviceSchools.join(" / ") }}</div>
                 <div class="store-meta">{{ data.store.school }} ｜ {{ data.store.category }} / {{ data.store.section }}</div>
               </div>
               <el-tag :type="data.store.status.includes('营业') ? 'success' : 'info'">{{ data.store.status }}</el-tag>

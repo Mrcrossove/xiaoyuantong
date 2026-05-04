@@ -57,6 +57,34 @@ function toArray(value: Prisma.JsonValue | null | undefined) {
   return Array.isArray(value) ? value : [];
 }
 
+function normalizeServiceSchools(homeSchool: string, schools: unknown) {
+  const result: string[] = [];
+  const seen = new Set<string>();
+  const push = (value: unknown) => {
+    const school = String(value || "").trim();
+    if (!school) return;
+    const key = school.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    result.push(school);
+  };
+
+  push(homeSchool);
+  if (Array.isArray(schools)) {
+    schools.forEach(push);
+  }
+  return result.slice(0, 10);
+}
+
+function mapServiceSchools(store: any) {
+  return normalizeServiceSchools(
+    store.school,
+    (store.serviceSchools || [])
+      .filter((item: any) => String(item.status || "enabled") === "enabled")
+      .map((item: any) => item.school)
+  );
+}
+
 function formatDateTime(value: Date | null | undefined) {
   if (!value) return "";
   return value.toISOString().slice(0, 19).replace("T", " ");
@@ -181,6 +209,8 @@ function mapStoreListItem(item: any) {
     detailId: item.detailId,
     name: item.name,
     school: item.school,
+    homeSchool: item.school,
+    serviceSchools: mapServiceSchools(item),
     rating: null,
     ratingText: "",
     monthlySales: item.monthlySales,
@@ -257,6 +287,9 @@ function mapStoreDetail(item: any) {
   return {
     title: item.title,
     storeName: item.name,
+    school: item.school,
+    homeSchool: item.school,
+    serviceSchools: mapServiceSchools(item),
     cover,
     notice: item.notice,
     phone: item.phone,
@@ -287,6 +320,7 @@ function mapAdminStoreItem(item: any) {
     owner: item.ownerUser?.nickname || "-",
     ownerPhone: item.ownerUser?.phone || "",
     school: item.school,
+    serviceSchools: mapServiceSchools(item),
     category: item.groupLabel,
     section: item.sectionLabel,
     status: item.status,
@@ -439,6 +473,7 @@ async function findAdminStoreWithScope(adminUserId: number, storeId: number) {
       school: buildSchoolWhere(scope, "")
     },
     include: {
+      serviceSchools: true,
       ownerUser: {
         select: {
           nickname: true,
@@ -679,22 +714,34 @@ export async function queryMiniStores(rawQuery: Record<string, unknown>) {
   const sectionKey = String(rawQuery.sectionKey || "");
 
   const where = {
-    school: school || undefined,
     groupKey: groupKey || undefined,
     sectionKey: sectionKey || undefined,
     status: STORE_STATUS.open,
-    OR: keyword
-      ? [
-          { name: { contains: keyword, mode: "insensitive" as const } },
-          { subtitle: { contains: keyword, mode: "insensitive" as const } },
-          { notice: { contains: keyword, mode: "insensitive" as const } }
-        ]
-      : undefined
+    AND: [
+      school
+        ? {
+            OR: [
+              { school },
+              { serviceSchools: { some: { school, status: "enabled" } } }
+            ]
+          }
+        : undefined,
+      keyword
+        ? {
+            OR: [
+              { name: { contains: keyword, mode: "insensitive" as const } },
+              { subtitle: { contains: keyword, mode: "insensitive" as const } },
+              { notice: { contains: keyword, mode: "insensitive" as const } }
+            ]
+          }
+        : undefined
+    ].filter(Boolean) as any
   };
 
   const stores = await prisma.miniStore.findMany({
     where,
     include: {
+      serviceSchools: true,
       productRows: {
         include: {
           skus: {
@@ -808,6 +855,7 @@ export async function getMiniStoreDetail(detailId: string) {
   const row = await prisma.miniStore.findUniqueOrThrow({
     where: { detailId },
     include: {
+      serviceSchools: true,
       productRows: {
         include: {
           skus: {
@@ -1069,6 +1117,7 @@ export async function getAdminStoreDashboard(adminUserId: number, storeId: numbe
       detailId: store.detailId,
       storeName: store.name,
       school: store.school,
+      serviceSchools: mapServiceSchools(store),
       category: store.groupLabel,
       section: store.sectionLabel,
       status: store.status,

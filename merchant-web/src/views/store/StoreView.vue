@@ -10,6 +10,9 @@ const coverUploading = ref(false);
 const bannerUploading = ref(false);
 const coverInputRef = ref<HTMLInputElement | null>(null);
 const bannerInputRef = ref<HTMLInputElement | null>(null);
+const serviceSchoolLabel = "\u53ef\u670d\u52a1\u9ad8\u6821";
+const serviceSchoolPlaceholder = "\u8f93\u5165\u9ad8\u6821\u540d\u79f0\u540e\u56de\u8f66\u6dfb\u52a0";
+const serviceSchoolTip = "\u5e97\u94fa\u5f52\u5c5e\u9ad8\u6821\u4f1a\u81ea\u52a8\u4fdd\u7559\uff1b\u6dfb\u52a0\u540e\uff0c\u7528\u6237\u5728\u8fd9\u4e9b\u9ad8\u6821\u4e5f\u80fd\u770b\u5230\u8be5\u5e97\u94fa\u5e76\u4e0b\u5355\u3002";
 
 const form = reactive({
   name: "",
@@ -23,6 +26,7 @@ const form = reactive({
   locationAddress: "",
   cover: "",
   tags: [] as string[],
+  serviceSchools: [] as string[],
   banners: [] as string[]
 });
 
@@ -45,6 +49,25 @@ function normalizeStoreTags(tags: string[]) {
   return result;
 }
 
+function normalizeServiceSchools(schools: string[]) {
+  const result: string[] = [];
+  const seen = new Set<string>();
+  for (const rawSchool of schools) {
+    const school = String(rawSchool || "").trim();
+    if (!school) continue;
+    if (school.length > 40) {
+      ElMessage.warning("\u670d\u52a1\u9ad8\u6821\u540d\u79f0\u6700\u591a 40 \u4e2a\u5b57");
+      continue;
+    }
+    const key = school.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(school);
+    if (result.length >= 10) break;
+  }
+  return result;
+}
+
 async function loadData() {
   loading.value = true;
   try {
@@ -60,6 +83,7 @@ async function loadData() {
     form.locationAddress = result.locationAddress || "";
     form.cover = result.cover || "";
     form.tags = Array.isArray(result.tags) ? normalizeStoreTags(result.tags) : [];
+    form.serviceSchools = Array.isArray(result.serviceSchools) ? normalizeServiceSchools(result.serviceSchools) : [];
     form.banners = Array.isArray(result.banners) ? result.banners : [];
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : "店铺信息加载失败");
@@ -163,6 +187,7 @@ async function saveStore(successMessage = "店铺信息已更新") {
       locationAddress: form.locationAddress,
       cover: form.cover,
       tags: normalizeStoreTags(form.tags),
+      serviceSchools: normalizeServiceSchools(form.serviceSchools),
       banners: form.banners
     });
     ElMessage.success(successMessage);
@@ -232,6 +257,22 @@ onMounted(loadData);
             <el-option v-for="tag in form.tags" :key="tag" :label="tag" :value="tag" />
           </el-select>
           <div class="form-tip">最多 6 个，每个最多 8 个字；不能填写联系方式、平台背书或引流内容。</div>
+        </el-form-item>
+
+        <el-form-item :label="serviceSchoolLabel">
+          <el-select
+            v-model="form.serviceSchools"
+            multiple
+            filterable
+            allow-create
+            default-first-option
+            :multiple-limit="10"
+            :placeholder="serviceSchoolPlaceholder"
+            style="width: 100%"
+          >
+            <el-option v-for="school in form.serviceSchools" :key="school" :label="school" :value="school" />
+          </el-select>
+          <div class="form-tip">{{ serviceSchoolTip }}</div>
         </el-form-item>
 
         <el-row :gutter="16">

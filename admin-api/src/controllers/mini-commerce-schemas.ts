@@ -41,6 +41,7 @@ export const miniMerchantStoreUpdateSchema = z.object({
   locationAddress: z.string().trim().max(120, "定位地址最多 120 个字").optional().default(""),
   cover: z.string().trim().optional().default(""),
   tags: z.array(z.string().trim().min(1).max(8)).max(6).optional().default([]),
+  serviceSchools: z.array(z.string().trim().min(1).max(40)).max(10).optional().default([]),
   banners: z.array(z.string().trim()).max(5, "店铺轮播图最多 5 张").optional().default([])
 });
 

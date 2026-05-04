@@ -52,6 +52,34 @@ type ResolvedOrderItem = StoreProductMatch & {
   amount: number;
 };
 
+function normalizeServiceSchools(homeSchool: string, schools: unknown) {
+  const result: string[] = [];
+  const seen = new Set<string>();
+  const push = (value: unknown) => {
+    const school = String(value || "").trim();
+    if (!school) return;
+    const key = school.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    result.push(school);
+  };
+
+  push(homeSchool);
+  if (Array.isArray(schools)) {
+    schools.forEach(push);
+  }
+  return result;
+}
+
+function getEnabledServiceSchools(store: any) {
+  return normalizeServiceSchools(
+    store.school,
+    (store.serviceSchools || [])
+      .filter((item: any) => String(item.status || "enabled") === "enabled")
+      .map((item: any) => item.school)
+  );
+}
+
 function buildOrderNo() {
   return `${Date.now()}${Math.floor(Math.random() * 900 + 100)}`;
 }
@@ -428,7 +456,10 @@ async function findAvailableAddress(userId: number, addressId?: number) {
 
 async function findStoreProduct(storeDetailId: string, productId: string, skuId?: string): Promise<StoreProductMatch> {
   const store = await prisma.miniStore.findUnique({
-    where: { detailId: storeDetailId }
+    where: { detailId: storeDetailId },
+    include: {
+      serviceSchools: true
+    }
   });
 
   if (!store) {
@@ -838,7 +869,9 @@ export async function createMiniOrder(userId: number, payload: MiniOrderCreatePa
     throw new ApiError("请至少选择一件商品", ERROR_CODES.BAD_REQUEST, 400);
   }
 
-  if (address.school && address.school !== firstItem.store.school) {
+  const allowedSchools = getEnabledServiceSchools(firstItem.store);
+  const orderSchool = String(address.school || payload.school || firstItem.store.school || "").trim();
+  if (orderSchool && !allowedSchools.includes(orderSchool)) {
     throw new ApiError("收货地址不在该店铺所属高校，请切换到店铺高校的收货地址", ERROR_CODES.BAD_REQUEST, 400);
   }
 
@@ -849,7 +882,7 @@ export async function createMiniOrder(userId: number, payload: MiniOrderCreatePa
     data: {
       orderNo: buildOrderNo(),
       userId,
-      school: firstItem.store.school,
+      school: orderSchool || firstItem.store.school,
       storeDetailId: firstItem.store.detailId,
       storeName: firstItem.store.name,
       productId: String(firstItem.product.id),
@@ -888,7 +921,7 @@ export async function createMiniOrder(userId: number, payload: MiniOrderCreatePa
   });
 
   await createMiniMessage({
-    school: firstItem.store.school,
+    school: orderSchool || firstItem.store.school,
     type: "system",
     category: "订单通知",
     content: `你的订单 ${row.orderNo} 已创建，请尽快完成支付。`,
