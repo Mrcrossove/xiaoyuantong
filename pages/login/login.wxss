@@ -70,7 +70,48 @@
 }
 
 .login-actions {
-  margin-top: 430rpx;
+  margin-top: 330rpx;
+}
+
+.agreement-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+  margin-bottom: 28rpx;
+}
+
+.checkbox {
+  flex: 0 0 auto;
+  width: 34rpx;
+  height: 34rpx;
+  border-radius: 10rpx;
+  border: 2rpx solid #c6cedb;
+  background: #ffffff;
+  color: #ffffff;
+  font-size: 24rpx;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 3rpx;
+}
+
+.checkbox.checked {
+  border-color: #2563eb;
+  background: #2563eb;
+}
+
+.agreement-text {
+  flex: 1;
+  min-width: 0;
+  color: #667085;
+  font-size: 25rpx;
+  line-height: 1.55;
+}
+
+.agreement-link {
+  color: #2563eb;
+  font-weight: 800;
 }
 
 .wechat-login-btn {
@@ -93,6 +134,11 @@
 
 .wechat-login-btn.loading {
   opacity: 0.78;
+}
+
+.wechat-login-btn.disabled {
+  background: #a9b7cf;
+  box-shadow: none;
 }
 
 .cancel-login {

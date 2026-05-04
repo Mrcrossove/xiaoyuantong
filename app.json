@@ -9,6 +9,7 @@
     "pages/message/message",
     "pages/profile/profile",
     "pages/login/login",
+    "pages/legal-agreement/legal-agreement",
     "pages/profile-edit/profile-edit",
     "pages/campus-verify/campus-verify",
     "pages/school-admin-apply/school-admin-apply",

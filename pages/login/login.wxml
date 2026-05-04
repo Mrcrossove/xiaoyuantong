@@ -12,7 +12,19 @@
   </view>
 
   <view class="login-actions">
-    <button class="wechat-login-btn {{loading ? 'loading' : ''}}" loading="{{loading}}" bindtap="handleWechatLogin">
+    <view class="agreement-row">
+      <view class="checkbox {{agreementChecked ? 'checked' : ''}}" bindtap="toggleAgreement">
+        <text wx:if="{{agreementChecked}}">✓</text>
+      </view>
+      <view class="agreement-text">
+        我已阅读并同意
+        <text class="agreement-link" data-type="user" bindtap="openAgreement">《用户协议》</text>
+        和
+        <text class="agreement-link" data-type="privacy" bindtap="openAgreement">《隐私政策》</text>
+      </view>
+    </view>
+
+    <button class="wechat-login-btn {{loading ? 'loading' : ''}} {{agreementChecked ? '' : 'disabled'}}" loading="{{loading}}" bindtap="handleWechatLogin">
       微信授权登录
     </button>
     <view class="cancel-login" bindtap="cancelLogin">取消授权登录</view>

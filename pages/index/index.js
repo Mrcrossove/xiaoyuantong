@@ -8,6 +8,7 @@ const { DEFAULT_SCHOOL, getSelectedSchool } = require("../../utils/school-state"
 const { HOME_FEED_ALL, getHomeFeedScope, setHomeFeedScope } = require("../../utils/home-feed-state");
 const { getProvinceSchoolGroups, filterProvinceSchoolGroups } = require("../../utils/school-catalog");
 const { buildPostCategoryView } = require("../../utils/post-category-view");
+const { redirectToLoginIfNeeded } = require("../../utils/login-guard");
 
 const DEFAULT_HOME_BANNER = {
   id: "default-recruit",
@@ -88,6 +89,10 @@ Page({
   },
 
   onLoad() {
+    if (redirectToLoginIfNeeded()) {
+      return;
+    }
+
     const systemInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
     const provinceSchoolGroups = getProvinceSchoolGroups();
     this.setData({
@@ -98,6 +103,10 @@ Page({
   },
 
   onShow() {
+    if (redirectToLoginIfNeeded()) {
+      return;
+    }
+
     const businessSchool = getSelectedSchool();
     this.syncProfile();
     this.setData({

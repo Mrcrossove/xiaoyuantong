@@ -1,0 +1,70 @@
+.legal-page {
+  min-height: 100vh;
+  background: #f5f7fb;
+}
+
+.legal-nav {
+  height: 88rpx;
+  padding: 0 24rpx;
+  background: #ffffff;
+  display: grid;
+  grid-template-columns: 88rpx 1fr 88rpx;
+  align-items: center;
+}
+
+.legal-title {
+  text-align: center;
+  font-size: 32rpx;
+  font-weight: 800;
+  color: #202534;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-space {
+  width: 88rpx;
+}
+
+.legal-scroll {
+  height: calc(100vh - 88rpx);
+}
+
+.legal-card {
+  margin: 20rpx 20rpx 40rpx;
+  padding: 34rpx 28rpx;
+  background: #ffffff;
+  border-radius: 24rpx;
+  box-shadow: 0 16rpx 36rpx rgba(53, 88, 163, 0.08);
+}
+
+.doc-title {
+  font-size: 38rpx;
+  font-weight: 900;
+  color: #172033;
+  line-height: 1.35;
+}
+
+.doc-date {
+  margin-top: 12rpx;
+  color: #8a94a6;
+  font-size: 24rpx;
+}
+
+.doc-section {
+  margin-top: 34rpx;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 800;
+  color: #202534;
+}
+
+.paragraph {
+  margin-top: 16rpx;
+  color: #4b5565;
+  font-size: 27rpx;
+  line-height: 1.9;
+  text-align: justify;
+}

@@ -1,0 +1,22 @@
+<view class="legal-page">
+  <view class="status-bar" style="height: {{statusBarHeight}}px;"></view>
+  <view class="legal-nav">
+    <view class="back-btn" bindtap="goBack"></view>
+    <view class="legal-title">{{agreement.title}}</view>
+    <view class="nav-space"></view>
+  </view>
+
+  <scroll-view class="legal-scroll" scroll-y>
+    <view class="legal-card">
+      <view class="doc-title">{{agreement.title}}</view>
+      <view class="doc-date">{{agreement.updatedLabel}}：{{agreement.updatedAt}}</view>
+
+      <view class="doc-section" wx:for="{{agreement.sections}}" wx:key="title">
+        <view class="section-title">{{item.title}}</view>
+        <view class="paragraph" wx:for="{{item.paragraphs}}" wx:for-item="paragraph" wx:key="*this">
+          {{paragraph}}
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+</view>
