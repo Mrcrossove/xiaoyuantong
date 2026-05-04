@@ -52,9 +52,10 @@
 }
 
 .hero-swiper {
-  height: 246rpx;
+  height: 386rpx;
   border-radius: 24rpx;
   overflow: hidden;
+  background: #e8edf7;
 }
 
 .hero-slide,
