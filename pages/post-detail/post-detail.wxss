@@ -1,5 +1,5 @@
 .detail-shell {
-  padding-bottom: 140rpx;
+  padding-bottom: 180rpx;
 }
 
 .detail-title {
@@ -285,7 +285,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 18rpx 24rpx 24rpx;
+  padding: 18rpx 24rpx calc(24rpx + env(safe-area-inset-bottom));
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 16rpx;

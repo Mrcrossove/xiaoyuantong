@@ -46,6 +46,7 @@ Page({
     statusBarHeight: 20,
     favorite: false,
     commentInput: "",
+    commentInputFocused: false,
     sendingComment: false,
     loadErrorText: "",
     keyboardHeight: 0
@@ -228,7 +229,23 @@ Page({
 
   focusCommentInput() {
     this.setData({
-      commentInput: this.data.commentInput || ""
+      commentInput: this.data.commentInput || "",
+      commentInputFocused: true
+    });
+  },
+
+  onCommentFocus(event) {
+    const height = Number((event && event.detail && event.detail.height) || this.data.keyboardHeight || 0);
+    this.setData({
+      commentInputFocused: true,
+      keyboardHeight: height > 0 ? height + 8 : this.data.keyboardHeight
+    });
+  },
+
+  onCommentBlur() {
+    this.setData({
+      commentInputFocused: false,
+      keyboardHeight: 0
     });
   },
 
@@ -256,8 +273,13 @@ Page({
       this.setData({
         "post.comments": comments,
         "post.commentCount": Number(result.commentCount || comments.length),
-        commentInput: ""
+        commentInput: "",
+        commentInputFocused: false,
+        keyboardHeight: 0
       });
+      if (wx.hideKeyboard) {
+        wx.hideKeyboard();
+      }
       wx.showToast({
         title: "评论成功",
         icon: "success"

@@ -96,7 +96,19 @@
     </view>
 
     <view class="detail-input-bar" style="bottom: {{keyboardHeight}}px;">
-      <input value="{{commentInput}}" bindinput="onCommentInput" placeholder="说点什么..." placeholder-class="placeholder" />
+      <input
+        value="{{commentInput}}"
+        focus="{{commentInputFocused}}"
+        adjust-position="{{false}}"
+        cursor-spacing="16"
+        confirm-type="send"
+        bindfocus="onCommentFocus"
+        bindblur="onCommentBlur"
+        bindinput="onCommentInput"
+        bindconfirm="submitComment"
+        placeholder="说点什么..."
+        placeholder-class="placeholder"
+      />
       <view class="send-btn active" bindtap="submitComment">{{sendingComment ? "发送中" : "发送"}}</view>
     </view>
 

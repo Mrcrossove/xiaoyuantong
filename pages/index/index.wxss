@@ -23,7 +23,7 @@
 
 .top-avatar-default {
   position: relative;
-  background: linear-gradient(135deg, #23262f, #848a97);
+  background: linear-gradient(135deg, #2f6df0, #79adff);
 }
 
 .top-avatar-default::before {
@@ -52,6 +52,17 @@
 .default-avatar-6 { background: linear-gradient(135deg, #be185d, #f9a8d4); }
 .default-avatar-7 { background: linear-gradient(135deg, #334155, #94a3b8); }
 .default-avatar-8 { background: linear-gradient(135deg, #2563eb, #7dd3fc); }
+
+.top-avatar-default.default-avatar-1,
+.top-avatar-default.default-avatar-2,
+.top-avatar-default.default-avatar-3,
+.top-avatar-default.default-avatar-4,
+.top-avatar-default.default-avatar-5,
+.top-avatar-default.default-avatar-6,
+.top-avatar-default.default-avatar-7,
+.top-avatar-default.default-avatar-8 {
+  background: linear-gradient(135deg, #2f6df0, #79adff);
+}
 
 .post-avatar-image,
 .post-avatar-default {

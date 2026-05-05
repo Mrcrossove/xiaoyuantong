@@ -3,9 +3,7 @@
 
   <view class="brand-section">
     <view class="brand-logo">
-      <view class="logo-layer one"></view>
-      <view class="logo-layer two"></view>
-      <view class="logo-layer three"></view>
+      <image class="brand-logo-image" src="/assets/login-logo.png" mode="aspectFit"></image>
     </view>
     <view class="brand-title">校园通</view>
     <view class="brand-subtitle">连接校园，分享生活</view>
