@@ -64,6 +64,7 @@
             </view>
           </scroll-view>
           <scroll-view scroll-y class="goods-section-scroll" enhanced show-scrollbar="{{false}}">
+          <view class="goods-section-content">
           <view class="goods-tip">点击商品卡片查看详情、参数和购买须知。</view>
           <view class="goods-section-title">{{activeProductCategoryName}}</view>
           <view class="goods-card {{selectedProductId == item.id ? 'active' : ''}}" wx:for="{{displayedProducts}}" wx:key="id" data-id="{{item.id}}" bindtap="openProductDetail">
@@ -89,6 +90,7 @@
                 <view class="goods-cart-plus" data-id="{{item.id}}" catchtap="addCartItem">+</view>
               </view>
             </view>
+          </view>
           </view>
           </scroll-view>
         </view>

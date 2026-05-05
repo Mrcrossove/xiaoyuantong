@@ -47,7 +47,7 @@
 
 .detail-scroll {
   height: calc(100vh - 88rpx - env(safe-area-inset-top) - 108rpx);
-  padding: 12rpx 14rpx 18rpx;
+  padding: 12rpx 14rpx 150rpx;
   box-sizing: border-box;
 }
 
@@ -557,6 +557,11 @@
   min-width: 0;
 }
 
+.goods-section-content {
+  padding-bottom: 170rpx;
+  box-sizing: border-box;
+}
+
 .goods-section-title {
   margin: 0 0 12rpx;
   color: #202534;
@@ -595,10 +600,12 @@
   display: grid;
   grid-template-columns: 150rpx 1fr;
   gap: 14rpx;
+  min-height: 174rpx;
   padding: 12rpx;
   border-radius: 18rpx;
   border: 2rpx solid transparent;
   transition: all 0.2s ease;
+  box-sizing: border-box;
 }
 
 .goods-card + .goods-card {
@@ -618,8 +625,12 @@
 
 .goods-body {
   min-width: 0;
+  min-height: 150rpx;
+  padding-right: 108rpx;
+  padding-bottom: 58rpx;
   padding-top: 4rpx;
   position: relative;
+  box-sizing: border-box;
 }
 
 .goods-title-row {

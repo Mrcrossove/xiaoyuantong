@@ -2,14 +2,16 @@ const { services, fabOptions } = require("../../utils/home-config");
 const { fetchHomeBanners } = require("../../utils/banner-api");
 const { fetchPostList } = require("../../utils/posts-api");
 const { buildAvatarView } = require("../../utils/avatar");
-const { getProfile, setProfile } = require("../../utils/mini-auth");
+const { getProfile, setProfile, ensureMiniSession } = require("../../utils/mini-auth");
 const { fetchMiniProfile } = require("../../utils/profile-api");
-const { DEFAULT_SCHOOL, getSelectedSchool } = require("../../utils/school-state");
+const { DEFAULT_SCHOOL, getSelectedSchool, setSelectedSchool } = require("../../utils/school-state");
 const { HOME_FEED_ALL, getHomeFeedScope, setHomeFeedScope } = require("../../utils/home-feed-state");
 const { getProvinceSchoolGroups, filterProvinceSchoolGroups } = require("../../utils/school-catalog");
 const { buildPostCategoryView } = require("../../utils/post-category-view");
 const { redirectToLoginIfNeeded } = require("../../utils/login-guard");
 const { refreshMessageBadge } = require("../../utils/message-badge");
+const { fetchCurrentVerification } = require("../../utils/verification-api");
+const { getVerificationInfo, setVerificationInfo } = require("../../utils/verification-state");
 
 const DEFAULT_HOME_BANNER = {
   id: "default-recruit",
@@ -23,10 +25,7 @@ const DEFAULT_EXPANDED_PROVINCES = [];
 const FLOATING_CATEGORY_SHOW_TOP = 520;
 const BACK_TO_FEED_SHOW_TOP = 760;
 
-const allCategoryEntry = { label: "全部", icon: "all", category: "" };
-const displayServices = [allCategoryEntry, ...services];
 const floatingCategories = [
-  { label: "全部", category: "" },
   ...services.map((item) => ({
     label: item.label,
     category: item.category
@@ -62,7 +61,7 @@ function mapPostView(post) {
 
 Page({
   data: {
-    services: displayServices,
+    services,
     floatingCategories,
     fabOptions,
     banners: [],
@@ -76,6 +75,7 @@ Page({
     selectedFeedSchool: DEFAULT_SCHOOL,
     selectedFeedLabel: DEFAULT_SCHOOL,
     businessSchool: DEFAULT_SCHOOL,
+    verifiedSchool: "",
     schoolKeyword: "",
     schoolPickerOpen: false,
     expandedProvinces: DEFAULT_EXPANDED_PROVINCES,
@@ -105,18 +105,21 @@ Page({
     });
   },
 
-  onShow() {
+  async onShow() {
     if (redirectToLoginIfNeeded()) {
       return;
     }
 
-    const businessSchool = getSelectedSchool();
-    this.syncProfile();
+    const verificationInfo = await this.syncVerification();
+    const verifiedSchool = verificationInfo.verified && verificationInfo.school ? verificationInfo.school : "";
+    const businessSchool = verifiedSchool || getSelectedSchool();
+    await this.syncProfile();
     refreshMessageBadge(this, { school: businessSchool });
     this.setData({
-      activeServiceCategory: ""
+      activeServiceCategory: "",
+      verifiedSchool
     });
-    this.applyFeedScope(getHomeFeedScope(businessSchool), businessSchool);
+    this.applyFeedScope(getHomeFeedScope(businessSchool, { verifiedSchool }), businessSchool);
   },
 
   onPageScroll(event) {
@@ -147,6 +150,25 @@ Page({
         userAvatar: buildAvatarView(remoteProfile.avatarUrl || "")
       });
     } catch (error) {}
+  },
+
+  async syncVerification() {
+    let verificationInfo = getVerificationInfo();
+
+    try {
+      await ensureMiniSession();
+      const remoteInfo = await fetchCurrentVerification();
+      verificationInfo = setVerificationInfo({
+        ...remoteInfo,
+        verified: !!remoteInfo.verified
+      });
+    } catch (error) {}
+
+    if (verificationInfo.verified && verificationInfo.school) {
+      setSelectedSchool(verificationInfo.school);
+    }
+
+    return verificationInfo;
   },
 
   buildDisplayGroups(keyword, sourceGroups = this.data.provinceSchoolGroups, expandedProvinces = this.data.expandedProvinces) {
@@ -300,7 +322,7 @@ Page({
   },
 
   selectAllNetwork() {
-    const nextFeedScope = setHomeFeedScope(HOME_FEED_ALL, this.data.businessSchool || DEFAULT_SCHOOL);
+    const nextFeedScope = setHomeFeedScope(HOME_FEED_ALL, this.data.businessSchool || DEFAULT_SCHOOL, { manual: true });
     this.setData({
       schoolPickerOpen: false
     });
@@ -326,7 +348,10 @@ Page({
     this.setData({
       activeServiceCategory: nextCategory
     });
-    this.applyFeedScope(getHomeFeedScope(this.data.businessSchool || DEFAULT_SCHOOL), this.data.businessSchool || DEFAULT_SCHOOL);
+    this.applyFeedScope(
+      getHomeFeedScope(this.data.businessSchool || DEFAULT_SCHOOL, { verifiedSchool: this.data.verifiedSchool }),
+      this.data.businessSchool || DEFAULT_SCHOOL
+    );
   },
 
   scrollToFeedTop() {

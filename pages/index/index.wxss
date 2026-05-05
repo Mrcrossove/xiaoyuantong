@@ -216,6 +216,8 @@
 .floating-category-item {
   position: relative;
   flex: 0 0 auto;
+  padding: 4rpx 18rpx;
+  border-radius: 999rpx;
   color: #606a7d;
   font-size: 28rpx;
   font-weight: 600;
@@ -225,6 +227,8 @@
 .floating-category-item.active {
   color: #2f68e3;
   font-weight: 800;
+  background: #eaf2ff;
+  box-shadow: inset 0 0 0 2rpx rgba(47, 104, 227, 0.14);
 }
 
 .floating-category-item.active::after {
@@ -232,8 +236,8 @@
   position: absolute;
   left: 50%;
   bottom: -10rpx;
-  width: 44rpx;
-  height: 5rpx;
+  width: 36rpx;
+  height: 6rpx;
   border-radius: 999rpx;
   background: #2f68e3;
   transform: translateX(-50%);
@@ -366,8 +370,8 @@
 
 .service-item.active {
   color: #1f4fd1;
-  font-weight: 800;
-  transform: translateY(-2rpx);
+  font-weight: 900;
+  transform: translateY(-3rpx);
 }
 
 .service-icon {
@@ -382,14 +386,46 @@
 }
 
 .service-item.active .service-icon {
-  background: #ffffff;
-  border-color: rgba(47, 109, 240, 0.2);
-  box-shadow: 0 14rpx 26rpx rgba(47, 109, 240, 0.16);
-  transform: scale(1.04);
+  background: #2f68e3;
+  border-color: #2f68e3;
+  box-shadow: 0 16rpx 28rpx rgba(47, 104, 227, 0.28), 0 0 0 8rpx rgba(47, 104, 227, 0.1);
+  transform: scale(1.06);
 }
 
-.service-all {
-  background: linear-gradient(180deg, #eef4ff, #fbfdff);
+.service-item.active .service-market,
+.service-item.active .service-job,
+.service-item.active .service-rent,
+.service-item.active .service-chat,
+.service-item.active .service-group,
+.service-item.active .service-run {
+  background: #2f68e3;
+}
+
+.service-item.active .service-market::before,
+.service-item.active .service-market::after,
+.service-item.active .service-job::before,
+.service-item.active .service-job::after,
+.service-item.active .service-rent::before,
+.service-item.active .service-rent::after,
+.service-item.active .service-chat::before,
+.service-item.active .service-group::before,
+.service-item.active .service-group::after,
+.service-item.active .service-run::before {
+  border-color: #ffffff;
+}
+
+.service-item.active .service-chat::after {
+  background: #ffffff;
+  box-shadow: 12rpx 0 0 #ffffff, 24rpx 0 0 #ffffff;
+}
+
+.service-item.active .service-run::after {
+  background: #ffffff;
+  box-shadow: 12rpx -13rpx 0 #ffffff;
+}
+
+.service-item.active .service-group::before {
+  box-shadow: 12rpx 21rpx 0 -4rpx #2f68e3, 12rpx 21rpx 0 1rpx #ffffff, 31rpx 18rpx 0 -4rpx #2f68e3, 31rpx 18rpx 0 1rpx #ffffff;
 }
 
 .service-market {
@@ -426,18 +462,6 @@
   border: 5rpx solid #2f7cff;
   border-radius: 10rpx;
   box-sizing: border-box;
-}
-
-.service-all::before {
-  content: "";
-  position: absolute;
-  left: 19rpx;
-  top: 19rpx;
-  width: 16rpx;
-  height: 16rpx;
-  border-radius: 6rpx;
-  background: #4d75ff;
-  box-shadow: 24rpx 0 0 #4d75ff, 0 24rpx 0 #4d75ff, 24rpx 24rpx 0 #4d75ff;
 }
 
 .service-market::after {
@@ -575,10 +599,6 @@
   border-right: 5rpx solid #2f7cff;
   border-bottom: 5rpx solid #2f7cff;
   transform: rotate(-20deg);
-}
-
-.service-item.active .service-group::before {
-  box-shadow: 12rpx 21rpx 0 -4rpx #ffffff, 12rpx 21rpx 0 1rpx #4f86ff, 31rpx 18rpx 0 -4rpx #ffffff, 31rpx 18rpx 0 1rpx #4f86ff;
 }
 
 .feed {
