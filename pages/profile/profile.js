@@ -5,6 +5,7 @@ const { getToken, ensureMiniSession, clearSession, getProfile, setProfile } = re
 const { fetchCurrentVerification } = require("../../utils/verification-api");
 const { fetchMiniProfile } = require("../../utils/profile-api");
 const { refreshMessageBadge } = require("../../utils/message-badge");
+const { requireLogin, openLoginPage } = require("../../utils/login-guard");
 
 const contentRouteMap = {
   order: "/pages/my-orders/my-orders",
@@ -163,9 +164,7 @@ Page({
   },
 
   openLogin() {
-    wx.navigateTo({
-      url: "/pages/login/login"
-    });
+    openLoginPage();
   },
 
   ensureLoggedIn() {
@@ -173,7 +172,10 @@ Page({
       return true;
     }
 
-    this.openLogin();
+    requireLogin({
+      title: "该功能需要登录",
+      content: "浏览内容无需登录，使用个人功能时需要微信授权登录。"
+    });
     return false;
   },
 

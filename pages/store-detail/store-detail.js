@@ -5,8 +5,9 @@ const { createOrder } = require("../../utils/order-api");
 const { getSelectedSchool } = require("../../utils/school-state");
 const { normalizeStoreDetail } = require("../../utils/store-cover");
 const { fetchStoreDetail } = require("../../utils/stores-api");
+const { requireLogin } = require("../../utils/login-guard");
 
-const CURRENCY_SYMBOL = "¥";
+const CURRENCY_SYMBOL = "楼";
 
 function pickDefaultProduct(detail) {
   const products = (detail && detail.products) || [];
@@ -122,7 +123,7 @@ function buildDetailState(detail) {
   const productSections = (normalizedDetail && normalizedDetail.productSections) || [];
   const hasMultipleProductSections = productSections.length > 1;
   const activeProductCategoryId = productSections[0] ? productSections[0].id : "";
-  const displayedProducts = productSections[0] ? productSections[0].products : (normalizedDetail.products || []);
+  const displayedProducts = productSections[0] ? productSections[0].products : normalizedDetail.products || [];
   const activeProductCategoryName = productSections[0] ? productSections[0].name : "";
 
   return {
@@ -247,7 +248,6 @@ Page({
 
   async loadFavoriteStatus(id) {
     try {
-      await ensureMiniSession();
       const result = await fetchFavoriteStatus({
         targetType: "store",
         targetId: String(id)
@@ -259,6 +259,10 @@ Page({
   },
 
   async loadDefaultAddress() {
+    if (!this.data.selectedSchool) {
+      return;
+    }
+
     try {
       await ensureMiniSession();
       const addressList = await fetchAddressList();
@@ -443,18 +447,17 @@ Page({
         currentAmountText: `${CURRENCY_SYMBOL}0.00`
       });
       return;
-    } else {
-      const products = (this.data.detail && this.data.detail.products) || [];
-      const product = products.find((item) => String(item.id) === productId);
-      const nextItem = buildCartItem(product, nextQuantity);
-      if (nextItem) {
-        cartItems[index] = nextItem;
-        this.setData({
-          ...buildCartState(cartItems),
-          ...buildSelectionState(product, nextItem.skuId, nextItem.quantity)
-        });
-        return;
-      }
+    }
+
+    const products = (this.data.detail && this.data.detail.products) || [];
+    const product = products.find((item) => String(item.id) === productId);
+    const nextItem = buildCartItem(product, nextQuantity);
+    if (nextItem) {
+      cartItems[index] = nextItem;
+      this.setData({
+        ...buildCartState(cartItems),
+        ...buildSelectionState(product, nextItem.skuId, nextItem.quantity)
+      });
     }
   },
 
@@ -464,6 +467,12 @@ Page({
     }
 
     try {
+      const passed = await requireLogin({
+        title: "收藏前请先登录",
+        content: "浏览店铺无需登录，收藏店铺时需要微信授权登录。"
+      });
+      if (!passed) return;
+
       await ensureMiniSession();
       const result = await toggleFavorite({
         targetType: "store",
@@ -496,23 +505,30 @@ Page({
       return;
     }
 
-    if (!this.data.selectedAddress) {
-      wx.showModal({
-        title: "需要收货地址",
-        content: "下单前请先添加收货地址。",
-        confirmText: "去添加",
-        success: (res) => {
-          if (!res.confirm) return;
-          wx.navigateTo({
-            url: "/pages/my-address/my-address"
-          });
-        }
-      });
-      return;
-    }
+    requireLogin({
+      title: "下单前请先登录",
+      content: "浏览商品无需登录，下单时需要微信授权登录。"
+    }).then((passed) => {
+      if (!passed) return;
 
-    this.setData({
-      confirmVisible: true
+      if (!this.data.selectedAddress) {
+        wx.showModal({
+          title: "需要收货地址",
+          content: "下单前请先添加收货地址。",
+          confirmText: "去添加",
+          success: (res) => {
+            if (!res.confirm) return;
+            wx.navigateTo({
+              url: "/pages/my-address/my-address"
+            });
+          }
+        });
+        return;
+      }
+
+      this.setData({
+        confirmVisible: true
+      });
     });
   },
 

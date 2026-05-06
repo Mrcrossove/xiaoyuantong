@@ -1,5 +1,4 @@
 const { getSelectedSchool } = require("./utils/school-state");
-const { getToken } = require("./utils/mini-auth");
 
 App({
   globalData: {
@@ -8,12 +7,6 @@ App({
   },
 
   onLaunch() {
-    if (getToken()) {
-      return;
-    }
-
-    wx.reLaunch({
-      url: "/pages/login/login"
-    });
+    // Allow anonymous browsing. Login is requested only before protected actions.
   }
 });

@@ -22,7 +22,7 @@ Page({
     }
 
     wx.redirectTo({
-      url: "/pages/login/login"
+      url: "/pages/index/index"
     });
   }
 });

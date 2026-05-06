@@ -6,6 +6,7 @@ const {
 const { getSelectedSchool } = require("../../utils/school-state");
 const { ensureMiniSession } = require("../../utils/mini-auth");
 const { fetchFavoriteStatus, toggleFavorite } = require("../../utils/favorites-api");
+const { requireLogin } = require("../../utils/login-guard");
 
 function isStyleImage(value) {
   return /^style-/.test(String(value || ""));
@@ -101,7 +102,6 @@ Page({
 
   async loadFavoriteStatus(id) {
     try {
-      await ensureMiniSession();
       const result = await fetchFavoriteStatus({
         targetType: "post",
         targetId: String(id)
@@ -180,6 +180,12 @@ Page({
     }
 
     try {
+      const passed = await requireLogin({
+        title: "收藏前请先登录",
+        content: "浏览帖子无需登录，收藏帖子时需要微信授权登录。"
+      });
+      if (!passed) return;
+
       await ensureMiniSession();
       const result = await toggleFavorite({
         targetType: "post",
@@ -209,6 +215,12 @@ Page({
     }
 
     try {
+      const passed = await requireLogin({
+        title: "点赞前请先登录",
+        content: "浏览帖子无需登录，点赞时需要微信授权登录。"
+      });
+      if (!passed) return;
+
       await ensureMiniSession();
       const result = await togglePostLike(this.data.post.id);
       this.setData({
@@ -228,9 +240,15 @@ Page({
   },
 
   focusCommentInput() {
-    this.setData({
-      commentInput: this.data.commentInput || "",
-      commentInputFocused: true
+    requireLogin({
+      title: "评论前请先登录",
+      content: "浏览帖子无需登录，发表评论时需要微信授权登录。"
+    }).then((passed) => {
+      if (!passed) return;
+      this.setData({
+        commentInput: this.data.commentInput || "",
+        commentInputFocused: true
+      });
     });
   },
 
@@ -267,6 +285,15 @@ Page({
 
     this.setData({ sendingComment: true });
     try {
+      const passed = await requireLogin({
+        title: "评论前请先登录",
+        content: "发表评论需要微信授权登录。"
+      });
+      if (!passed) {
+        this.setData({ sendingComment: false });
+        return;
+      }
+
       await ensureMiniSession();
       const result = await createPostComment(this.data.post.id, { content });
       const comments = (this.data.post.comments || []).concat(result.comment);

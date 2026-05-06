@@ -4,6 +4,7 @@ const { createOrder } = require("../../utils/order-api");
 const { getSelectedSchool } = require("../../utils/school-state");
 const { normalizeStoreDetail } = require("../../utils/store-cover");
 const { fetchStoreDetail } = require("../../utils/stores-api");
+const { requireLogin } = require("../../utils/login-guard");
 
 const CURRENCY_SYMBOL = "楼";
 
@@ -187,20 +188,28 @@ Page({
       wx.showToast({ title: "当前商品暂不可下单", icon: "none" });
       return;
     }
-    if (!this.data.selectedAddress) {
-      wx.showModal({
-        title: "需要收货地址",
-        content: "下单前请先添加收货地址。",
-        confirmText: "去添加",
-        success: (res) => {
-          if (res.confirm) {
-            wx.navigateTo({ url: "/pages/my-address/my-address" });
+
+    requireLogin({
+      title: "下单前请先登录",
+      content: "浏览商品无需登录，下单时需要微信授权登录。"
+    }).then((passed) => {
+      if (!passed) return;
+
+      if (!this.data.selectedAddress) {
+        wx.showModal({
+          title: "需要收货地址",
+          content: "下单前请先添加收货地址。",
+          confirmText: "去添加",
+          success: (res) => {
+            if (res.confirm) {
+              wx.navigateTo({ url: "/pages/my-address/my-address" });
+            }
           }
-        }
-      });
-      return;
-    }
-    this.setData({ confirmVisible: true });
+        });
+        return;
+      }
+      this.setData({ confirmVisible: true });
+    });
   },
 
   closeConfirmModal() {

@@ -1,4 +1,5 @@
 const { getPublishType } = require("../../utils/publish-config");
+const { requireLogin } = require("../../utils/login-guard");
 
 Page({
   data: {
@@ -29,8 +30,14 @@ Page({
 
   selectCategory(event) {
     const { category } = event.currentTarget.dataset;
-    wx.navigateTo({
-      url: `/pages/publish/publish?type=${this.data.type}&category=${encodeURIComponent(category)}`
+    requireLogin({
+      title: "发布前请先登录",
+      content: "浏览内容无需登录，发布内容时需要微信授权登录。"
+    }).then((passed) => {
+      if (!passed) return;
+      wx.navigateTo({
+        url: `/pages/publish/publish?type=${this.data.type}&category=${encodeURIComponent(category)}`
+      });
     });
   }
 });

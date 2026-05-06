@@ -1,4 +1,5 @@
-const { authRequest } = require("./mini-auth");
+const { request } = require("./api");
+const { buildAuthHeader, getToken, authRequest } = require("./mini-auth");
 
 function fetchFavoriteList(params) {
   return authRequest({
@@ -9,10 +10,11 @@ function fetchFavoriteList(params) {
 }
 
 function fetchFavoriteStatus(params) {
-  return authRequest({
+  return request({
     url: "/mini/favorite/status",
     method: "GET",
-    data: params
+    data: params,
+    header: buildAuthHeader(getToken())
   });
 }
 

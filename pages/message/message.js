@@ -1,7 +1,8 @@
-const { ensureMiniSession } = require("../../utils/mini-auth");
+const { ensureMiniSession, getToken } = require("../../utils/mini-auth");
 const { getSelectedSchool } = require("../../utils/school-state");
 const { calcUnreadTotal, formatBadgeCount } = require("../../utils/message-badge");
 const { deleteMessage, fetchMessageList, markAllMessagesRead, markMessageRead } = require("../../utils/messages-api");
+const { requireLogin } = require("../../utils/login-guard");
 
 const LABELS = {
   pageTitle: "消息",
@@ -79,6 +80,19 @@ Page({
   },
 
   async onShow() {
+    if (!getToken()) {
+      const passed = await requireLogin({
+        title: "消息功能需要登录",
+        content: "查看系统消息和互动消息需要微信授权登录。"
+      });
+      if (!passed) {
+        wx.redirectTo({
+          url: "/pages/index/index"
+        });
+        return;
+      }
+    }
+
     await this.loadMessages();
   },
 
@@ -161,11 +175,11 @@ Page({
     }
 
     const { confirm } = await wx.showModal({
-      title: "\u5220\u9664\u6d88\u606f",
-      content: "\u5220\u9664\u540e\u5c06\u4e0d\u518d\u5c55\u793a\u8fd9\u6761\u6d88\u606f\uff0c\u786e\u5b9a\u5220\u9664\u5417\uff1f",
-      confirmText: "\u5220\u9664",
+      title: "删除消息",
+      content: "删除后将不再展示这条消息，确定删除吗？",
+      confirmText: "删除",
       confirmColor: "#e5484d",
-      cancelText: "\u53d6\u6d88"
+      cancelText: "取消"
     });
     if (!confirm) {
       return;
@@ -189,7 +203,7 @@ Page({
         messageBadgeText: formatBadgeCount(nextBadgeCount)
       });
       wx.showToast({
-        title: "\u5df2\u5220\u9664",
+        title: "已删除",
         icon: "success"
       });
     } catch (error) {

@@ -11,6 +11,7 @@ const { buildPostCategoryView } = require("../../utils/post-category-view");
 const { refreshMessageBadge } = require("../../utils/message-badge");
 const { fetchCurrentVerification } = require("../../utils/verification-api");
 const { getVerificationInfo, setVerificationInfo } = require("../../utils/verification-state");
+const { requireLogin } = require("../../utils/login-guard");
 
 const DEFAULT_HOME_BANNER = {
   id: "default-recruit",
@@ -466,8 +467,14 @@ Page({
     this.setData({
       fabOpen: false
     });
-    wx.navigateTo({
-      url: `/pages/category-select/category-select?type=${type}`
+    requireLogin({
+      title: "发布前请先登录",
+      content: "浏览内容无需登录，发布帖子时需要微信授权登录。"
+    }).then((passed) => {
+      if (!passed) return;
+      wx.navigateTo({
+        url: `/pages/category-select/category-select?type=${type}`
+      });
     });
   },
 

@@ -5,6 +5,7 @@ const { ensureMiniSession } = require("../../utils/mini-auth");
 const { createPost } = require("../../utils/posts-api");
 const { uploadImage } = require("../../utils/upload-api");
 const { fetchCurrentVerification } = require("../../utils/verification-api");
+const { requireLogin } = require("../../utils/login-guard");
 
 Page({
   data: {
@@ -157,7 +158,7 @@ Page({
     }
 
     if (this.data.useCustomDisplayName && displayName.length < 2) {
-      wx.showToast({ title: "展示昵称至少 2 个字", icon: "none" });
+      wx.showToast({ title: "展示名称至少 2 个字", icon: "none" });
       return;
     }
 
@@ -170,6 +171,15 @@ Page({
     this.setData({ publishing: true });
 
     try {
+      const passed = await requireLogin({
+        title: "发布前请先登录",
+        content: "发布帖子需要微信授权登录。"
+      });
+      if (!passed) {
+        this.setData({ publishing: false });
+        return;
+      }
+
       await this.syncVerificationSchool();
       const images = await this.ensureUploadedImages();
       const publishSchool = getCampusSchool();
