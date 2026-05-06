@@ -48,7 +48,7 @@ const rules: FormRules<typeof form> = {
   title: [{ required: true, message: "请输入推荐标题", trigger: "blur" }],
   type: [{ required: true, message: "请输入推荐类型", trigger: "blur" }],
   school: [{ required: true, message: "请选择所属高校", trigger: "change" }],
-  sort: [{ required: true, message: "请输入排序", trigger: "blur" }],
+  sort: [{ required: true, message: "请输入显示排序", trigger: "blur" }],
   status: [{ required: true, message: "请选择状态", trigger: "change" }]
 };
 
@@ -224,15 +224,15 @@ watch(
 <template>
   <div class="page">
     <el-row :gutter="16">
-      <el-col :span="8"><el-card shadow="never"><div class="metric-label">推荐位数量</div><div class="metric-value">{{ total }}</div></el-card></el-col>
+      <el-col :span="8"><el-card shadow="never"><div class="metric-label">推荐位总数</div><div class="metric-value">{{ total }}</div></el-card></el-col>
       <el-col :span="8"><el-card shadow="never"><div class="metric-label">启用中</div><div class="metric-value success">{{ enabledCount }}</div></el-card></el-col>
-      <el-col :span="8"><el-card shadow="never"><div class="metric-label">推荐类型</div><div class="metric-value">{{ typeOptions.length }}</div></el-card></el-col>
+      <el-col :span="8"><el-card shadow="never"><div class="metric-label">推荐类型数</div><div class="metric-value">{{ typeOptions.length }}</div></el-card></el-col>
     </el-row>
 
     <el-card shadow="never">
       <template #header>筛选条件</template>
       <div class="toolbar">
-        <el-input v-model="query.keyword" placeholder="搜索标题或关联对象" clearable class="input" @keyup.enter="handleSearch" />
+        <el-input v-model="query.keyword" placeholder="搜索推荐标题或关联内容" clearable class="input" @keyup.enter="handleSearch" />
         <el-select v-model="query.type" placeholder="全部类型" clearable class="select">
           <el-option v-for="item in typeOptions" :key="item" :label="item" :value="item" />
         </el-select>
@@ -252,9 +252,9 @@ watch(
     <el-card shadow="never">
       <template #header>推荐位配置</template>
       <el-table :data="list" stripe v-loading="loading">
-        <el-table-column prop="title" label="推荐内容" min-width="220" />
-        <el-table-column prop="type" label="类型" width="120" />
-        <el-table-column prop="targetName" label="关联对象" min-width="180" />
+        <el-table-column prop="title" label="推荐标题" min-width="220" />
+        <el-table-column prop="type" label="推荐类型" width="120" />
+        <el-table-column prop="targetName" label="关联内容" min-width="180" />
         <el-table-column prop="school" label="所属高校" min-width="160" />
         <el-table-column prop="sort" label="排序" width="100" />
         <el-table-column prop="updatedAt" label="更新时间" width="180" />
@@ -286,10 +286,18 @@ watch(
     </el-card>
 
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑推荐位' : '新增推荐位'" width="720px">
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
         <el-row :gutter="16">
-          <el-col :span="12"><el-form-item label="标题" prop="title"><el-input v-model="form.title" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="类型" prop="type"><el-input v-model="form.type" /></el-form-item></el-col>
+          <el-col :span="12">
+            <el-form-item label="推荐标题" prop="title">
+              <el-input v-model="form.title" placeholder="例如：校园优选店铺、热门打印店" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="推荐类型" prop="type">
+              <el-input v-model="form.type" placeholder="店铺推荐请填写 store" />
+            </el-form-item>
+          </el-col>
           <el-col :span="12">
             <el-form-item label="所属高校" prop="school">
               <el-select v-model="form.school" class="full-width" filterable allow-create default-first-option>
@@ -297,9 +305,13 @@ watch(
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="12"><el-form-item label="排序" prop="sort"><el-input-number v-model="form.sort" :min="0" class="full-width" /></el-form-item></el-col>
           <el-col :span="12">
-            <el-form-item label="关联对象">
+            <el-form-item label="显示排序" prop="sort">
+              <el-input-number v-model="form.sort" :min="0" class="full-width" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="关联内容">
               <el-select
                 v-if="isStoreRecommend"
                 v-model="form.targetId"
@@ -310,10 +322,18 @@ watch(
               >
                 <el-option v-for="item in storeOptions" :key="item.value" :label="item.label" :value="item.value" />
               </el-select>
-              <el-input v-else v-model="form.targetName" />
+              <el-input v-else v-model="form.targetName" placeholder="填写要关联的对象名称，例如店铺名" />
             </el-form-item>
           </el-col>
-          <el-col :span="12"><el-form-item label="关联 ID"><el-input v-model="form.targetId" :disabled="isStoreRecommend" /></el-form-item></el-col>
+          <el-col :span="12">
+            <el-form-item label="关联编号">
+              <el-input
+                v-model="form.targetId"
+                :disabled="isStoreRecommend"
+                :placeholder="isStoreRecommend ? '选择店铺后自动生成' : '填写关联对象的唯一编号'"
+              />
+            </el-form-item>
+          </el-col>
           <el-col :span="12">
             <el-form-item label="状态" prop="status">
               <el-select v-model="form.status" class="full-width">
@@ -322,7 +342,21 @@ watch(
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="24"><el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="3" /></el-form-item></el-col>
+          <el-col :span="24">
+            <el-form-item label="填写说明">
+              <el-alert
+                title="如果推荐店铺：推荐类型填 store，然后直接选择店铺，系统会自动带出关联编号。"
+                type="info"
+                :closable="false"
+                show-icon
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="备注">
+              <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="可填写推荐原因、投放说明等" />
+            </el-form-item>
+          </el-col>
         </el-row>
       </el-form>
       <template #footer>

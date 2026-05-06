@@ -30,5 +30,13 @@
     "backgroundColor": "#f5f7fb",
     "backgroundTextStyle": "light"
   },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于商家入驻时选择店铺位置"
+    }
+  },
+  "requiredPrivateInfos": [
+    "chooseLocation"
+  ],
   "style": "v2"
 }

@@ -40,10 +40,10 @@ const form = reactive<SearchWordPayload>({
 });
 
 const rules: FormRules<typeof form> = {
-  school: [{ required: true, message: "请选择高校", trigger: "change" }],
-  keyword: [{ required: true, message: "请输入搜索热词", trigger: "blur" }],
-  searchCount: [{ required: true, message: "请输入搜索量", trigger: "blur" }],
-  sort: [{ required: true, message: "请输入排序", trigger: "blur" }],
+  school: [{ required: true, message: "请选择所属高校", trigger: "change" }],
+  keyword: [{ required: true, message: "请输入热词内容", trigger: "blur" }],
+  searchCount: [{ required: true, message: "请输入搜索次数", trigger: "blur" }],
+  sort: [{ required: true, message: "请输入显示排序", trigger: "blur" }],
   status: [{ required: true, message: "请选择状态", trigger: "change" }]
 };
 
@@ -172,7 +172,7 @@ onMounted(loadData);
     <el-row :gutter="16">
       <el-col :span="8"><el-card shadow="never"><div class="metric-label">热词数量</div><div class="metric-value">{{ summary.total }}</div></el-card></el-col>
       <el-col :span="8"><el-card shadow="never"><div class="metric-label">启用热词</div><div class="metric-value success">{{ summary.enabledCount }}</div></el-card></el-col>
-      <el-col :span="8"><el-card shadow="never"><div class="metric-label">高校范围</div><div class="metric-value">{{ summary.schoolOptions.length }}</div></el-card></el-col>
+      <el-col :span="8"><el-card shadow="never"><div class="metric-label">覆盖高校数</div><div class="metric-value">{{ summary.schoolOptions.length }}</div></el-card></el-col>
     </el-row>
 
     <el-card shadow="never">
@@ -191,9 +191,9 @@ onMounted(loadData);
     <el-card shadow="never">
       <template #header>搜索热词列表</template>
       <el-table :data="list" stripe v-loading="loading">
-        <el-table-column prop="school" label="高校" min-width="140" />
-        <el-table-column prop="keyword" label="关键词" min-width="180" />
-        <el-table-column prop="searchCount" label="搜索量" width="120" />
+        <el-table-column prop="school" label="所属高校" min-width="140" />
+        <el-table-column prop="keyword" label="热词内容" min-width="180" />
+        <el-table-column prop="searchCount" label="搜索次数" width="120" />
         <el-table-column prop="sort" label="排序" width="100" />
         <el-table-column prop="updatedAt" label="更新时间" width="180" />
         <el-table-column label="状态" width="100">
@@ -222,20 +222,34 @@ onMounted(loadData);
     </el-card>
 
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑搜索热词' : '新增搜索热词'" width="620px">
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
         <el-form-item label="所属高校" prop="school">
           <el-select v-model="form.school" class="full-width" filterable allow-create default-first-option>
             <el-option v-for="item in summary.schoolOptions" :key="item" :label="item" :value="item" />
           </el-select>
         </el-form-item>
-        <el-form-item label="搜索热词" prop="keyword"><el-input v-model="form.keyword" /></el-form-item>
-        <el-form-item label="搜索量" prop="searchCount"><el-input-number v-model="form.searchCount" :min="0" class="full-width" /></el-form-item>
-        <el-form-item label="排序" prop="sort"><el-input-number v-model="form.sort" :min="0" class="full-width" /></el-form-item>
+        <el-form-item label="热词内容" prop="keyword">
+          <el-input v-model="form.keyword" placeholder="例如：打印店、校园跑腿、二手书" />
+        </el-form-item>
+        <el-form-item label="搜索次数" prop="searchCount">
+          <el-input-number v-model="form.searchCount" :min="0" class="full-width" />
+        </el-form-item>
+        <el-form-item label="显示排序" prop="sort">
+          <el-input-number v-model="form.sort" :min="0" class="full-width" />
+        </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-select v-model="form.status" class="full-width">
             <el-option label="启用" value="启用" />
             <el-option label="停用" value="停用" />
           </el-select>
+        </el-form-item>
+        <el-form-item label="填写说明">
+          <el-alert
+            title="热词是用户常搜的关键词，用于后续热门搜索展示。排序值越小，展示越靠前。"
+            type="info"
+            :closable="false"
+            show-icon
+          />
         </el-form-item>
       </el-form>
       <template #footer>
