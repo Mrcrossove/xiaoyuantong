@@ -7,13 +7,19 @@
   height: 88rpx;
   padding: 0 24rpx;
   display: grid;
-  grid-template-columns: 64rpx 1fr 120rpx;
+  grid-template-columns: 120rpx 1fr 120rpx;
   align-items: center;
   background: #ffffff;
 }
 
+.nav-left {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
 .category-title {
-  justify-self: start;
+  justify-self: center;
   font-size: 34rpx;
   font-weight: 700;
   color: #202534;

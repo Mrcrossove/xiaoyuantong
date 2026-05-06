@@ -70,30 +70,15 @@
   border-radius: 50%;
   background: #ffffff;
   box-shadow: 0 18rpx 40rpx rgba(53, 123, 201, 0.16);
-  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.brand-logo::before {
-  content: "";
-  position: absolute;
-  left: 38rpx;
-  top: 42rpx;
-  width: 64rpx;
-  height: 48rpx;
-  background: linear-gradient(135deg, #29b6a4, #159d91);
-  clip-path: polygon(50% 0, 100% 28%, 50% 56%, 0 28%);
-  box-shadow: 0 28rpx 0 #21a99a;
-}
-
-.brand-logo::after {
-  content: "";
-  position: absolute;
-  right: 36rpx;
-  top: 42rpx;
-  width: 36rpx;
-  height: 22rpx;
-  background: #b9c1c4;
-  transform: skewY(-24deg);
+.brand-logo-image {
+  width: 104rpx;
+  height: 104rpx;
+  display: block;
 }
 
 .brand-title {

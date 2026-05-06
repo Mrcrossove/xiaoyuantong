@@ -49,16 +49,14 @@ Page({
   },
 
   cancelLogin() {
-    wx.showModal({
-      title: "\u9700\u8981\u767b\u5f55",
-      content: "\u4f7f\u7528\u6821\u9662\u901a\u9700\u8981\u5148\u5b8c\u6210\u5fae\u4fe1\u6388\u6743\u767b\u5f55\u3002",
-      confirmText: "\u6211\u77e5\u9053\u4e86",
-      showCancel: false,
-      success() {
-        if (wx.exitMiniProgram) {
-          wx.exitMiniProgram();
-        }
-      }
+    const pages = getCurrentPages();
+    if (pages.length > 1) {
+      wx.navigateBack();
+      return;
+    }
+
+    wx.redirectTo({
+      url: "/pages/index/index"
     });
   },
 

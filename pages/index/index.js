@@ -2,13 +2,12 @@ const { services, fabOptions } = require("../../utils/home-config");
 const { fetchHomeBanners } = require("../../utils/banner-api");
 const { fetchPostList } = require("../../utils/posts-api");
 const { buildAvatarView } = require("../../utils/avatar");
-const { getProfile, setProfile, ensureMiniSession } = require("../../utils/mini-auth");
+const { getToken, getProfile, setProfile, ensureMiniSession } = require("../../utils/mini-auth");
 const { fetchMiniProfile } = require("../../utils/profile-api");
 const { DEFAULT_SCHOOL, getSelectedSchool, setSelectedSchool } = require("../../utils/school-state");
 const { HOME_FEED_ALL, getHomeFeedScope, setHomeFeedScope } = require("../../utils/home-feed-state");
 const { getProvinceSchoolGroups, filterProvinceSchoolGroups } = require("../../utils/school-catalog");
 const { buildPostCategoryView } = require("../../utils/post-category-view");
-const { redirectToLoginIfNeeded } = require("../../utils/login-guard");
 const { refreshMessageBadge } = require("../../utils/message-badge");
 const { fetchCurrentVerification } = require("../../utils/verification-api");
 const { getVerificationInfo, setVerificationInfo } = require("../../utils/verification-state");
@@ -26,6 +25,10 @@ const FLOATING_CATEGORY_SHOW_TOP = 520;
 const BACK_TO_FEED_SHOW_TOP = 760;
 
 const floatingCategories = [
+  {
+    label: "全部",
+    category: ""
+  },
   ...services.map((item) => ({
     label: item.label,
     category: item.category
@@ -92,10 +95,6 @@ Page({
   },
 
   onLoad() {
-    if (redirectToLoginIfNeeded()) {
-      return;
-    }
-
     const systemInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
     const provinceSchoolGroups = getProvinceSchoolGroups();
     this.setData({
@@ -106,14 +105,22 @@ Page({
   },
 
   async onShow() {
-    if (redirectToLoginIfNeeded()) {
-      return;
+    const hasToken = !!getToken();
+    let verificationInfo = getVerificationInfo();
+    let verifiedSchool = verificationInfo.verified && verificationInfo.school ? verificationInfo.school : "";
+    let businessSchool = getSelectedSchool();
+
+    if (hasToken) {
+      verificationInfo = await this.syncVerification();
+      verifiedSchool = verificationInfo.verified && verificationInfo.school ? verificationInfo.school : "";
+      businessSchool = verifiedSchool || getSelectedSchool();
+      await this.syncProfile();
+    } else {
+      this.setData({
+        userAvatar: buildAvatarView("")
+      });
     }
 
-    const verificationInfo = await this.syncVerification();
-    const verifiedSchool = verificationInfo.verified && verificationInfo.school ? verificationInfo.school : "";
-    const businessSchool = verifiedSchool || getSelectedSchool();
-    await this.syncProfile();
     refreshMessageBadge(this, { school: businessSchool });
     this.setData({
       activeServiceCategory: "",

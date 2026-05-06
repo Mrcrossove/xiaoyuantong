@@ -1,6 +1,8 @@
 <view class="category-page" style="padding-top: {{statusBarHeight}}px;">
   <view class="category-nav">
-    <view class="back-btn" bindtap="goBack"></view>
+    <view class="nav-left">
+      <view class="back-btn" bindtap="goBack"></view>
+    </view>
     <view class="category-title">{{pageTitle}}</view>
     <view class="nav-actions">
       <view class="nav-icon search-mini"></view>

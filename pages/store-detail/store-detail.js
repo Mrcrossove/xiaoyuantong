@@ -119,9 +119,8 @@ function buildCartState(cartItems) {
 
 function buildDetailState(detail) {
   const normalizedDetail = normalizeStoreDetail(detail);
-  const currentProduct = pickDefaultProduct(normalizedDetail);
-  const currentSku = pickDefaultSku(currentProduct);
   const productSections = (normalizedDetail && normalizedDetail.productSections) || [];
+  const hasMultipleProductSections = productSections.length > 1;
   const activeProductCategoryId = productSections[0] ? productSections[0].id : "";
   const displayedProducts = productSections[0] ? productSections[0].products : (normalizedDetail.products || []);
   const activeProductCategoryName = productSections[0] ? productSections[0].name : "";
@@ -129,10 +128,17 @@ function buildDetailState(detail) {
   return {
     detail: normalizedDetail,
     productSections,
+    hasMultipleProductSections,
     activeProductCategoryId,
     activeProductCategoryName,
     displayedProducts,
-    ...buildSelectionState(currentProduct, currentSku && currentSku.id, 1),
+    currentProduct: null,
+    currentSku: null,
+    selectedProductId: "",
+    selectedSkuId: "",
+    quantity: 1,
+    maxQuantity: 1,
+    currentAmountText: `${CURRENCY_SYMBOL}0.00`,
     ...buildCartState([])
   };
 }
@@ -167,6 +173,7 @@ Page({
     selectedSchool: "",
     detail: null,
     productSections: [],
+    hasMultipleProductSections: false,
     activeProductCategoryId: "",
     activeProductCategoryName: "",
     displayedProducts: [],
@@ -316,7 +323,14 @@ Page({
     this.setData({
       activeProductCategoryId: String(id || ""),
       activeProductCategoryName: section ? section.name : "",
-      displayedProducts: section ? section.products : []
+      displayedProducts: section ? section.products : [],
+      selectedProductId: "",
+      selectedSkuId: "",
+      currentProduct: null,
+      currentSku: null,
+      quantity: 1,
+      maxQuantity: 1,
+      currentAmountText: `${CURRENCY_SYMBOL}0.00`
     });
   },
 
@@ -339,6 +353,13 @@ Page({
     const { id } = event.currentTarget.dataset;
     if (!id || !this.storeId) {
       return;
+    }
+
+    const products = (this.data.detail && this.data.detail.products) || [];
+    const currentProduct = products.find((item) => String(item.id) === String(id));
+    if (currentProduct) {
+      const currentSku = pickDefaultSku(currentProduct);
+      this.setData(buildSelectionState(currentProduct, currentSku && currentSku.id, 1));
     }
 
     wx.navigateTo({
@@ -392,7 +413,10 @@ Page({
       cartItems.push(nextItem);
     }
 
-    this.setData(buildCartState(cartItems));
+    this.setData({
+      ...buildCartState(cartItems),
+      ...buildSelectionState(product, nextItem.skuId, nextItem.quantity)
+    });
   },
 
   decreaseCartItem(event) {
@@ -408,16 +432,30 @@ Page({
     const nextQuantity = Number(current.quantity || 0) - 1;
     if (nextQuantity <= 0) {
       cartItems.splice(index, 1);
+      this.setData({
+        ...buildCartState(cartItems),
+        selectedProductId: productId,
+        selectedSkuId: "",
+        currentProduct: null,
+        currentSku: null,
+        quantity: 1,
+        maxQuantity: 1,
+        currentAmountText: `${CURRENCY_SYMBOL}0.00`
+      });
+      return;
     } else {
       const products = (this.data.detail && this.data.detail.products) || [];
       const product = products.find((item) => String(item.id) === productId);
       const nextItem = buildCartItem(product, nextQuantity);
       if (nextItem) {
         cartItems[index] = nextItem;
+        this.setData({
+          ...buildCartState(cartItems),
+          ...buildSelectionState(product, nextItem.skuId, nextItem.quantity)
+        });
+        return;
       }
     }
-
-    this.setData(buildCartState(cartItems));
   },
 
   async toggleStoreFavorite() {
