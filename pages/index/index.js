@@ -98,6 +98,12 @@ Page({
   onLoad() {
     const systemInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
     const provinceSchoolGroups = getProvinceSchoolGroups();
+    if (wx.showShareMenu) {
+      wx.showShareMenu({
+        withShareTicket: true,
+        menus: ["shareAppMessage", "shareTimeline"]
+      });
+    }
     this.setData({
       statusBarHeight: systemInfo.statusBarHeight || 20,
       provinceSchoolGroups,
@@ -476,6 +482,20 @@ Page({
         url: `/pages/category-select/category-select?type=${type}`
       });
     });
+  },
+
+  onShareAppMessage() {
+    return {
+      title: "校园通",
+      path: "/pages/index/index"
+    };
+  },
+
+  onShareTimeline() {
+    return {
+      title: "校园通",
+      query: ""
+    };
   },
 
   noop() {}
