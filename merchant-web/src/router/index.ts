@@ -64,6 +64,12 @@ const router = createRouter({
           meta: { title: "钱包结算", menuPath: "/wallet" }
         },
         {
+          path: "referral",
+          name: "merchant-referral",
+          component: () => import("../views/referral/ReferralView.vue"),
+          meta: { title: "推广获客", menuPath: "/referral" }
+        },
+        {
           path: "message",
           name: "merchant-message",
           component: () => import("../views/message/MessageView.vue"),

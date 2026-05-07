@@ -85,6 +85,7 @@ export const reviewRefundApi = (id: number, payload: { status: "已通过" | "�
 export const getWalletApi = () => request<any>({ url: "/merchant/wallet/overview", method: "GET" });
 export const createWithdrawApi = (payload: { amount: number; accountType?: string; accountNo?: string; remark?: string }) =>
   request<any>({ url: "/merchant/wallet/withdraw", method: "POST", body: JSON.stringify(payload) });
+export const getReferralOverviewApi = () => request<any>({ url: "/merchant/referral/overview", method: "GET" });
 
 export const getMessageListApi = (params?: { keyword?: string; type?: string }) =>
   request<any>({ url: "/merchant/message/list", method: "GET", params });

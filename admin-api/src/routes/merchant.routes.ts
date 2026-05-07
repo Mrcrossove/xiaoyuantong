@@ -12,6 +12,7 @@ import {
   getMerchantAccountProfileAction,
   getMerchantDashboardAction,
   getMerchantOrderDetailAction,
+  getMerchantReferralAction,
   getMerchantRefundDetailAction,
   getMerchantStatAction,
   getMerchantStoreAction,
@@ -63,6 +64,13 @@ router.get(
   requireMerchantMenuAccess("/dashboard"),
   requireMerchantPermission("dashboard:view"),
   asyncHandler(getMerchantDashboardAction)
+);
+
+router.get(
+  "/referral/overview",
+  requireMerchantMenuAccess("/referral"),
+  requireMerchantPermission("referral:view"),
+  asyncHandler(getMerchantReferralAction)
 );
 
 router.get(

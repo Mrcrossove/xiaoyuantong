@@ -29,7 +29,8 @@ export const adminPasswordUpdateSchema = z.object({
 });
 
 export const miniLoginSchema = z.object({
-  code: requiredText("微信登录 code")
+  code: requiredText("微信登录 code"),
+  referralScene: z.string().trim().max(64, "referralScene max length is 64").optional().default("")
 });
 
 export const miniProfileUpdateSchema = z.object({

@@ -1,4 +1,5 @@
 const { request } = require("./api");
+const { clearReferralScene, getReferralScene } = require("./referral-scene");
 
 const TOKEN_KEY = "miniToken";
 const PROFILE_KEY = "miniProfile";
@@ -94,9 +95,13 @@ async function ensureMiniSession(options = {}) {
   }
 
   const code = await getWechatCode();
-  return loginWithPayload({
-    code
+  const referralScene = getReferralScene();
+  const session = await loginWithPayload({
+    code,
+    referralScene
   });
+  clearReferralScene();
+  return session;
 }
 
 function buildAuthHeader(token) {

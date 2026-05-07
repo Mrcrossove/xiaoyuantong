@@ -37,11 +37,18 @@ import {
   updateMerchantAccountProfile,
   updateMerchantPassword
 } from "../services/merchant-portal.service";
+import { getMerchantReferralOverview } from "../services/merchant-referral.service";
 import { ok } from "../utils/response";
 
 export async function getMerchantDashboardAction(req: Request, res: Response) {
   const auth = getMerchantAuth(req);
   const data = await queryMerchantDashboard(auth.accountId);
+  return ok(res, data, req.traceId);
+}
+
+export async function getMerchantReferralAction(req: Request, res: Response) {
+  const auth = getMerchantAuth(req);
+  const data = await getMerchantReferralOverview(auth.accountId);
   return ok(res, data, req.traceId);
 }
 

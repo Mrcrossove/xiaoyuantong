@@ -12,6 +12,7 @@ const { refreshMessageBadge } = require("../../utils/message-badge");
 const { fetchCurrentVerification } = require("../../utils/verification-api");
 const { getVerificationInfo, setVerificationInfo } = require("../../utils/verification-state");
 const { requireLogin } = require("../../utils/login-guard");
+const { captureReferralSceneFromOptions } = require("../../utils/referral-scene");
 
 const DEFAULT_HOME_BANNER = {
   id: "default-recruit",
@@ -95,7 +96,8 @@ Page({
     messageBadgeText: ""
   },
 
-  onLoad() {
+  onLoad(options) {
+    captureReferralSceneFromOptions(options);
     const systemInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
     const provinceSchoolGroups = getProvinceSchoolGroups();
     if (wx.showShareMenu) {

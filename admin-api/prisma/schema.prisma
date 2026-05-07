@@ -86,6 +86,7 @@ model MiniUser {
   messages      MiniMessage[]     @relation("MiniMessageReceiver")
   messageReads  MiniMessageRead[]
   messageDeletes MiniMessageDelete[]
+  merchantReferrals MerchantReferral[]
   ownedStores   MiniStore[]       @relation("MiniStoreOwner")
   merchantAccount MerchantAccount?
   schoolAdminApplications SchoolAdminApplication[]
@@ -400,8 +401,31 @@ model MerchantAccount {
   passwordUpdatedAt DateTime?
   initialPasswordSentAt DateTime?
   lastLoginAt   DateTime?
+  referrals     MerchantReferral[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+model MerchantReferral {
+  id                Int             @id @default(autoincrement())
+  merchantAccountId Int
+  merchantAccount   MerchantAccount @relation(fields: [merchantAccountId], references: [id])
+  storeId           Int
+  userId            Int             @unique
+  user              MiniUser        @relation(fields: [userId], references: [id])
+  scene             String
+  source            String          @default("mini_qr")
+  billable          Boolean         @default(true)
+  unitPriceCents    Int             @default(100)
+  status            String          @default("pending")
+  firstLoginAt      DateTime        @default(now())
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([merchantAccountId, createdAt])
+  @@index([storeId, createdAt])
+  @@index([status, createdAt])
+  @@index([scene])
 }
 
 model MerchantLoginCode {

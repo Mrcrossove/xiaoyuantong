@@ -1,4 +1,5 @@
 const { getSelectedSchool } = require("./utils/school-state");
+const { captureReferralSceneFromOptions } = require("./utils/referral-scene");
 
 App({
   globalData: {
@@ -6,7 +7,12 @@ App({
     selectedSchool: getSelectedSchool()
   },
 
-  onLaunch() {
+  onLaunch(options) {
+    captureReferralSceneFromOptions(options);
     // Allow anonymous browsing. Login is requested only before protected actions.
+  },
+
+  onShow(options) {
+    captureReferralSceneFromOptions(options);
   }
 });

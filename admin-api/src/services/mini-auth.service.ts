@@ -4,6 +4,7 @@ import type { MiniLoginPayload, MiniProfileUpdatePayload } from "../controllers/
 import { fetchWechatSession } from "./wechat-auth.service";
 import { ApiError } from "../utils/api-error";
 import { ERROR_CODES } from "../constants/error-codes";
+import { recordMerchantReferral } from "./merchant-referral.service";
 
 const VERIFY_STATUS_VERIFIED_LIST = ["已认证", "宸茶璇?"];
 const DEFAULT_AVATAR_COUNT = 8;
@@ -80,6 +81,10 @@ export async function miniLogin(payload: MiniLoginPayload) {
   }
 
   const wechatSession = await fetchWechatSession(loginCode);
+  const existingUser = await prisma.miniUser.findUnique({
+    where: { openid: wechatSession.openid },
+    select: { id: true }
+  });
   const user = await prisma.miniUser.upsert({
     where: { openid: wechatSession.openid },
     create: {
@@ -93,6 +98,9 @@ export async function miniLogin(payload: MiniLoginPayload) {
       unionId: wechatSession.unionid || undefined
     }
   });
+  if (!existingUser && payload.referralScene) {
+    await recordMerchantReferral(user.id, payload.referralScene);
+  }
   const profileUser = await ensureDefaultProfile(user);
 
   return {
