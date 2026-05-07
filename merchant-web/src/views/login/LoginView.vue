@@ -105,7 +105,7 @@ async function handleCodeLogin() {
   <div class="login-page">
     <div class="login-panel">
       <section class="hero">
-        <div class="hero-badge">校园通商家中心</div>
+        <div class="hero-badge">校院通商家中心</div>
         <h1>用账号密码或验证码登录商家后台</h1>
         <p>
           店铺入驻申请审核通过后，平台会把商家后台地址、登录账号和初始密码发送到小程序消息中心。短信服务审核通过后，也可以使用手机号验证码登录。

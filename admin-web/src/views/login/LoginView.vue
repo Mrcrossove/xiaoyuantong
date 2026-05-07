@@ -32,7 +32,7 @@ async function handleLogin() {
 <template>
   <div class="login-page">
     <div class="login-card">
-      <div class="brand">校园通管理后台</div>
+      <div class="brand">校院通管理后台</div>
       <div class="sub">统一管理高校、用户、认证、店铺、订单和运营配置。</div>
 
       <el-form label-position="top" @submit.prevent>

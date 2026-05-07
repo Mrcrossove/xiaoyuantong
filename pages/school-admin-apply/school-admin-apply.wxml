@@ -10,7 +10,7 @@
   </view>
 
   <view class="hero card">
-    <view class="hero-badge">校园通后台</view>
+    <view class="hero-badge">校院通后台</view>
     <view class="hero-title">申请学校专属管理后台</view>
     <view class="hero-desc">提交学校、团队人数和联系方式后，超级管理员会筛选团队并线下联系，为通过者分配后台账号密码。</view>
   </view>

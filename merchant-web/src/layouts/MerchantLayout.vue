@@ -26,7 +26,7 @@ function handleLogout() {
 <template>
   <el-container class="layout-shell">
     <el-aside :class="['aside', { 'aside-open': menuOpen }]" width="248px">
-      <div class="logo">校园通商家后台</div>
+      <div class="logo">校院通商家后台</div>
       <div class="store-card">
         <div class="store-name">{{ authStore.profile?.storeName || "-" }}</div>
         <div class="store-meta">{{ authStore.profile?.school || "-" }}</div>

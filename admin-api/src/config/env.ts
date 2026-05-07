@@ -52,7 +52,7 @@ export const env = {
   wechatPayProfitSharingReceiverName: process.env.WECHAT_PAY_PROFIT_SHARING_RECEIVER_NAME || "",
   wechatPayTransferNotifyUrl: process.env.WECHAT_PAY_TRANSFER_NOTIFY_URL || "",
   wechatPayTransferSceneId: process.env.WECHAT_PAY_TRANSFER_SCENE_ID || "",
-  wechatPayTransferUserRecvPerception: process.env.WECHAT_PAY_TRANSFER_USER_RECV_PERCEPTION || "校园通商家提现",
+  wechatPayTransferUserRecvPerception: process.env.WECHAT_PAY_TRANSFER_USER_RECV_PERCEPTION || "校院通商家提现",
 
   smsProvider: (process.env.SMS_PROVIDER || "mock").trim().toLowerCase(),
   allowSmsMockInProduction: process.env.ALLOW_SMS_MOCK_IN_PRODUCTION === "true",

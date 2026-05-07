@@ -323,7 +323,7 @@ Page({
 
   onShareAppMessage() {
     const post = this.data.post || {};
-    const title = post.title ? `${post.title} - 校园通` : "校园通帖子分享";
+    const title = post.title ? `${post.title} - 校院通` : "校院通帖子分享";
     const path = post.id ? `/pages/post-detail/post-detail?id=${encodeURIComponent(String(post.id))}` : "/pages/index/index";
 
     return {

@@ -1058,7 +1058,7 @@ async function main() {
         sectionTitle: "平台信息",
         configKey: "platform_name",
         label: "平台名称",
-        value: "校园通",
+        value: "校院通",
         valueType: "text",
         sort: 1,
         status: TEXT.enabled

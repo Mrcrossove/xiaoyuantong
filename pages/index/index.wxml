@@ -8,7 +8,7 @@
         <view wx:else class="top-avatar-default {{userAvatar.defaultAvatarClass}}"></view>
       </view>
     </view>
-    <view class="topbar-title">校园通</view>
+    <view class="topbar-title">校院通</view>
     <view class="topbar-right"></view>
   </view>
 
@@ -65,7 +65,7 @@
         <view class="banner-slide" data-link="{{item.linkUrl}}" data-is-default="{{item.isDefault}}" bindtap="openHomeBanner">
           <view wx:if="{{item.isDefault}}" class="banner-art">
             <view class="banner-copy">
-              <text class="banner-tag">校园通后台招募</text>
+              <text class="banner-tag">校院通后台招募</text>
               <view class="banner-title">校园管理员招募中</view>
               <view class="banner-desc">点击提交学校、团队人数和联系方式，平台审核后为你开通学校专属管理后台</view>
             </view>

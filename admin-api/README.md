@@ -1,6 +1,6 @@
 # campus-admin-api
 
-`admin-api` 是校园通当前的后台接口服务，技术栈为 `Express + TypeScript + Prisma + PostgreSQL`。
+`admin-api` 是校院通当前的后台接口服务，技术栈为 `Express + TypeScript + Prisma + PostgreSQL`。
 
 当前已实现：
 

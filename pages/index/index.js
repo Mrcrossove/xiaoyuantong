@@ -486,14 +486,14 @@ Page({
 
   onShareAppMessage() {
     return {
-      title: "校园通",
+      title: "校院通",
       path: "/pages/index/index"
     };
   },
 
   onShareTimeline() {
     return {
-      title: "校园通",
+      title: "校院通",
       query: ""
     };
   },

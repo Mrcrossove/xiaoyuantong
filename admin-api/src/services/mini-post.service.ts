@@ -17,7 +17,7 @@ const LABELS = {
 
 const HOT_POST_FETCH_LIMIT = 240;
 const HOT_POST_POOL_LIMIT = 120;
-const DISPLAY_NAME_BLOCKED_WORDS = ["官方", "管理员", "客服", "校园通", "平台", "系统"];
+const DISPLAY_NAME_BLOCKED_WORDS = ["官方", "管理员", "客服", "校院通", "平台", "系统"];
 const POST_CATEGORY_GROUPS: Record<string, string[]> = {
   "\u6811\u6d1e": [
     "\u6811\u6d1e",

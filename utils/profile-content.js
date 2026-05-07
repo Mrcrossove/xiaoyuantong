@@ -111,15 +111,15 @@ const helpCards = [
 
 const contactList = [
   { label: "平台客服", value: "工作日 09:00 - 18:00" },
-  { label: "客服微信", value: "校园通客服小助手" },
+  { label: "客服微信", value: "校院通客服小助手" },
   { label: "客服邮箱", value: "平台服务邮箱已开通，可联系在线客服获取" }
 ];
 
 const aboutInfo = {
-  name: "校园通",
+  name: "校院通",
   version: "当前版本 1.0.0",
   intro:
-    "校园通聚合校园帖子、创业店铺、消息通知与认证服务，帮助学生更方便地完成校内生活与交易。",
+    "校院通聚合校园帖子、创业店铺、消息通知与认证服务，帮助学生更方便地完成校内生活与交易。",
   sections: [
     {
       title: "我们在做什么",

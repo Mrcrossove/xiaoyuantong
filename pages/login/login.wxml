@@ -5,7 +5,7 @@
     <view class="brand-logo">
       <image class="brand-logo-image" src="/assets/login-logo.png" mode="aspectFit"></image>
     </view>
-    <view class="brand-title">校园通</view>
+    <view class="brand-title">校院通</view>
     <view class="brand-subtitle">连接校园，分享生活</view>
   </view>
 

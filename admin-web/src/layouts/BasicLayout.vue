@@ -36,7 +36,7 @@ function handleLogout() {
 <template>
   <el-container class="layout-shell">
     <el-aside width="248px" class="aside">
-      <div class="logo">校园通后台</div>
+      <div class="logo">校院通后台</div>
       <el-menu :default-active="activePath" class="menu" unique-opened @select="handleSelect">
         <el-sub-menu v-for="group in visibleMenus" :key="group.key" :index="group.key">
           <template #title>{{ group.title }}</template>
@@ -49,7 +49,7 @@ function handleLogout() {
 
     <el-container>
       <el-header class="header">
-        <div class="page-name">{{ route.meta.title || "校园通管理后台" }}</div>
+        <div class="page-name">{{ route.meta.title || "校院通管理后台" }}</div>
         <div class="header-right">
           <el-tag type="success">{{ authStore.profile?.roleName || "未登录" }}</el-tag>
           <el-tag type="info">数据范围：{{ authStore.schoolScopeLabel }}</el-tag>

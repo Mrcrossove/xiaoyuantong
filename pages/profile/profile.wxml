@@ -68,7 +68,7 @@
         <button
           class="contact-service-hit"
           open-type="contact"
-          send-message-title="校园通客服"
+          send-message-title="校院通客服"
           send-message-path="/pages/profile/profile"
           show-message-card="true"
         ></button>
