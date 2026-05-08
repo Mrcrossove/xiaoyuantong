@@ -8,6 +8,7 @@ import {
   getAdminStoreOrderDetail,
   getAdminStoreDashboard,
   getMiniStoreDetail,
+  resolveMiniStoreReferralScene,
   queryStoreProductApprovals,
   queryAdminStoreOrders,
   queryAdminStoreList,
@@ -25,6 +26,11 @@ export async function listMiniStoreAction(req: Request, res: Response) {
 
 export async function getMiniStoreDetailAction(req: Request, res: Response) {
   const data = await getMiniStoreDetail(String(req.params.detailId || ""));
+  return ok(res, data, req.traceId);
+}
+
+export async function resolveMiniStoreReferralSceneAction(req: Request, res: Response) {
+  const data = await resolveMiniStoreReferralScene(String(req.query.scene || ""));
   return ok(res, data, req.traceId);
 }
 

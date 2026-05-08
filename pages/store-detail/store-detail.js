@@ -4,8 +4,9 @@ const { ensureMiniSession } = require("../../utils/mini-auth");
 const { createOrder } = require("../../utils/order-api");
 const { getSelectedSchool } = require("../../utils/school-state");
 const { normalizeStoreDetail } = require("../../utils/store-cover");
-const { fetchStoreDetail } = require("../../utils/stores-api");
+const { fetchStoreDetail, resolveStoreReferralScene } = require("../../utils/stores-api");
 const { requireLogin } = require("../../utils/login-guard");
+const { captureReferralSceneFromOptions, normalizeReferralScene } = require("../../utils/referral-scene");
 
 const CURRENCY_SYMBOL = "楼";
 
@@ -200,6 +201,7 @@ Page({
   },
 
   async onLoad(options) {
+    captureReferralSceneFromOptions(options);
     const systemInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
     const menuButton = wx.getMenuButtonBoundingClientRect ? wx.getMenuButtonBoundingClientRect() : null;
     this.storeId = String(options.id || "");
@@ -209,8 +211,37 @@ Page({
       navRightSafeRpx: this.getNavRightSafeRpx(systemInfo, menuButton)
     });
 
+    if (!this.storeId) {
+      this.storeId = await this.resolveStoreIdFromScene(options);
+    }
+
+    if (!this.storeId) {
+      wx.showToast({
+        title: "店铺二维码无效",
+        icon: "none"
+      });
+      this.setData({
+        detail: null
+      });
+      return;
+    }
+
     await this.loadStoreDetail(this.storeId);
     await Promise.all([this.loadFavoriteStatus(this.storeId), this.loadDefaultAddress()]);
+  },
+
+  async resolveStoreIdFromScene(options = {}) {
+    const scene = normalizeReferralScene(options.scene || (options.query && options.query.scene) || "");
+    if (!scene) {
+      return "";
+    }
+
+    try {
+      const result = await resolveStoreReferralScene(scene);
+      return String(result.detailId || "");
+    } catch (error) {
+      return "";
+    }
   },
 
   getNavRightSafeRpx(systemInfo, menuButton) {

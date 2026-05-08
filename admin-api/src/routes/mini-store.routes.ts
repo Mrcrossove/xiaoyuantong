@@ -13,6 +13,7 @@ import {
   getAdminStoreDashboardAction,
   getAdminStoreOrderDetailAction,
   getMiniStoreDetailAction,
+  resolveMiniStoreReferralSceneAction,
   listAdminStoreOrdersAction,
   listAdminStoreAction,
   listMiniStoreAction,
@@ -30,6 +31,7 @@ import { validateBody } from "../middlewares/validate";
 const router = Router();
 
 router.get("/list", asyncHandler(listMiniStoreAction));
+router.get("/referral/resolve", asyncHandler(resolveMiniStoreReferralSceneAction));
 router.get("/detail/:detailId", asyncHandler(getMiniStoreDetailAction));
 
 router.get("/admin/list", requireAdminAuth, requireAdminMenuAccess("/store/list"), asyncHandler(listAdminStoreAction));

@@ -11,7 +11,7 @@ export function buildMerchantReferralScene(accountId: number) {
   return `${SCENE_PREFIX}${accountId}`;
 }
 
-function parseMerchantReferralScene(scene: string) {
+export function parseMerchantReferralScene(scene: string) {
   const value = String(scene || "").trim();
   if (!value.startsWith(SCENE_PREFIX)) return 0;
   const id = Number(value.slice(SCENE_PREFIX.length));
@@ -77,7 +77,7 @@ export async function getMerchantReferralOverview(accountId: number) {
 
   const scene = buildMerchantReferralScene(account.id);
   const [miniCode, totalCount, billableCount, recentRows] = await Promise.all([
-    createUnlimitedMiniCode(scene),
+    createUnlimitedMiniCode(scene, "pages/store-detail/store-detail"),
     prisma.merchantReferral.count({
       where: { merchantAccountId: account.id }
     }),
@@ -113,7 +113,7 @@ export async function getMerchantReferralOverview(accountId: number) {
       school: account.store.school
     },
     scene,
-    page: "pages/index/index",
+    page: "pages/store-detail/store-detail",
     miniCode: {
       dataUrl: `data:${miniCode.mimeType};base64,${miniCode.base64}`,
       mocked: miniCode.mocked

@@ -15,7 +15,18 @@ function fetchStoreDetail(detailId) {
   });
 }
 
+function resolveStoreReferralScene(scene) {
+  return request({
+    url: "/mini/store/referral/resolve",
+    method: "GET",
+    data: {
+      scene
+    }
+  });
+}
+
 module.exports = {
   fetchStoreList,
-  fetchStoreDetail
+  fetchStoreDetail,
+  resolveStoreReferralScene
 };

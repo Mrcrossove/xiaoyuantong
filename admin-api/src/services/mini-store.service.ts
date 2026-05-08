@@ -21,6 +21,7 @@ import {
   settleMiniOrderIncome
 } from "./mini-order.service";
 import { reviewMiniRefundRequest } from "./mini-refund.service";
+import { buildMerchantReferralScene, parseMerchantReferralScene } from "./merchant-referral.service";
 import {
   createStoreProductRecord,
   deleteStoreProductRecord,
@@ -867,6 +868,38 @@ export async function getMiniStoreDetail(detailId: string) {
     }
   });
   return mapStoreDetail(row);
+}
+
+export async function resolveMiniStoreReferralScene(scene: string) {
+  const accountId = parseMerchantReferralScene(scene);
+  if (!accountId) {
+    throw new ApiError("推广码无效", ERROR_CODES.BAD_REQUEST, 400);
+  }
+
+  const account = await prisma.merchantAccount.findUnique({
+    where: { id: accountId },
+    include: {
+      store: {
+        select: {
+          detailId: true,
+          name: true,
+          school: true,
+          status: true
+        }
+      }
+    }
+  });
+
+  if (!account || !account.store || account.store.status !== STORE_STATUS.open) {
+    throw new ApiError("店铺不存在或暂未营业", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  return {
+    detailId: account.store.detailId,
+    storeName: account.store.name,
+    school: account.store.school,
+    scene: buildMerchantReferralScene(account.id)
+  };
 }
 
 export async function queryAdminStoreList(adminUserId: number, rawQuery: Record<string, unknown>) {
