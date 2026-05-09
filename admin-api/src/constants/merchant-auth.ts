@@ -6,6 +6,7 @@ export const MERCHANT_MENU_PATHS = [
   "/refund",
   "/wallet",
   "/referral",
+  "/supply",
   "/message",
   "/stat",
   "/account"
@@ -29,6 +30,8 @@ export const MERCHANT_PERMISSION_CODES = [
   "wallet:view",
   "wallet:withdraw",
   "referral:view",
+  "supply:view",
+  "supply:create",
   "message:view",
   "message:read",
   "stat:view",

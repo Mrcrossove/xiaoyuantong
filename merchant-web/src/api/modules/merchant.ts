@@ -87,6 +87,12 @@ export const createWithdrawApi = (payload: { amount: number; accountType?: strin
   request<any>({ url: "/merchant/wallet/withdraw", method: "POST", body: JSON.stringify(payload) });
 export const getReferralOverviewApi = () => request<any>({ url: "/merchant/referral/overview", method: "GET" });
 
+export const getSupplyDefaultsApi = () => request<any>({ url: "/merchant/supply/defaults", method: "GET" });
+export const getSupplyRequestListApi = (params?: any) =>
+  request<any>({ url: "/merchant/supply/list", method: "GET", params });
+export const createSupplyRequestApi = (payload: any) =>
+  request<any>({ url: "/merchant/supply/request", method: "POST", body: JSON.stringify(payload) });
+
 export const getMessageListApi = (params?: { keyword?: string; type?: string }) =>
   request<any>({ url: "/merchant/message/list", method: "GET", params });
 export const readMessageApi = (id: number) => request<any>({ url: `/merchant/message/${id}/read`, method: "POST" });

@@ -70,6 +70,12 @@ const router = createRouter({
           meta: { title: "推广获客", menuPath: "/referral" }
         },
         {
+          path: "supply",
+          name: "merchant-supply",
+          component: () => import("../views/supply/SupplyRequestView.vue"),
+          meta: { title: "商品补给申请", menuPath: "/supply" }
+        },
+        {
           path: "message",
           name: "merchant-message",
           component: () => import("../views/message/MessageView.vue"),

@@ -38,6 +38,11 @@ import {
   updateMerchantPassword
 } from "../services/merchant-portal.service";
 import { getMerchantReferralOverview } from "../services/merchant-referral.service";
+import {
+  createMerchantSupplyRequest,
+  getMerchantSupplyDefaults,
+  queryMerchantSupplyRequests
+} from "../services/merchant-supply-request.service";
 import { ok } from "../utils/response";
 
 export async function getMerchantDashboardAction(req: Request, res: Response) {
@@ -49,6 +54,24 @@ export async function getMerchantDashboardAction(req: Request, res: Response) {
 export async function getMerchantReferralAction(req: Request, res: Response) {
   const auth = getMerchantAuth(req);
   const data = await getMerchantReferralOverview(auth.accountId);
+  return ok(res, data, req.traceId);
+}
+
+export async function getMerchantSupplyDefaultsAction(req: Request, res: Response) {
+  const auth = getMerchantAuth(req);
+  const data = await getMerchantSupplyDefaults(auth.accountId);
+  return ok(res, data, req.traceId);
+}
+
+export async function createMerchantSupplyRequestAction(req: Request, res: Response) {
+  const auth = getMerchantAuth(req);
+  const data = await createMerchantSupplyRequest(auth.accountId, req.body);
+  return ok(res, data, req.traceId, "补给申请已提交");
+}
+
+export async function listMerchantSupplyRequestsAction(req: Request, res: Response) {
+  const auth = getMerchantAuth(req);
+  const data = await queryMerchantSupplyRequests(auth.accountId, req.query as Record<string, unknown>);
   return ok(res, data, req.traceId);
 }
 

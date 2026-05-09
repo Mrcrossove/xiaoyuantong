@@ -87,6 +87,7 @@ export const adminMenus: AdminMenuItem[] = [
       { key: "trade-refund", title: "退款管理", path: "/trade/refund" },
       { key: "trade-wallet", title: "钱包账户", path: "/trade/wallet" },
       { key: "trade-settlement", title: "分账配置", path: "/trade/settlement" },
+      { key: "trade-supply", title: "商品补给申请", path: "/trade/supply" },
       { key: "trade-withdraw", title: "提现审核", path: "/trade/withdraw" }
     ]
   },

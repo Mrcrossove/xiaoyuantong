@@ -44,6 +44,7 @@ async function main() {
   await prisma.adminHelpArticle.deleteMany();
   await prisma.adminSearchWord.deleteMany();
   await prisma.adminMessageTemplate.deleteMany();
+  await prisma.merchantSupplyRequest.deleteMany();
   await prisma.merchantLoginCode.deleteMany();
   await prisma.merchantAccount.deleteMany();
   await prisma.miniRefundRecord.deleteMany();
@@ -103,6 +104,7 @@ async function main() {
         "/trade/order",
         "/trade/refund",
         "/trade/wallet",
+        "/trade/supply",
         "/trade/withdraw",
         "/stat/user",
         "/stat/post",
@@ -134,9 +136,12 @@ async function main() {
         "store:apply:reject",
         "post:report:review",
         "refund:review",
+        "supply:view",
+        "supply:handle",
+        "supply:export",
         "withdraw:review"
       ],
-      menuPaths: ["/dashboard/overview", "/verify/list", "/post/list", "/post/report", "/store/apply", "/trade/refund", "/trade/withdraw"]
+      menuPaths: ["/dashboard/overview", "/verify/list", "/post/list", "/post/report", "/store/apply", "/trade/refund", "/trade/supply", "/trade/withdraw"]
     }
   });
 
@@ -157,8 +162,8 @@ async function main() {
       name: "\u5ba2\u670d\u4e3b\u7ba1",
       scopeType: "assigned",
       status: TEXT.enabled,
-      permissions: ["order:view", "order:export", "wallet:view", "wallet:export", "refund:review", "withdraw:review"],
-      menuPaths: ["/dashboard/overview", "/trade/order", "/trade/refund", "/trade/wallet", "/trade/withdraw"]
+      permissions: ["order:view", "order:export", "wallet:view", "wallet:export", "refund:review", "supply:view", "supply:handle", "supply:export", "withdraw:review"],
+      menuPaths: ["/dashboard/overview", "/trade/order", "/trade/refund", "/trade/wallet", "/trade/supply", "/trade/withdraw"]
     }
   });
 
@@ -182,6 +187,9 @@ async function main() {
         "wallet:view",
         "wallet:export",
         "refund:review",
+        "supply:view",
+        "supply:handle",
+        "supply:export",
         "withdraw:review",
         "message:template:add",
         "message:template:edit",
@@ -226,6 +234,7 @@ async function main() {
         "/trade/order",
         "/trade/refund",
         "/trade/wallet",
+        "/trade/supply",
         "/trade/withdraw",
         "/stat/user",
         "/stat/post",

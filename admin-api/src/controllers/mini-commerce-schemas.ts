@@ -116,6 +116,22 @@ export const miniWithdrawCreateSchema = z.object({
   remark: z.string().trim().max(100, "备注最多 100 个字").optional().default("")
 });
 
+export const merchantSupplyRequestCreateSchema = z.object({
+  storeName: z.string().trim().min(1, "店铺名称不能为空").max(60, "店铺名称最多 60 个字"),
+  ownerName: z.string().trim().min(1, "店主不能为空").max(30, "店主最多 30 个字"),
+  phone: z.string().trim().min(6, "联系电话至少 6 位").max(20, "联系电话最多 20 位"),
+  school: z.string().trim().min(1, "高校不能为空").max(40, "高校最多 40 个字"),
+  address: z.string().trim().min(2, "店铺详细地址至少 2 个字").max(120, "店铺详细地址最多 120 个字"),
+  productName: z.string().trim().min(1, "具体商品名称不能为空").max(80, "具体商品名称最多 80 个字"),
+  quantity: z.number().int().min(1, "申请补货数量必须大于 0").max(999999, "申请补货数量过大"),
+  remark: z.string().trim().max(200, "备注最多 200 个字").optional().default("")
+});
+
+export const adminSupplyRequestStatusSchema = z.object({
+  status: z.enum(["pending", "delivering", "completed", "rejected"]),
+  adminNote: z.string().trim().max(200, "处理备注最多 200 个字").optional().default("")
+});
+
 export const refundReviewSchema = z.object({
   status: z.enum(["已通过", "已驳回"]),
   reviewNote: z.string().trim().max(100, "审核备注最多 100 个字").optional().default("")
@@ -133,5 +149,7 @@ export type MiniMerchantMovePayload = z.infer<typeof miniMerchantMoveSchema>;
 export type MiniMerchantBatchIdsPayload = z.infer<typeof miniMerchantBatchIdsSchema>;
 export type MiniUploadImagePayload = z.infer<typeof miniUploadImageSchema>;
 export type MiniWithdrawCreatePayload = z.infer<typeof miniWithdrawCreateSchema>;
+export type MerchantSupplyRequestCreatePayload = z.infer<typeof merchantSupplyRequestCreateSchema>;
+export type AdminSupplyRequestStatusPayload = z.infer<typeof adminSupplyRequestStatusSchema>;
 export type RefundReviewPayload = z.infer<typeof refundReviewSchema>;
 export type StoreProductApprovalReviewPayload = z.infer<typeof storeProductApprovalReviewSchema>;

@@ -5,6 +5,7 @@ import {
   batchDownMerchantProductsAction,
   createMerchantProductCategoryAction,
   createMerchantProductAction,
+  createMerchantSupplyRequestAction,
   createMerchantWithdrawAction,
   deleteMerchantProductAction,
   deleteMerchantProductCategoryAction,
@@ -16,11 +17,13 @@ import {
   getMerchantRefundDetailAction,
   getMerchantStatAction,
   getMerchantStoreAction,
+  getMerchantSupplyDefaultsAction,
   getMerchantWalletAction,
   listMerchantMessagesAction,
   listMerchantOrdersAction,
   listMerchantProductsAction,
   listMerchantProductCategoriesAction,
+  listMerchantSupplyRequestsAction,
   listMerchantRefundsAction,
   moveMerchantProductAction,
   moveMerchantProductCategoryAction,
@@ -43,6 +46,7 @@ import {
   miniMerchantProductCategorySchema,
   miniMerchantProductSchema,
   miniMerchantStoreUpdateSchema,
+  merchantSupplyRequestCreateSchema,
   miniUploadImageSchema,
   miniWithdrawCreateSchema,
   refundReviewSchema
@@ -71,6 +75,26 @@ router.get(
   requireMerchantMenuAccess("/referral"),
   requireMerchantPermission("referral:view"),
   asyncHandler(getMerchantReferralAction)
+);
+
+router.get(
+  "/supply/defaults",
+  requireMerchantMenuAccess("/supply"),
+  requireMerchantPermission("supply:view"),
+  asyncHandler(getMerchantSupplyDefaultsAction)
+);
+router.get(
+  "/supply/list",
+  requireMerchantMenuAccess("/supply"),
+  requireMerchantPermission("supply:view"),
+  asyncHandler(listMerchantSupplyRequestsAction)
+);
+router.post(
+  "/supply/request",
+  requireMerchantMenuAccess("/supply"),
+  requireMerchantPermission("supply:create"),
+  validateBody(merchantSupplyRequestCreateSchema),
+  asyncHandler(createMerchantSupplyRequestAction)
 );
 
 router.get(

@@ -73,6 +73,30 @@ export function syncWithdrawTransferApi(id: number) {
   });
 }
 
+export function getSupplyRequestListApi(query: any) {
+  return request<any>({
+    url: "/merchant/supply/admin/list",
+    method: "GET",
+    params: query
+  });
+}
+
+export function exportSupplyRequestListApi(query: any) {
+  return request<any[]>({
+    url: "/merchant/supply/admin/export",
+    method: "GET",
+    params: query
+  });
+}
+
+export function updateSupplyRequestStatusApi(id: number, payload: { status: string; adminNote?: string }) {
+  return request<any>({
+    url: `/merchant/supply/admin/${id}/status`,
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
 export function getStoreSettlementConfigListApi(query: StoreSettlementConfigQuery) {
   return request<StoreSettlementConfigListResult>({
     url: "/trade/admin/settlement/store/list",
