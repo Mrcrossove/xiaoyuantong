@@ -171,6 +171,16 @@
   padding-top: 24rpx;
 }
 
+.picker-value {
+  padding-top: 0;
+  justify-content: space-between;
+}
+
+.picker-arrow {
+  color: #8a94a6;
+  font-size: 24rpx;
+}
+
 .field-textarea {
   min-height: 180rpx;
   padding: 22rpx;

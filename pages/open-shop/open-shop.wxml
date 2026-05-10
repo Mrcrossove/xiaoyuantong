@@ -210,7 +210,12 @@
 
       <view class="field-item">
         <view class="field-label">{{labels.category}}</view>
-        <input class="field-input" value="{{form.category}}" data-field="category" bindinput="onInput" placeholder="{{labels.placeholders.category}}" />
+        <picker mode="selector" range="{{categoryOptions}}" value="{{categoryIndex}}" bindchange="onCategoryChange">
+          <view class="field-input picker-value">
+            <text>{{form.category || labels.placeholders.category}}</text>
+            <text class="picker-arrow">请选择</text>
+          </view>
+        </picker>
       </view>
 
       <view class="field-item">

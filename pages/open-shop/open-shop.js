@@ -14,8 +14,11 @@ const {
   submitShopApply,
   updateCurrentMerchantStore
 } = require("../../utils/open-shop-api");
+const { shopCategories } = require("../../utils/store-config");
 
 const MERCHANT_WEB_URL = "https://xy-merchant.jpwlkj.com/merchant/";
+const SHOP_CATEGORY_OPTIONS = shopCategories.map((item) => item.label);
+const DEFAULT_SHOP_CATEGORY = SHOP_CATEGORY_OPTIONS[0] || "学生商家";
 
 const LABELS = {
   title: "我要开店",
@@ -71,7 +74,7 @@ const LABELS = {
   addBanner: "添加轮播图",
   placeholders: {
     storeName: "例如：校园轻食屋",
-    category: "例如：学生商家",
+    category: "请选择经营分类",
     contactName: "请填写真实联系人",
     contactPhone: "请填写联系手机",
     description: "请至少填写 5 个字，例如：主营奶茶、零食配送",
@@ -124,6 +127,11 @@ function moveArrayItem(list, index, direction) {
   return next;
 }
 
+function resolveCategoryIndex(category) {
+  const index = SHOP_CATEGORY_OPTIONS.indexOf(category);
+  return index >= 0 ? index : 0;
+}
+
 Page({
   data: {
     statusBarHeight: 20,
@@ -136,10 +144,12 @@ Page({
     currentApply: null,
     merchantStore: null,
     merchantOrderBoard: getInitialOrderBoard(),
+    categoryOptions: SHOP_CATEGORY_OPTIONS,
+    categoryIndex: 0,
     form: {
       school: "",
       storeName: "",
-      category: "学生商家",
+      category: DEFAULT_SHOP_CATEGORY,
       contactName: "",
       contactPhone: "",
       description: ""
@@ -213,11 +223,13 @@ Page({
       });
 
       if (currentApply && currentApply.status === LABELS.rejected) {
+        const category = SHOP_CATEGORY_OPTIONS.includes(currentApply.category) ? currentApply.category : DEFAULT_SHOP_CATEGORY;
         this.setData({
+          categoryIndex: resolveCategoryIndex(category),
           form: {
             school: this.data.selectedSchool,
             storeName: currentApply.storeName || "",
-            category: currentApply.category || "学生商家",
+            category,
             contactName: currentApply.contactName || "",
             contactPhone: currentApply.contactPhone || "",
             description: currentApply.description || ""
@@ -232,6 +244,15 @@ Page({
   onInput(event) {
     const { field } = event.currentTarget.dataset;
     this.setData({ [`form.${field}`]: event.detail.value });
+  },
+
+  onCategoryChange(event) {
+    const index = Number(event.detail.value || 0);
+    const category = this.data.categoryOptions[index] || DEFAULT_SHOP_CATEGORY;
+    this.setData({
+      categoryIndex: index,
+      "form.category": category
+    });
   },
 
   onMerchantInput(event) {
@@ -309,7 +330,7 @@ Page({
     });
 
     if (payload.storeName.length < 2) return wx.showToast({ title: "请填写店铺名称", icon: "none" });
-    if (!payload.category) return wx.showToast({ title: "请填写经营分类", icon: "none" });
+    if (!SHOP_CATEGORY_OPTIONS.includes(payload.category)) return wx.showToast({ title: "请选择经营分类", icon: "none" });
     if (!payload.contactName) return wx.showToast({ title: "请填写联系人", icon: "none" });
     if (!/^1\d{10}$/.test(payload.contactPhone)) return wx.showToast({ title: "请输入正确的手机号", icon: "none" });
     if (payload.description.length < 5) return wx.showToast({ title: "经营说明至少 5 个字", icon: "none" });
