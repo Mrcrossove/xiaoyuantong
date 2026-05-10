@@ -59,6 +59,11 @@ function handleLogout() {
       <el-main class="main">
         <router-view />
       </el-main>
+      <footer class="icp-footer">
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
+          黔ICP备2024036138号-1
+        </a>
+      </footer>
     </el-container>
   </el-container>
 </template>
@@ -166,6 +171,25 @@ function handleLogout() {
   background: #f4f7fb;
   padding: 18px;
   overflow-x: hidden;
+}
+
+.icp-footer {
+  flex-shrink: 0;
+  text-align: center;
+  padding: 20px 0;
+  font-size: 12px;
+  color: #666;
+  background: #f5f5f5;
+}
+
+.icp-footer a {
+  color: #666;
+  text-decoration: none;
+}
+
+.icp-footer a:hover {
+  color: #1677ff;
+  text-decoration: underline;
 }
 
 .mobile-mask {

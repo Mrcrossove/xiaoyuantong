@@ -47,7 +47,7 @@ function handleLogout() {
       </el-menu>
     </el-aside>
 
-    <el-container>
+    <el-container class="content-shell">
       <el-header class="header">
         <div class="page-name">{{ route.meta.title || "校院通管理后台" }}</div>
         <div class="header-right">
@@ -62,6 +62,11 @@ function handleLogout() {
       <el-main class="main">
         <router-view />
       </el-main>
+      <footer class="icp-footer">
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
+          黔ICP备2024036138号-1
+        </a>
+      </footer>
     </el-container>
   </el-container>
 </template>
@@ -91,6 +96,10 @@ function handleLogout() {
   border-right: 0;
 }
 
+.content-shell {
+  min-width: 0;
+}
+
 .header {
   display: flex;
   align-items: center;
@@ -118,5 +127,24 @@ function handleLogout() {
 
 .main {
   background: #f5f7fb;
+}
+
+.icp-footer {
+  flex-shrink: 0;
+  text-align: center;
+  padding: 20px 0;
+  font-size: 12px;
+  color: #666;
+  background: #f5f5f5;
+}
+
+.icp-footer a {
+  color: #666;
+  text-decoration: none;
+}
+
+.icp-footer a:hover {
+  color: #1677ff;
+  text-decoration: underline;
 }
 </style>
