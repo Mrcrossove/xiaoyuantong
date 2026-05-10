@@ -184,14 +184,23 @@
 .submit-btn {
   margin-top: 36rpx;
   width: 100%;
-  height: 104rpx;
+  height: 88rpx;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 999rpx;
   border: 0;
   background: linear-gradient(135deg, #173985, #3b82f6);
   color: #ffffff;
-  font-size: 32rpx;
+  font-size: 30rpx;
   font-weight: 800;
+  line-height: 88rpx;
   box-shadow: 0 18rpx 34rpx rgba(59, 130, 246, 0.28);
+}
+
+.submit-btn::after {
+  border: 0;
 }
 
 .submit-btn[disabled] {
