@@ -11,6 +11,7 @@ import {
   syncMiniWithdrawTransferBill,
   validateMiniWithdrawTransferReady
 } from "./mini-withdraw-transfer.service";
+import { assertSchoolInScope, buildScopedSchoolWhere, getAdminSchoolScope } from "./admin-scope.service";
 
 const WITHDRAW_STATUS = {
   pending: "待审核",
@@ -138,6 +139,12 @@ async function findWithdrawOrThrow(id: number) {
   return row;
 }
 
+async function findAdminScopedWithdrawOrThrow(adminUserId: number, id: number) {
+  const [record, scope] = await Promise.all([findWithdrawOrThrow(id), getAdminSchoolScope(adminUserId)]);
+  assertSchoolInScope(scope, record.school);
+  return record;
+}
+
 export async function queryMiniWalletSummary(userId: number) {
   const account = await ensureWalletAccount(userId);
   const recentWithdraws = await prisma.miniWithdrawRecord.findMany({
@@ -159,13 +166,14 @@ export async function queryMiniWalletSummary(userId: number) {
   };
 }
 
-export async function queryAdminWalletAccountList(rawQuery: Record<string, unknown>) {
+export async function queryAdminWalletAccountList(adminUserId: number, rawQuery: Record<string, unknown>) {
   const { page, pageSize, skip } = parsePageParams(rawQuery);
+  const scope = await getAdminSchoolScope(adminUserId);
   const school = String(rawQuery.school || "").trim();
   const status = String(rawQuery.status || "").trim();
 
   const where = {
-    school: school || undefined,
+    school: buildScopedSchoolWhere(scope, school),
     status: status || undefined
   };
 
@@ -205,15 +213,16 @@ export async function queryAdminWalletAccountList(rawQuery: Record<string, unkno
   };
 }
 
-export async function queryAdminWithdrawList(rawQuery: Record<string, unknown>) {
+export async function queryAdminWithdrawList(adminUserId: number, rawQuery: Record<string, unknown>) {
   const { page, pageSize, skip } = parsePageParams(rawQuery);
+  const scope = await getAdminSchoolScope(adminUserId);
   const school = String(rawQuery.school || "").trim();
   const status = String(rawQuery.status || "").trim();
   const transferStatus = String(rawQuery.transferStatus || "").trim();
   const keyword = String(rawQuery.keyword || "").trim();
 
   const where = {
-    school: school || undefined,
+    school: buildScopedSchoolWhere(scope, school),
     status: status || undefined,
     transferStatus: transferStatus || undefined,
     OR: keyword
@@ -295,8 +304,8 @@ export async function createMiniWithdraw(userId: number, payload: MiniWithdrawCr
   return mapRecord(record);
 }
 
-export async function reviewMiniWithdraw(id: number, payload: MiniWithdrawReviewPayload) {
-  const record = await findWithdrawOrThrow(id);
+export async function reviewMiniWithdraw(adminUserId: number, id: number, payload: MiniWithdrawReviewPayload) {
+  const record = await findAdminScopedWithdrawOrThrow(adminUserId, id);
 
   if (record.status !== WITHDRAW_STATUS.pending) {
     throw new ApiError("当前提现记录不可审核", ERROR_CODES.BAD_REQUEST, 400);
@@ -360,8 +369,8 @@ export async function reviewMiniWithdraw(id: number, payload: MiniWithdrawReview
   return mapAdminWithdraw(next);
 }
 
-export async function syncAdminWithdrawTransfer(id: number) {
-  const record = await findWithdrawOrThrow(id);
+export async function syncAdminWithdrawTransfer(adminUserId: number, id: number) {
+  const record = await findAdminScopedWithdrawOrThrow(adminUserId, id);
 
   if (record.status !== WITHDRAW_STATUS.approved) {
     throw new ApiError("仅已审核通过的提现记录可查单", ERROR_CODES.BAD_REQUEST, 400);

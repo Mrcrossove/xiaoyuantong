@@ -17,12 +17,12 @@ export async function getMiniWalletSummaryAction(req: Request, res: Response) {
 }
 
 export async function listAdminWithdrawAction(req: Request, res: Response) {
-  const data = await queryAdminWithdrawList(req.query as Record<string, unknown>);
+  const data = await queryAdminWithdrawList(req.adminAuth!.userId, req.query as Record<string, unknown>);
   return ok(res, data, req.traceId);
 }
 
 export async function listAdminWalletAccountAction(req: Request, res: Response) {
-  const data = await queryAdminWalletAccountList(req.query as Record<string, unknown>);
+  const data = await queryAdminWalletAccountList(req.adminAuth!.userId, req.query as Record<string, unknown>);
   return ok(res, data, req.traceId);
 }
 
@@ -33,12 +33,12 @@ export async function createMiniWithdrawAction(req: Request, res: Response) {
 
 export async function reviewMiniWithdrawAction(req: Request, res: Response) {
   const { id } = idParamSchema.parse(req.params);
-  const data = await reviewMiniWithdraw(id, req.body as MiniWithdrawReviewPayload);
+  const data = await reviewMiniWithdraw(req.adminAuth!.userId, id, req.body as MiniWithdrawReviewPayload);
   return ok(res, data, req.traceId, "提现审核完成");
 }
 
 export async function syncAdminWithdrawTransferAction(req: Request, res: Response) {
   const { id } = idParamSchema.parse(req.params);
-  const data = await syncAdminWithdrawTransfer(id);
+  const data = await syncAdminWithdrawTransfer(req.adminAuth!.userId, id);
   return ok(res, data, req.traceId, "提现打款状态已同步");
 }
