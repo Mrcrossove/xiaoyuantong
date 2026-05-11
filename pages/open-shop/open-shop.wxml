@@ -133,7 +133,7 @@
       <view class="field-item">
         <view class="field-label">导航定位</view>
         <view class="location-summary">
-          {{merchantForm.latitude && merchantForm.longitude ? (merchantForm.locationName || merchantForm.locationAddress || '已选择导航位置') : '暂未选择导航位置'}}
+          {{merchantForm.latitude !== null && merchantForm.longitude !== null ? (merchantForm.locationName || merchantForm.locationAddress || '已选择导航位置') : '暂未选择导航位置'}}
         </view>
         <view class="merchant-web-actions">
           <view class="mini-action-btn" bindtap="chooseMerchantLocation">地图选点</view>
@@ -232,6 +232,17 @@
         <view class="field-label">{{labels.description}}</view>
         <textarea class="field-textarea" value="{{form.description}}" data-field="description" bindinput="onInput" maxlength="300" placeholder="{{labels.placeholders.description}}" />
         <view class="field-helper">至少填写 5 个字，方便平台判断经营内容。</view>
+      </view>
+
+      <view class="field-item">
+        <view class="field-label">导航定位</view>
+        <view class="location-summary">
+          {{form.latitude !== null && form.longitude !== null ? (form.locationName || form.locationAddress || '已选择导航位置') : '暂未选择导航位置'}}
+        </view>
+        <view class="merchant-web-actions">
+          <view class="mini-action-btn" bindtap="chooseApplyLocation">地图选点</view>
+          <view class="mini-action-btn secondary" bindtap="clearApplyLocation">清空定位</view>
+        </view>
       </view>
     </view>
 

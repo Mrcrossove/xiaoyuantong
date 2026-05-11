@@ -526,6 +526,10 @@ model MiniShopApply {
   contactName  String
   contactPhone String
   description  String
+  latitude     Float?
+  longitude    Float?
+  locationName String?
+  locationAddress String?
   status       String
   reviewNote   String?
   reviewedAt   DateTime?

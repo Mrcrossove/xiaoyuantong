@@ -77,7 +77,11 @@ export const miniShopApplySchema = z.object({
   category: requiredText("经营分类"),
   contactName: requiredText("联系人"),
   contactPhone: z.string().trim().regex(/^1\d{10}$/, "请输入正确的手机号"),
-  description: z.string().trim().min(5, "经营说明至少 5 个字").max(300, "经营说明最多 300 个字")
+  description: z.string().trim().min(5, "经营说明至少 5 个字").max(300, "经营说明最多 300 个字"),
+  latitude: z.number().min(-90).max(90).nullable().optional(),
+  longitude: z.number().min(-180).max(180).nullable().optional(),
+  locationName: z.string().trim().max(60, "定位名称最多 60 个字").optional().default(""),
+  locationAddress: z.string().trim().max(120, "定位地址最多 120 个字").optional().default("")
 });
 
 export const miniShopApplyReviewSchema = z.object({

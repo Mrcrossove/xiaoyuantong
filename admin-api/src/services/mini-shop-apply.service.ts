@@ -72,6 +72,10 @@ function mapApply(item: any) {
     contactName: item.contactName,
     contactPhone: item.contactPhone,
     description: item.description,
+    latitude: item.latitude ?? null,
+    longitude: item.longitude ?? null,
+    locationName: item.locationName || "",
+    locationAddress: item.locationAddress || "",
     status: item.status,
     statusClass,
     reviewNote: item.reviewNote || "",
@@ -123,7 +127,11 @@ async function createStoreForApprovedApply(apply: any) {
       title: "店铺首页",
       notice: apply.description,
       phone: apply.contactPhone,
-      address: `${apply.school} 校园商家服务区`,
+      address: apply.locationAddress || apply.locationName || `${apply.school} 校园商家服务区`,
+      latitude: apply.latitude ?? null,
+      longitude: apply.longitude ?? null,
+      locationName: apply.locationName || "",
+      locationAddress: apply.locationAddress || "",
       soldText: "0单",
       amountText: "0.00",
       productCount: 0,
@@ -203,10 +211,25 @@ export async function getCurrentMiniShopApply(userId: number) {
 }
 
 export async function createMiniShopApply(userId: number, payload: MiniShopApplyPayload) {
+  const hasLatitude = payload.latitude !== undefined && payload.latitude !== null;
+  const hasLongitude = payload.longitude !== undefined && payload.longitude !== null;
+  if (hasLatitude !== hasLongitude) {
+    throw new ApiError("店铺导航位置需要同时填写经纬度", ERROR_CODES.BAD_REQUEST, 400);
+  }
+
   await assertRiskPassed({
     userId,
     scene: "shop_apply",
-    texts: [payload.school, payload.storeName, payload.category, payload.contactName, payload.contactPhone, payload.description]
+    texts: [
+      payload.school,
+      payload.storeName,
+      payload.category,
+      payload.contactName,
+      payload.contactPhone,
+      payload.description,
+      payload.locationName || "",
+      payload.locationAddress || ""
+    ]
   });
 
   const latest = await prisma.miniShopApply.findFirst({
@@ -231,6 +254,10 @@ export async function createMiniShopApply(userId: number, payload: MiniShopApply
       contactName: payload.contactName,
       contactPhone: payload.contactPhone,
       description: payload.description,
+      latitude: hasLatitude ? payload.latitude : null,
+      longitude: hasLongitude ? payload.longitude : null,
+      locationName: payload.locationName || "",
+      locationAddress: payload.locationAddress || "",
       status: STATUS.pending
     }
   });

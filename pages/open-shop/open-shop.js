@@ -152,7 +152,11 @@ Page({
       category: DEFAULT_SHOP_CATEGORY,
       contactName: "",
       contactPhone: "",
-      description: ""
+      description: "",
+      latitude: null,
+      longitude: null,
+      locationName: "",
+      locationAddress: ""
     },
     merchantForm: getInitialMerchantForm()
   },
@@ -232,7 +236,11 @@ Page({
             category,
             contactName: currentApply.contactName || "",
             contactPhone: currentApply.contactPhone || "",
-            description: currentApply.description || ""
+            description: currentApply.description || "",
+            latitude: typeof currentApply.latitude === "number" ? currentApply.latitude : null,
+            longitude: typeof currentApply.longitude === "number" ? currentApply.longitude : null,
+            locationName: currentApply.locationName || "",
+            locationAddress: currentApply.locationAddress || ""
           }
         });
       }
@@ -260,11 +268,47 @@ Page({
     this.setData({ [`merchantForm.${field}`]: event.detail.value });
   },
 
+  hasLocation(target) {
+    return typeof target.latitude === "number" && typeof target.longitude === "number";
+  },
+
+  buildChooseLocationOptions(target) {
+    return {
+      latitude: this.hasLocation(target) ? target.latitude : undefined,
+      longitude: this.hasLocation(target) ? target.longitude : undefined,
+      keyword: target.address || target.storeName || target.name || ""
+    };
+  },
+
+  chooseApplyLocation() {
+    wx.chooseLocation({
+      ...this.buildChooseLocationOptions(this.data.form),
+      success: (res) => {
+        this.setData({
+          "form.latitude": res.latitude,
+          "form.longitude": res.longitude,
+          "form.locationName": res.name || "",
+          "form.locationAddress": res.address || ""
+        });
+      },
+      fail: () => {
+        wx.showToast({ title: "地图选点失败", icon: "none" });
+      }
+    });
+  },
+
+  clearApplyLocation() {
+    this.setData({
+      "form.latitude": null,
+      "form.longitude": null,
+      "form.locationName": "",
+      "form.locationAddress": ""
+    });
+  },
+
   chooseMerchantLocation() {
     wx.chooseLocation({
-      latitude: Number(this.data.merchantForm.latitude || 0) || undefined,
-      longitude: Number(this.data.merchantForm.longitude || 0) || undefined,
-      keyword: this.data.merchantForm.address || this.data.merchantForm.name || "",
+      ...this.buildChooseLocationOptions(this.data.merchantForm),
       success: (res) => {
         this.setData({
           "merchantForm.latitude": res.latitude,
@@ -321,7 +365,11 @@ Page({
       category: String(this.data.form.category || "").trim(),
       contactName: String(this.data.form.contactName || "").trim(),
       contactPhone: String(this.data.form.contactPhone || "").trim(),
-      description: String(this.data.form.description || "").trim()
+      description: String(this.data.form.description || "").trim(),
+      latitude: this.data.form.latitude,
+      longitude: this.data.form.longitude,
+      locationName: String(this.data.form.locationName || "").trim(),
+      locationAddress: String(this.data.form.locationAddress || "").trim()
     };
 
     this.setData({
