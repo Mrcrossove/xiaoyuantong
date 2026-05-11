@@ -4,13 +4,16 @@ Page({
   data: {
     statusBarHeight: 20,
     loading: false,
-    agreementChecked: false
+    agreementChecked: false,
+    redirectUrl: ""
   },
 
-  onLoad() {
+  onLoad(options = {}) {
     const systemInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
+    const redirectUrl = this.normalizeRedirectUrl(options.redirect || "");
     this.setData({
-      statusBarHeight: systemInfo.statusBarHeight || 20
+      statusBarHeight: systemInfo.statusBarHeight || 20,
+      redirectUrl
     });
   },
 
@@ -36,7 +39,7 @@ Page({
         icon: "success"
       });
       setTimeout(() => {
-        this.goBackToProfile();
+        this.goAfterLogin();
       }, 500);
     } catch (error) {
       wx.showToast({
@@ -71,6 +74,28 @@ Page({
     wx.navigateTo({
       url: `/pages/legal-agreement/legal-agreement?type=${type}`
     });
+  },
+
+  normalizeRedirectUrl(value) {
+    let decoded = "";
+    try {
+      decoded = decodeURIComponent(String(value || ""));
+    } catch (error) {
+      decoded = String(value || "");
+    }
+
+    return /^\/pages\/[A-Za-z0-9_-]+\/[A-Za-z0-9_-]+(\?.*)?$/.test(decoded) ? decoded : "";
+  },
+
+  goAfterLogin() {
+    if (this.data.redirectUrl) {
+      wx.redirectTo({
+        url: this.data.redirectUrl
+      });
+      return;
+    }
+
+    this.goBackToProfile();
   },
 
   goBackToProfile() {

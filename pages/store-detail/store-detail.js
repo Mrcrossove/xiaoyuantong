@@ -1,6 +1,6 @@
 const { fetchAddressList } = require("../../utils/address-api");
 const { fetchFavoriteStatus, toggleFavorite } = require("../../utils/favorites-api");
-const { ensureMiniSession } = require("../../utils/mini-auth");
+const { ensureMiniSession, getToken } = require("../../utils/mini-auth");
 const { createOrder } = require("../../utils/order-api");
 const { getSelectedSchool } = require("../../utils/school-state");
 const { normalizeStoreDetail } = require("../../utils/store-cover");
@@ -201,7 +201,7 @@ Page({
   },
 
   async onLoad(options) {
-    captureReferralSceneFromOptions(options);
+    const referralScene = captureReferralSceneFromOptions(options);
     const systemInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
     const menuButton = wx.getMenuButtonBoundingClientRect ? wx.getMenuButtonBoundingClientRect() : null;
     this.storeId = String(options.id || "");
@@ -210,6 +210,16 @@ Page({
       statusBarHeight: systemInfo.statusBarHeight || 20,
       navRightSafeRpx: this.getNavRightSafeRpx(systemInfo, menuButton)
     });
+
+    if (referralScene && !getToken()) {
+      const referralStoreId = await this.resolveStoreIdFromScene(options);
+      if (referralStoreId) {
+        wx.redirectTo({
+          url: `/pages/login/login?redirect=${encodeURIComponent(`/pages/store-detail/store-detail?id=${referralStoreId}`)}`
+        });
+        return;
+      }
+    }
 
     if (!this.storeId) {
       this.storeId = await this.resolveStoreIdFromScene(options);
