@@ -8,8 +8,6 @@ const { fetchStoreDetail, resolveStoreReferralScene } = require("../../utils/sto
 const { requireLogin } = require("../../utils/login-guard");
 const { captureReferralSceneFromOptions, normalizeReferralScene } = require("../../utils/referral-scene");
 
-const CURRENCY_SYMBOL = "楼";
-
 function pickDefaultProduct(detail) {
   const products = (detail && detail.products) || [];
   return products.find((item) => item && item.recommended) || products[0] || null;
@@ -27,9 +25,9 @@ function parsePriceNumber(priceText) {
 
 function formatAmount(price, quantity) {
   if (!price || !quantity) {
-    return `${CURRENCY_SYMBOL}0.00`;
+    return "0.00元";
   }
-  return `${CURRENCY_SYMBOL}${Number((price * quantity).toFixed(2)).toFixed(2)}`;
+  return `${Number((price * quantity).toFixed(2)).toFixed(2)}元`;
 }
 
 function getMaxQuantity(sku) {
@@ -54,7 +52,7 @@ function buildSelectionState(product, skuId, nextQuantity) {
   const currentSku = skuList.find((item) => String(item.id) === String(skuId || "")) || pickDefaultSku(currentProduct);
   const maxQuantity = getMaxQuantity(currentSku);
   const quantity = Math.min(Math.max(1, Number(nextQuantity || 1)), maxQuantity);
-  const currentAmountText = currentSku ? formatAmount(parsePriceNumber(currentSku.price), quantity) : `${CURRENCY_SYMBOL}0.00`;
+  const currentAmountText = currentSku ? formatAmount(parsePriceNumber(currentSku.price), quantity) : "0.00元";
 
   return {
     currentProduct,
@@ -114,7 +112,7 @@ function buildCartState(cartItems) {
     cartItems: safeItems,
     cartCount,
     cartAmount,
-    cartAmountText: `${CURRENCY_SYMBOL}${cartAmount.toFixed(2)}`,
+    cartAmountText: `${cartAmount.toFixed(2)}元`,
     cartQuantityMap
   };
 }
@@ -140,7 +138,7 @@ function buildDetailState(detail) {
     selectedSkuId: "",
     quantity: 1,
     maxQuantity: 1,
-    currentAmountText: `${CURRENCY_SYMBOL}0.00`,
+    currentAmountText: "0.00元",
     ...buildCartState([])
   };
 }
@@ -186,13 +184,13 @@ Page({
     selectedSkuId: "",
     currentProduct: null,
     currentSku: null,
-    currentAmountText: `${CURRENCY_SYMBOL}0.00`,
+    currentAmountText: "0.00元",
     quantity: 1,
     maxQuantity: 1,
     cartItems: [],
     cartCount: 0,
     cartAmount: 0,
-    cartAmountText: `${CURRENCY_SYMBOL}0.00`,
+    cartAmountText: "0.00元",
     cartQuantityMap: {},
     addressList: [],
     selectedAddress: null,
@@ -323,7 +321,15 @@ Page({
   },
 
   goBack() {
-    wx.navigateBack();
+    const pages = getCurrentPages();
+    if (pages.length > 1) {
+      wx.navigateBack();
+      return;
+    }
+
+    wx.reLaunch({
+      url: "/pages/index/index"
+    });
   },
 
   openStoreLocation() {
@@ -375,7 +381,7 @@ Page({
       currentSku: null,
       quantity: 1,
       maxQuantity: 1,
-      currentAmountText: `${CURRENCY_SYMBOL}0.00`
+      currentAmountText: "0.00元"
     });
   },
 
@@ -485,7 +491,7 @@ Page({
         currentSku: null,
         quantity: 1,
         maxQuantity: 1,
-        currentAmountText: `${CURRENCY_SYMBOL}0.00`
+        currentAmountText: "0.00元"
       });
       return;
     }

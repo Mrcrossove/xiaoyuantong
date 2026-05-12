@@ -6,8 +6,6 @@ const { normalizeStoreDetail } = require("../../utils/store-cover");
 const { fetchStoreDetail } = require("../../utils/stores-api");
 const { requireLogin } = require("../../utils/login-guard");
 
-const CURRENCY_SYMBOL = "楼";
-
 function pickDefaultSku(product) {
   const skus = (product && product.skus) || [];
   return skus.find((item) => item.isDefault) || skus[0] || null;
@@ -19,7 +17,7 @@ function parsePriceNumber(priceText) {
 }
 
 function formatAmount(price, quantity) {
-  return `${CURRENCY_SYMBOL}${Number((Number(price || 0) * Number(quantity || 0)).toFixed(2)).toFixed(2)}`;
+  return `${Number((Number(price || 0) * Number(quantity || 0)).toFixed(2)).toFixed(2)}元`;
 }
 
 function getMaxQuantity(sku) {
@@ -65,7 +63,7 @@ Page({
     currentSku: null,
     quantity: 1,
     maxQuantity: 1,
-    currentAmountText: `${CURRENCY_SYMBOL}0.00`,
+    currentAmountText: "0.00元",
     detailLines: [],
     addressList: [],
     selectedAddress: null,
@@ -120,7 +118,7 @@ Page({
         currentSku,
         maxQuantity,
         quantity: 1,
-        currentAmountText: currentSku ? formatAmount(parsePriceNumber(currentSku.price), 1) : `${CURRENCY_SYMBOL}0.00`,
+        currentAmountText: currentSku ? formatAmount(parsePriceNumber(currentSku.price), 1) : "0.00元",
         detailLines: normalizeDetailText(product.detailText)
       });
     } catch (error) {
@@ -155,7 +153,15 @@ Page({
   },
 
   goBack() {
-    wx.navigateBack();
+    const pages = getCurrentPages();
+    if (pages.length > 1) {
+      wx.navigateBack();
+      return;
+    }
+
+    wx.reLaunch({
+      url: "/pages/index/index"
+    });
   },
 
   decreaseQuantity() {
@@ -179,7 +185,7 @@ Page({
     const quantity = Math.min(Math.max(1, Number(nextQuantity || 1)), Number(this.data.maxQuantity || 1));
     this.setData({
       quantity,
-      currentAmountText: currentSku ? formatAmount(parsePriceNumber(currentSku.price), quantity) : `${CURRENCY_SYMBOL}0.00`
+      currentAmountText: currentSku ? formatAmount(parsePriceNumber(currentSku.price), quantity) : "0.00元"
     });
   },
 
