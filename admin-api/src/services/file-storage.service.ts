@@ -18,7 +18,7 @@ const LONG_CACHE_CONTROL = "public, max-age=31536000, immutable";
 
 let cosClient: COS | null = null;
 
-function getCosClient() {
+export function getCosClient() {
   if (cosClient) {
     return cosClient;
   }
@@ -38,7 +38,7 @@ function joinUrl(baseUrl: string, pathname: string) {
   return `${normalizeBaseUrl(baseUrl)}/${pathname.replace(/^\/+/, "")}`;
 }
 
-function safeExt(fileName: string, mimeType: string) {
+export function safeExt(fileName: string, mimeType: string) {
   const ext = path.extname(fileName || "").toLowerCase();
   if (ext && [".jpg", ".jpeg", ".png", ".webp", ".gif"].includes(ext)) {
     return ext;
@@ -53,7 +53,7 @@ function safeExt(fileName: string, mimeType: string) {
   return mimeExtMap[mimeType] || ".jpg";
 }
 
-function buildRelativePath(scene: string, fileName: string, mimeType: string) {
+export function buildRelativePath(scene: string, fileName: string, mimeType: string) {
   const dateFolder = new Date().toISOString().slice(0, 10);
   const ext = safeExt(fileName, mimeType);
   const generatedName = `${Date.now()}_${Math.floor(Math.random() * 100000)}${ext}`;
@@ -68,12 +68,12 @@ function buildLocalPublicUrl(relativePath: string) {
   return joinUrl(baseUrl, relativePath);
 }
 
-function buildCosObjectKey(relativePath: string) {
+export function buildCosObjectKey(relativePath: string) {
   const prefix = env.tencentCosPathPrefix.trim().replace(/^\/+|\/+$/g, "");
   return prefix ? path.posix.join(prefix, relativePath) : relativePath;
 }
 
-function buildCosPublicUrl(objectKey: string) {
+export function buildCosPublicUrl(objectKey: string) {
   if (env.tencentCosPublicBaseUrl) {
     return joinUrl(env.tencentCosPublicBaseUrl, objectKey);
   }

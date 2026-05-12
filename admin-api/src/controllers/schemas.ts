@@ -190,6 +190,13 @@ export const miniUploadImageSchema = z.object({
   scene: z.enum(["post", "merchant", "verify", "avatar"]).optional().default("post")
 });
 
+export const miniCosDirectUploadSchema = z.object({
+  fileName: requiredText("文件名"),
+  mimeType: z.enum(["image/jpeg", "image/png", "image/webp", "image/gif"]).optional().default("image/jpeg"),
+  size: z.number().int().positive("图片大小不能为空").max(8 * 1024 * 1024, "单张图片不能超过 8MB"),
+  scene: z.enum(["post", "merchant", "verify", "avatar"]).optional().default("post")
+});
+
 export const schoolContentPayloadSchema = z.object({
   school: requiredText("高校"),
   userCount: z.number().int().min(0),
@@ -442,6 +449,7 @@ export type MiniMerchantProductPayload = z.infer<typeof miniMerchantProductSchem
 export type MiniMerchantMovePayload = z.infer<typeof miniMerchantMoveSchema>;
 export type MiniMerchantBatchIdsPayload = z.infer<typeof miniMerchantBatchIdsSchema>;
 export type MiniUploadImagePayload = z.infer<typeof miniUploadImageSchema>;
+export type MiniCosDirectUploadPayload = z.infer<typeof miniCosDirectUploadSchema>;
 export type SchoolContentPayload = z.infer<typeof schoolContentPayloadSchema>;
 export type UserPublishPayload = z.infer<typeof userPublishPayloadSchema>;
 export type ProductSpecPayload = z.infer<typeof productSpecPayloadSchema>;
