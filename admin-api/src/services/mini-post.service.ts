@@ -371,8 +371,7 @@ export async function createMiniPost(userId: number, payload: MiniPostPayload) {
       payload.category,
       payload.title,
       payload.content,
-      displayName,
-      ...(payload.contacts || []).flatMap((item) => [item.label, item.value])
+      displayName
     ]
   });
 

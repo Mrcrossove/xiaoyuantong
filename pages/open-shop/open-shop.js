@@ -169,6 +169,11 @@ Page({
   },
 
   async onShow() {
+    if (this.skipNextRefresh) {
+      this.skipNextRefresh = false;
+      return;
+    }
+
     let verification = getVerificationInfo();
 
     try {
@@ -281,6 +286,7 @@ Page({
   },
 
   chooseApplyLocation() {
+    this.skipNextRefresh = true;
     wx.chooseLocation({
       ...this.buildChooseLocationOptions(this.data.form),
       success: (res) => {
@@ -292,6 +298,7 @@ Page({
         });
       },
       fail: () => {
+        this.skipNextRefresh = false;
         wx.showToast({ title: "地图选点失败", icon: "none" });
       }
     });
@@ -307,6 +314,7 @@ Page({
   },
 
   chooseMerchantLocation() {
+    this.skipNextRefresh = true;
     wx.chooseLocation({
       ...this.buildChooseLocationOptions(this.data.merchantForm),
       success: (res) => {
@@ -319,6 +327,7 @@ Page({
         });
       },
       fail: () => {
+        this.skipNextRefresh = false;
         wx.showToast({ title: "地图选点失败", icon: "none" });
       }
     });
@@ -386,7 +395,13 @@ Page({
     this.setData({ submitting: true });
     try {
       const currentApply = await submitShopApply(payload);
-      this.setData({ currentApply });
+      this.setData({
+        currentApply,
+        "form.latitude": typeof currentApply.latitude === "number" ? currentApply.latitude : this.data.form.latitude,
+        "form.longitude": typeof currentApply.longitude === "number" ? currentApply.longitude : this.data.form.longitude,
+        "form.locationName": currentApply.locationName || this.data.form.locationName,
+        "form.locationAddress": currentApply.locationAddress || this.data.form.locationAddress
+      });
       wx.showToast({ title: "开店申请已提交", icon: "success" });
     } catch (error) {
       wx.showToast({ title: error.message || "提交失败", icon: "none" });
