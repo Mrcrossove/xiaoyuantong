@@ -1,7 +1,7 @@
 import { prisma } from "../lib/prisma";
 import { parsePageParams } from "../utils/pagination";
 import { formatDateTime } from "../utils/time";
-import type { MiniShopApplyPayload, MiniShopApplyReviewPayload } from "../controllers/schemas";
+import type { MiniShopApplyPayload, MiniShopApplyReviewPayload, MiniShopApplyTakedownPayload } from "../controllers/schemas";
 import { ApiError } from "../utils/api-error";
 import { ERROR_CODES } from "../constants/error-codes";
 import { assertRiskPassed } from "./risk-control.service";
@@ -9,6 +9,8 @@ import { createMiniMessage } from "./mini-message.service";
 import { env } from "../config/env";
 import { hashPassword } from "../utils/password";
 import { assertSchoolInScope, buildScopedSchoolWhere, getAdminSchoolScope } from "./admin-scope.service";
+import { MERCHANT_PRODUCT_STATUS } from "../utils/merchant-product";
+import { syncStoreProductSnapshot } from "./store-product.service";
 
 const STATUS = {
   pending: "待审核",
@@ -19,6 +21,16 @@ const STATUS = {
 const ERROR_MESSAGES = {
   pendingExists: "你已有待审核的开店申请",
   approvedExists: "你已有审核通过的店铺申请"
+} as const;
+
+const STORE_STATUS = {
+  open: "\u8425\u4e1a\u4e2d",
+  takedown: "\u5df2\u4e0b\u67b6"
+} as const;
+
+const MERCHANT_ACCOUNT_STATUS = {
+  enabled: "\u542f\u7528",
+  disabled: "\u505c\u7528"
 } as const;
 
 const STORE_CATEGORY_MAP: Record<
@@ -59,7 +71,7 @@ const STORE_CATEGORY_MAP: Record<
   }
 };
 
-function mapApply(item: any) {
+function mapApply(item: any, store?: any) {
   const statusClass =
     item.status === STATUS.pending ? "pending" : item.status === STATUS.approved ? "approved" : "rejected";
 
@@ -78,6 +90,8 @@ function mapApply(item: any) {
     locationAddress: item.locationAddress || "",
     status: item.status,
     statusClass,
+    storeId: store?.id || 0,
+    storeStatus: store?.status || "",
     reviewNote: item.reviewNote || "",
     reviewedAt: item.reviewedAt ? formatDateTime(item.reviewedAt) : "",
     createdAt: formatDateTime(item.createdAt)
@@ -295,8 +309,24 @@ export async function queryAdminShopApplyList(adminUserId: number, rawQuery: Rec
     })
   ]);
 
+  const stores = list.length
+    ? await prisma.miniStore.findMany({
+        where: {
+          detailId: {
+            in: list.map((item: any) => buildDetailId(item.id))
+          }
+        },
+        select: {
+          id: true,
+          detailId: true,
+          status: true
+        }
+      })
+    : [];
+  const storeMap = new Map(stores.map((item: any) => [String(item.detailId), item]));
+
   return {
-    list: list.map(mapApply),
+    list: list.map((item: any) => mapApply(item, storeMap.get(buildDetailId(item.id)))),
     page,
     pageSize,
     total
@@ -326,4 +356,143 @@ export async function reviewMiniShopApply(adminUserId: number, id: number, paylo
   }
 
   return mapApply(row);
+}
+
+export async function takedownApprovedMiniShopApply(
+  adminUserId: number,
+  id: number,
+  payload: MiniShopApplyTakedownPayload
+) {
+  const scope = await getAdminSchoolScope(adminUserId);
+  const [current, operator] = await Promise.all([
+    prisma.miniShopApply.findUniqueOrThrow({
+      where: { id }
+    }),
+    prisma.adminUser.findUniqueOrThrow({
+      where: { id: adminUserId },
+      include: {
+        role: {
+          select: {
+            code: true,
+            scopeType: true
+          }
+        }
+      }
+    })
+  ]);
+  assertSchoolInScope(scope, current.school);
+
+  if (current.status !== STATUS.approved) {
+    throw new ApiError("\u53ea\u80fd\u4e0b\u67b6\u5df2\u901a\u8fc7\u7684\u5e97\u94fa\u7533\u8bf7", ERROR_CODES.BAD_REQUEST, 400);
+  }
+
+  const store = await prisma.miniStore.findUnique({
+    where: {
+      detailId: buildDetailId(current.id)
+    },
+    include: {
+      merchantAccount: true,
+      productRows: {
+        select: { id: true }
+      },
+      serviceSchools: true
+    }
+  });
+
+  if (!store) {
+    throw new ApiError("\u5df2\u901a\u8fc7\u7533\u8bf7\u5c1a\u672a\u627e\u5230\u5bf9\u5e94\u5e97\u94fa", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  if (store.status !== STORE_STATUS.open) {
+    throw new ApiError("\u5e97\u94fa\u5df2\u4e0d\u662f\u8425\u4e1a\u4e2d\u72b6\u6001", ERROR_CODES.BAD_REQUEST, 400);
+  }
+
+  const reason = String(payload.reason || "").trim();
+
+  await prisma.$transaction(async (tx) => {
+    await tx.miniStore.update({
+      where: { id: store.id },
+      data: {
+        status: STORE_STATUS.takedown,
+        profitSharingEnabled: false,
+        settlementMode: "disabled",
+        productCount: 0
+      }
+    });
+
+    if (store.merchantAccount) {
+      await tx.merchantAccount.update({
+        where: { id: store.merchantAccount.id },
+        data: {
+          status: MERCHANT_ACCOUNT_STATUS.disabled,
+          withdrawBlockedReason: reason || "\u5e97\u94fa\u5df2\u4e0b\u67b6"
+        }
+      });
+    }
+
+    await tx.miniStoreServiceSchool.updateMany({
+      where: { storeId: store.id },
+      data: { status: "disabled" }
+    });
+
+    await tx.miniStoreProduct.updateMany({
+      where: { storeId: store.id },
+      data: {
+        status: MERCHANT_PRODUCT_STATUS.offSale,
+        recommended: false
+      }
+    });
+
+    const productIds = store.productRows.map((item: any) => item.id);
+    if (productIds.length) {
+      await tx.miniStoreProductSku.updateMany({
+        where: {
+          productId: {
+            in: productIds
+          }
+        },
+        data: {
+          status: MERCHANT_PRODUCT_STATUS.offSale
+        }
+      });
+    }
+
+    await syncStoreProductSnapshot(tx, store.id);
+
+    await tx.adminStoreChangeLog.create({
+      data: {
+        storeId: store.id,
+        school: store.school,
+        module: "store_apply",
+        action: "takedown_store",
+        targetType: "store",
+        targetId: String(store.id),
+        operatorId: operator.id,
+        operatorRoleCode: operator.role.code,
+        operatorScopeType: operator.role.scopeType,
+        changeMode: "normal",
+        summary: `\u4e0b\u67b6\u5e97\u94fa\uff1a${store.name}\uff1b\u539f\u56e0\uff1a${reason}`,
+        beforeData: {
+          storeStatus: store.status,
+          merchantStatus: store.merchantAccount?.status || "",
+          serviceSchoolCount: store.serviceSchools.length,
+          productCount: store.productRows.length
+        },
+        afterData: {
+          storeStatus: STORE_STATUS.takedown,
+          merchantStatus: store.merchantAccount ? MERCHANT_ACCOUNT_STATUS.disabled : "",
+          serviceSchoolStatus: "disabled",
+          productStatus: MERCHANT_PRODUCT_STATUS.offSale,
+          reason
+        }
+      }
+    });
+  });
+
+  const updatedStore = await prisma.miniStore.findUnique({
+    where: { id: store.id },
+    select: { id: true, detailId: true, status: true }
+  });
+
+  return mapApply(current, updatedStore);
 }

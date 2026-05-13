@@ -89,6 +89,10 @@ export const miniShopApplyReviewSchema = z.object({
   reviewNote: z.string().trim().max(100, "审核备注最多 100 个字").optional().default("")
 });
 
+export const miniShopApplyTakedownSchema = z.object({
+  reason: z.string().trim().min(1, "\u8bf7\u586b\u5199\u4e0b\u67b6\u539f\u56e0").max(200, "\u4e0b\u67b6\u539f\u56e0\u6700\u591a 200 \u4e2a\u5b57")
+});
+
 export const schoolAdminApplicationSchema = z.object({
   school: requiredText("学校"),
   teamSize: z.number().int().min(1, "团队人数至少 1 人").max(500, "团队人数不能超过 500 人"),
@@ -432,6 +436,7 @@ export type PostReviewPayload = z.infer<typeof postReviewSchema>;
 export type MiniPostPayload = z.infer<typeof miniPostPayloadSchema>;
 export type MiniShopApplyPayload = z.infer<typeof miniShopApplySchema>;
 export type MiniShopApplyReviewPayload = z.infer<typeof miniShopApplyReviewSchema>;
+export type MiniShopApplyTakedownPayload = z.infer<typeof miniShopApplyTakedownSchema>;
 export type SchoolAdminApplicationPayload = z.infer<typeof schoolAdminApplicationSchema>;
 export type SchoolAdminApplicationReviewPayload = z.infer<typeof schoolAdminApplicationReviewSchema>;
 export type SchoolAdminApplicationAssignPayload = z.infer<typeof schoolAdminApplicationAssignSchema>;

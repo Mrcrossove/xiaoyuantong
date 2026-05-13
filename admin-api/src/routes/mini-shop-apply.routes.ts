@@ -3,9 +3,10 @@ import {
   getCurrentMiniShopApplyAction,
   listAdminShopApplyAction,
   reviewMiniShopApplyAction,
-  submitMiniShopApplyAction
+  submitMiniShopApplyAction,
+  takedownMiniShopApplyAction
 } from "../controllers/mini-shop-apply.controller";
-import { miniShopApplyReviewSchema, miniShopApplySchema } from "../controllers/schemas";
+import { miniShopApplyReviewSchema, miniShopApplySchema, miniShopApplyTakedownSchema } from "../controllers/schemas";
 import { asyncHandler } from "../middlewares/async-handler";
 import { requireAdminAuth, requireAdminMenuAccess, requireAdminPermission, requireMiniAuth } from "../middlewares/auth";
 import { validateBody } from "../middlewares/validate";
@@ -27,6 +28,13 @@ router.post(
   requireAdminMenuAccess("/store/apply"),
   validateBody(miniShopApplyReviewSchema),
   asyncHandler(reviewMiniShopApplyAction)
+);
+router.post(
+  "/admin/:id/takedown",
+  requireAdminAuth,
+  requireAdminMenuAccess("/store/apply"),
+  validateBody(miniShopApplyTakedownSchema),
+  asyncHandler(takedownMiniShopApplyAction)
 );
 
 export default router;

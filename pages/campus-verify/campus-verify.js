@@ -1,6 +1,5 @@
 const schools = require("../../utils/school-options");
 const { getSelectedSchool, setSelectedSchool } = require("../../utils/school-state");
-const { setHomeFeedScope } = require("../../utils/home-feed-state");
 const { isSchoolMatched } = require("../../utils/school-catalog");
 const { getVerificationInfo, setVerificationInfo } = require("../../utils/verification-state");
 const { ensureMiniSession } = require("../../utils/mini-auth");
@@ -233,7 +232,6 @@ Page({
         verified: true
       });
       setSelectedSchool(trimmedSchool);
-      setHomeFeedScope(trimmedSchool, trimmedSchool);
 
       this.setData({
         verification: nextInfo,

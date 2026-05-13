@@ -13,7 +13,8 @@ import type {
   StoreProductApprovalReviewPayload,
   StoreApplyItem,
   StoreApplyQuery,
-  StoreReviewPayload
+  StoreReviewPayload,
+  StoreTakedownPayload
 } from "../contracts";
 import { request } from "../request";
 
@@ -28,6 +29,14 @@ export function getStoreApplyListApi(query: StoreApplyQuery) {
 export function reviewStoreApplyApi(id: number, payload: StoreReviewPayload) {
   return request<StoreApplyItem>({
     url: `/shop/apply/admin/${id}/review`,
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function takedownStoreApplyApi(id: number, payload: StoreTakedownPayload) {
+  return request<StoreApplyItem>({
+    url: `/shop/apply/admin/${id}/takedown`,
     method: "POST",
     body: JSON.stringify(payload)
   });

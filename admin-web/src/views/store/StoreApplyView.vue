@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import type { StoreApplyItem } from "../../api/contracts";
-import { getStoreApplyListApi, reviewStoreApplyApi } from "../../api/modules/store";
+import { getStoreApplyListApi, reviewStoreApplyApi, takedownStoreApplyApi } from "../../api/modules/store";
 import { ApiRequestError } from "../../api/request";
 
 const loading = ref(false);
@@ -16,9 +16,16 @@ const query = reactive({
   keyword: ""
 });
 
+const APPLY_STATUS_PENDING = "\u5f85\u5ba1\u6838";
+const APPLY_STATUS_APPROVED = "\u5df2\u901a\u8fc7";
+const APPLY_STATUS_REJECTED = "\u5df2\u9a73\u56de";
+const STORE_STATUS_OPEN = "\u8425\u4e1a\u4e2d";
+const STORE_STATUS_TAKEDOWN = "\u5df2\u4e0b\u67b6";
+
 const schoolOptions = computed(() => [...new Set(list.value.map((item) => item.school).filter(Boolean))]);
-const pendingCount = computed(() => list.value.filter((item) => item.status === "待审核").length);
-const approvedCount = computed(() => list.value.filter((item) => item.status === "已通过").length);
+const pendingCount = computed(() => list.value.filter((item) => item.status === APPLY_STATUS_PENDING).length);
+const approvedCount = computed(() => list.value.filter((item) => item.status === APPLY_STATUS_APPROVED).length);
+const canTakedown = (row: StoreApplyItem) => row.status === APPLY_STATUS_APPROVED && row.storeStatus === STORE_STATUS_OPEN;
 
 function showApiError(error: unknown, fallback: string) {
   if (error instanceof ApiRequestError) {
@@ -45,7 +52,7 @@ async function loadData() {
   }
 }
 
-async function handleReview(row: StoreApplyItem, status: "已通过" | "已驳回") {
+async function handleReview(row: StoreApplyItem, status: string) {
   try {
     const { value } = await ElMessageBox.prompt("请输入审核备注，可为空", status === "已通过" ? "入驻通过" : "入驻驳回", {
       inputValue: row.reviewNote || "",
@@ -66,6 +73,39 @@ async function handleReview(row: StoreApplyItem, status: "已通过" | "已驳�
       showApiError(error, "入驻审核失败");
     }
     if (error === "cancel") return;
+  }
+}
+
+async function handleTakedown(row: StoreApplyItem) {
+  try {
+    const { value } = await ElMessageBox.prompt(
+      "下架后小程序不再展示该店铺，商家账号停用，商品全部下架，历史交易数据保留。请填写下架原因",
+      "下架店铺",
+      {
+        inputType: "textarea",
+        inputPlaceholder: "请填写下架原因",
+        inputValidator: (value) => {
+          const reason = String(value || "").trim();
+          if (!reason) return "请填写下架原因";
+          if (reason.length > 200) return "下架原因最多 200 个字";
+          return true;
+        },
+        confirmButtonText: "确认下架",
+        cancelButtonText: "取消",
+        confirmButtonClass: "el-button--danger"
+      }
+    );
+
+    await takedownStoreApplyApi(row.id, {
+      reason: String(value || "").trim()
+    });
+
+    ElMessage.success("店铺已下架");
+    await loadData();
+  } catch (error) {
+    if (error !== "cancel") {
+      showApiError(error, "店铺下架失败");
+    }
   }
 }
 
@@ -132,32 +172,48 @@ onMounted(loadData);
         <el-table-column prop="description" label="经营说明" min-width="220" show-overflow-tooltip />
         <el-table-column label="审核状态" width="120">
           <template #default="{ row }">
-            <el-tag :type="row.status === '已通过' ? 'success' : row.status === '待审核' ? 'warning' : 'danger'">{{ row.status }}</el-tag>
+            <el-tag :type="row.status === APPLY_STATUS_APPROVED ? 'success' : row.status === APPLY_STATUS_PENDING ? 'warning' : 'danger'">{{ row.status }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="店铺状态" width="120">
+          <template #default="{ row }">
+            <el-tag v-if="row.storeStatus" :type="row.storeStatus === STORE_STATUS_OPEN ? 'success' : 'info'">{{ row.storeStatus }}</el-tag>
+            <span v-else class="muted">-</span>
           </template>
         </el-table-column>
         <el-table-column prop="reviewNote" label="审核备注" min-width="180" show-overflow-tooltip />
         <el-table-column prop="createdAt" label="提交时间" width="180" />
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="260" fixed="right">
           <template #default="{ row }">
             <el-button
-              v-if="row.status === '待审核'"
+              v-if="row.status === APPLY_STATUS_PENDING"
               v-permission="'store:apply:approve'"
               link
               type="success"
-              @click="handleReview(row, '已通过')"
+              @click="handleReview(row, APPLY_STATUS_APPROVED)"
             >
               通过
             </el-button>
             <el-button
-              v-if="row.status === '待审核'"
+              v-if="row.status === APPLY_STATUS_PENDING"
               v-permission="'store:apply:reject'"
               link
               type="danger"
-              @click="handleReview(row, '已驳回')"
+              @click="handleReview(row, APPLY_STATUS_REJECTED)"
             >
               驳回
             </el-button>
-            <span v-else class="muted">已审核</span>
+            <el-button
+              v-else-if="canTakedown(row)"
+              v-permission="'store:apply:reject'"
+              link
+              type="danger"
+              @click="handleTakedown(row)"
+            >
+              下架店铺
+            </el-button>
+            <span v-else-if="row.storeStatus === STORE_STATUS_TAKEDOWN" class="muted">已下架</span>
+            <span v-else class="muted">{{ row.status === APPLY_STATUS_REJECTED ? "已驳回" : "已审核" }}</span>
           </template>
         </el-table-column>
       </el-table>

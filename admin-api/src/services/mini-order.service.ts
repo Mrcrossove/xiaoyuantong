@@ -10,6 +10,10 @@ import { createOrSyncMiniOrderProfitSharing, MINI_PROFIT_SHARING_STATUS } from "
 import { getDefaultSku, parseMoneyNumber } from "../utils/merchant-product";
 import { listStoreProductsByDetailId } from "./store-product.service";
 
+const STORE_STATUS = {
+  open: "\u8425\u4e1a\u4e2d"
+} as const;
+
 export const MINI_ORDER_STATUS = {
   pending: "\u5f85\u652f\u4ed8",
   processing: "\u8fdb\u884c\u4e2d",
@@ -464,6 +468,10 @@ async function findStoreProduct(storeDetailId: string, productId: string, skuId?
 
   if (!store) {
     throw new ApiError("店铺不存在", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  if (store.status !== STORE_STATUS.open) {
+    throw new ApiError("\u5e97\u94fa\u5df2\u4e0b\u67b6\uff0c\u6682\u4e0d\u652f\u6301\u4e0b\u5355", ERROR_CODES.BAD_REQUEST, 400);
   }
 
   const products = await listStoreProductsByDetailId(storeDetailId);

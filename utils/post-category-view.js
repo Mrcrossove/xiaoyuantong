@@ -1,28 +1,70 @@
 const PRIMARY_CATEGORY_BY_TYPE = {
-  market: "跳蚤市场",
-  "job-post": "兼职信息",
-  "rent-house": "房屋租售",
-  "tree-hole": "树洞",
-  partner: "找搭子",
-  errand: "跑腿代办"
+  market: "\u8df3\u86a4\u5e02\u573a",
+  "job-post": "\u517c\u804c\u4fe1\u606f",
+  "rent-house": "\u623f\u5c4b\u79df\u552e",
+  "tree-hole": "\u6811\u6d1e",
+  partner: "\u627e\u642d\u5b50",
+  errand: "\u8dd1\u817f\u4ee3\u529e"
 };
 
 const THEME_BY_PRIMARY_CATEGORY = {
-  跳蚤市场: "market",
-  兼职信息: "job",
-  房屋租售: "rent",
-  树洞: "tree",
-  找搭子: "partner",
-  跑腿代办: "errand"
+  "\u8df3\u86a4\u5e02\u573a": "market",
+  "\u517c\u804c\u4fe1\u606f": "job",
+  "\u623f\u5c4b\u79df\u552e": "rent",
+  "\u6811\u6d1e": "tree",
+  "\u627e\u642d\u5b50": "partner",
+  "\u8dd1\u817f\u4ee3\u529e": "errand"
 };
 
 const SECONDARY_CATEGORY_BY_PRIMARY_CATEGORY = {
-  树洞: ["情感倾诉", "匿名表白", "求助咨询", "避雷提醒", "校园八卦", "学业吐槽", "日常碎碎念", "好物安利", "其他类型"],
-  房屋租售: ["求租信息", "发布房源", "其他房屋租售"],
-  兼职信息: ["校内岗位", "实习岗位", "兼职招聘", "求职咨询", "家教辅导", "其他兼职"],
-  找搭子: ["旅游搭子", "学习搭子", "赛事搭子", "运动搭子", "美食搭子", "游戏搭子", "出行搭子", "其他搭子"],
-  跑腿代办: ["快递代取", "外卖代取", "食堂代买", "超市代购", "校园跑腿", "其他代办"],
-  跳蚤市场: ["图书资料", "电子数码", "生活用品", "服饰鞋帽", "美妆护肤", "运动器材", "兴趣好物", "其他闲置"]
+  "\u6811\u6d1e": [
+    "\u60c5\u611f\u503e\u8bc9",
+    "\u795e\u79d8\u8868\u767d\u5c40",
+    "\u6c42\u52a9\u54a8\u8be2",
+    "\u907f\u96f7\u63d0\u9192",
+    "\u6821\u56ed\u516b\u5366",
+    "\u5b66\u4e1a\u5410\u69fd",
+    "\u65e5\u5e38\u788e\u788e\u5ff5",
+    "\u597d\u7269\u5b89\u5229",
+    "\u5176\u4ed6\u7c7b\u578b"
+  ],
+  "\u623f\u5c4b\u79df\u552e": ["\u6c42\u79df\u4fe1\u606f", "\u53d1\u5e03\u623f\u6e90", "\u5176\u4ed6\u623f\u5c4b\u79df\u552e"],
+  "\u517c\u804c\u4fe1\u606f": [
+    "\u6821\u5185\u5c97\u4f4d",
+    "\u5b9e\u4e60\u5c97\u4f4d",
+    "\u517c\u804c\u62db\u8058",
+    "\u6c42\u804c\u54a8\u8be2",
+    "\u5bb6\u6559\u8f85\u5bfc",
+    "\u5176\u4ed6\u517c\u804c"
+  ],
+  "\u627e\u642d\u5b50": [
+    "\u65c5\u6e38\u642d\u5b50",
+    "\u5b66\u4e60\u642d\u5b50",
+    "\u8d5b\u4e8b\u642d\u5b50",
+    "\u8fd0\u52a8\u642d\u5b50",
+    "\u7f8e\u98df\u642d\u5b50",
+    "\u6e38\u620f\u642d\u5b50",
+    "\u51fa\u884c\u642d\u5b50",
+    "\u5176\u4ed6\u642d\u5b50"
+  ],
+  "\u8dd1\u817f\u4ee3\u529e": [
+    "\u5feb\u9012\u4ee3\u53d6",
+    "\u5916\u5356\u4ee3\u53d6",
+    "\u98df\u5802\u4ee3\u4e70",
+    "\u8d85\u5e02\u4ee3\u8d2d",
+    "\u6821\u56ed\u8dd1\u817f",
+    "\u5176\u4ed6\u4ee3\u529e"
+  ],
+  "\u8df3\u86a4\u5e02\u573a": [
+    "\u56fe\u4e66\u8d44\u6599",
+    "\u7535\u5b50\u6570\u7801",
+    "\u751f\u6d3b\u7528\u54c1",
+    "\u670d\u9970\u978b\u5e3d",
+    "\u7f8e\u5986\u62a4\u80a4",
+    "\u8fd0\u52a8\u5668\u6750",
+    "\u5174\u8da3\u597d\u7269",
+    "\u5176\u4ed6\u95f2\u7f6e"
+  ]
 };
 
 function getPrimaryCategoryByType(type) {
@@ -44,7 +86,7 @@ function inferPrimaryCategory(category) {
 
 function buildPostCategoryView(post) {
   const secondaryLabel = String((post && post.category) || "").trim();
-  const primaryLabel = String((post && post.primaryCategory) || "").trim() || inferPrimaryCategory(secondaryLabel) || "其他";
+  const primaryLabel = String((post && post.primaryCategory) || "").trim() || inferPrimaryCategory(secondaryLabel) || "\u5176\u4ed6";
   const theme = THEME_BY_PRIMARY_CATEGORY[primaryLabel] || "default";
 
   return {

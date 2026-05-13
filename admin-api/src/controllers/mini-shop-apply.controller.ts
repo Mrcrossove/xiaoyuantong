@@ -5,12 +5,23 @@ import {
   createMiniShopApply,
   getCurrentMiniShopApply,
   queryAdminShopApplyList,
-  reviewMiniShopApply
+  reviewMiniShopApply,
+  takedownApprovedMiniShopApply
 } from "../services/mini-shop-apply.service";
-import type { MiniShopApplyPayload, MiniShopApplyReviewPayload } from "./schemas";
+import type { MiniShopApplyPayload, MiniShopApplyReviewPayload, MiniShopApplyTakedownPayload } from "./schemas";
 
 export async function getCurrentMiniShopApplyAction(req: Request, res: Response) {
   const data = await getCurrentMiniShopApply(req.miniAuth!.userId);
+  return ok(res, data, req.traceId);
+}
+
+export async function takedownMiniShopApplyAction(req: Request, res: Response) {
+  await assertRequestAdminPermission(req, "store:apply:reject");
+  const data = await takedownApprovedMiniShopApply(
+    req.adminAuth!.userId,
+    Number(req.params.id),
+    req.body as MiniShopApplyTakedownPayload
+  );
   return ok(res, data, req.traceId);
 }
 

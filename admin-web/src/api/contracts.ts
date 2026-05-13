@@ -957,6 +957,8 @@ export interface VerifyReviewPayload {
 export interface StoreApplyItem {
   id: number;
   userId: number;
+  storeId: number;
+  storeStatus: string;
   school: string;
   storeName: string;
   category: string;
@@ -975,6 +977,10 @@ export interface StoreApplyQuery extends PageQuery {}
 export interface StoreReviewPayload {
   status: string;
   reviewNote?: string;
+}
+
+export interface StoreTakedownPayload {
+  reason: string;
 }
 
 export interface AdminStoreItem {

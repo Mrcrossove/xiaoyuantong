@@ -10,20 +10,14 @@ function getScopeValue(value) {
   return value;
 }
 
-function isManualAllScope(value) {
-  return Boolean(value && typeof value === "object" && value.value === HOME_FEED_ALL && value.manual === true);
-}
-
-function normalizeScope(value, fallbackSchool, options = {}) {
-  const fallback = schools.includes(fallbackSchool) ? fallbackSchool : schools[0];
-  const verifiedSchool = schools.includes(options.verifiedSchool) ? options.verifiedSchool : "";
+function normalizeScope(value) {
   const scopeValue = getScopeValue(value);
 
-  if (scopeValue === HOME_FEED_ALL && (!verifiedSchool || isManualAllScope(value))) {
+  if (scopeValue === HOME_FEED_ALL) {
     return {
       mode: "all",
       school: "",
-      label: "全网"
+      label: "\u5168\u7f51"
     };
   }
 
@@ -35,34 +29,23 @@ function normalizeScope(value, fallbackSchool, options = {}) {
     };
   }
 
-  if (verifiedSchool) {
-    return {
-      mode: "school",
-      school: verifiedSchool,
-      label: verifiedSchool
-    };
-  }
-
   return {
     mode: "all",
     school: "",
-    label: "全网"
+    label: "\u5168\u7f51"
   };
 }
 
-function getHomeFeedScope(fallbackSchool, options = {}) {
+function getHomeFeedScope() {
   try {
-    return normalizeScope(wx.getStorageSync(STORAGE_KEY), fallbackSchool, options);
+    return normalizeScope(wx.getStorageSync(STORAGE_KEY));
   } catch (error) {
-    return normalizeScope("", fallbackSchool, options);
+    return normalizeScope("");
   }
 }
 
 function setHomeFeedScope(value, fallbackSchool, options = {}) {
-  const normalized = normalizeScope(value, fallbackSchool, {
-    ...options,
-    verifiedSchool: ""
-  });
+  const normalized = normalizeScope(value);
   const storedValue =
     normalized.mode === "all"
       ? {

@@ -867,6 +867,9 @@ export async function getMiniStoreDetail(detailId: string) {
       }
     }
   });
+  if (row.status !== STORE_STATUS.open) {
+    throw new ApiError("\u5e97\u94fa\u5df2\u4e0b\u67b6", ERROR_CODES.NOT_FOUND, 404);
+  }
   return mapStoreDetail(row);
 }
 

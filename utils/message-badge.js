@@ -28,8 +28,9 @@ async function refreshMessageBadge(page, options = {}) {
   }
 
   try {
+    const hasExplicitSchool = Object.prototype.hasOwnProperty.call(options, "school");
     const summary = await fetchMessageUnreadSummary({
-      school: options.school || getSelectedSchool()
+      school: hasExplicitSchool ? options.school : getSelectedSchool()
     });
     const total = calcUnreadTotal(summary);
     page.setData({

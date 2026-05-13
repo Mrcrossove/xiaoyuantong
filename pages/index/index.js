@@ -4,7 +4,7 @@ const { fetchPostList } = require("../../utils/posts-api");
 const { buildAvatarView } = require("../../utils/avatar");
 const { getToken, getProfile, setProfile, ensureMiniSession } = require("../../utils/mini-auth");
 const { fetchMiniProfile } = require("../../utils/profile-api");
-const { DEFAULT_SCHOOL, getSelectedSchool, setSelectedSchool } = require("../../utils/school-state");
+const { getStoredSelectedSchool, setSelectedSchool } = require("../../utils/school-state");
 const { HOME_FEED_ALL, getHomeFeedScope, setHomeFeedScope } = require("../../utils/home-feed-state");
 const { getProvinceSchoolGroups, filterProvinceSchoolGroups } = require("../../utils/school-catalog");
 const { buildPostCategoryView } = require("../../utils/post-category-view");
@@ -76,10 +76,10 @@ Page({
     searchKeyword: "",
     provinceSchoolGroups: [],
     filteredProvinceSchoolGroups: [],
-    selectedFeedMode: "school",
-    selectedFeedSchool: DEFAULT_SCHOOL,
-    selectedFeedLabel: DEFAULT_SCHOOL,
-    businessSchool: DEFAULT_SCHOOL,
+    selectedFeedMode: "all",
+    selectedFeedSchool: "",
+    selectedFeedLabel: "全网",
+    businessSchool: "",
     verifiedSchool: "",
     schoolKeyword: "",
     schoolPickerOpen: false,
@@ -117,12 +117,12 @@ Page({
     const hasToken = !!getToken();
     let verificationInfo = getVerificationInfo();
     let verifiedSchool = verificationInfo.verified && verificationInfo.school ? verificationInfo.school : "";
-    let businessSchool = getSelectedSchool();
+    let businessSchool = verifiedSchool || getStoredSelectedSchool();
 
     if (hasToken) {
       verificationInfo = await this.syncVerification();
       verifiedSchool = verificationInfo.verified && verificationInfo.school ? verificationInfo.school : "";
-      businessSchool = verifiedSchool || getSelectedSchool();
+      businessSchool = verifiedSchool || getStoredSelectedSchool();
       await this.syncProfile();
     } else {
       this.setData({
@@ -135,7 +135,7 @@ Page({
       activeServiceCategory: "",
       verifiedSchool
     });
-    this.applyFeedScope(getHomeFeedScope(businessSchool, { verifiedSchool }), businessSchool);
+    this.applyFeedScope(getHomeFeedScope(), businessSchool);
   },
 
   onPageScroll(event) {
@@ -209,10 +209,10 @@ Page({
     return filterProvinceSchoolGroups(trimmed).map((group) => group.province);
   },
 
-  async applyFeedScope(feedScope, businessSchool = getSelectedSchool()) {
-    const selectedFeedMode = feedScope.mode || "school";
+  async applyFeedScope(feedScope, businessSchool = "") {
+    const selectedFeedMode = feedScope.mode || "all";
     const selectedFeedSchool = feedScope.school || "";
-    const selectedFeedLabel = feedScope.label || (selectedFeedMode === "all" ? "全网" : businessSchool);
+    const selectedFeedLabel = feedScope.label || (selectedFeedMode === "all" ? "全网" : selectedFeedSchool);
     const schoolKeyword = "";
     const expandedProvinces = DEFAULT_EXPANDED_PROVINCES.slice();
 
@@ -232,14 +232,13 @@ Page({
     });
 
     try {
-      const bannerSchool = selectedFeedMode === "all" ? businessSchool : selectedFeedSchool;
+      const bannerSchool = selectedFeedMode === "all" ? "" : selectedFeedSchool;
       const postQuery =
         selectedFeedMode === "all"
           ? {
               page: 1,
               pageSize: 20,
-              scope: "all",
-              excludeSchool: businessSchool
+              scope: "all"
             }
           : {
               page: 1,
@@ -330,19 +329,19 @@ Page({
     if (!school) {
       return;
     }
-    const nextFeedScope = setHomeFeedScope(school, this.data.businessSchool || DEFAULT_SCHOOL);
+    const nextFeedScope = setHomeFeedScope(school);
     this.setData({
       schoolPickerOpen: false
     });
-    this.applyFeedScope(nextFeedScope, this.data.businessSchool || DEFAULT_SCHOOL);
+    this.applyFeedScope(nextFeedScope, this.data.businessSchool || "");
   },
 
   selectAllNetwork() {
-    const nextFeedScope = setHomeFeedScope(HOME_FEED_ALL, this.data.businessSchool || DEFAULT_SCHOOL, { manual: true });
+    const nextFeedScope = setHomeFeedScope(HOME_FEED_ALL, "", { manual: true });
     this.setData({
       schoolPickerOpen: false
     });
-    this.applyFeedScope(nextFeedScope, this.data.businessSchool || DEFAULT_SCHOOL);
+    this.applyFeedScope(nextFeedScope, this.data.businessSchool || "");
   },
 
   onSearchKeywordInput(event) {
@@ -364,10 +363,7 @@ Page({
     this.setData({
       activeServiceCategory: nextCategory
     });
-    this.applyFeedScope(
-      getHomeFeedScope(this.data.businessSchool || DEFAULT_SCHOOL, { verifiedSchool: this.data.verifiedSchool }),
-      this.data.businessSchool || DEFAULT_SCHOOL
-    );
+    this.applyFeedScope(getHomeFeedScope(), this.data.businessSchool || "");
   },
 
   scrollToFeedTop() {
@@ -488,14 +484,14 @@ Page({
 
   onShareAppMessage() {
     return {
-      title: "校院通",
+      title: "校园通",
       path: "/pages/index/index"
     };
   },
 
   onShareTimeline() {
     return {
-      title: "校院通",
+      title: "校园通",
       query: ""
     };
   },

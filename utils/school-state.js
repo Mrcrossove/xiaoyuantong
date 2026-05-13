@@ -15,6 +15,16 @@ function getSelectedSchool() {
   return DEFAULT_SCHOOL;
 }
 
+function getStoredSelectedSchool() {
+  try {
+    const stored = wx.getStorageSync(STORAGE_KEY);
+    if (stored && schools.includes(stored)) {
+      return stored;
+    }
+  } catch (error) {}
+  return "";
+}
+
 function setSelectedSchool(school) {
   const selectedSchool = schools.includes(school) ? school : DEFAULT_SCHOOL;
   try {
@@ -49,6 +59,7 @@ function setStorefrontSchool(school) {
 
 module.exports = {
   DEFAULT_SCHOOL,
+  getStoredSelectedSchool,
   getSelectedSchool,
   setSelectedSchool,
   getStorefrontSchool,
