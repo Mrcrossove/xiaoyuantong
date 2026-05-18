@@ -16,6 +16,13 @@ function fetchTravelRouteDetail(id) {
   });
 }
 
+function fetchTravelSubscribeConfig() {
+  return request({
+    url: "/travel/mini/subscribe-config",
+    method: "GET"
+  });
+}
+
 function createTravelBooking(data) {
   return authRequest({
     url: "/travel/mini/booking",
@@ -38,10 +45,27 @@ function cancelTravelBooking(id) {
   });
 }
 
+function createTravelPay(id) {
+  return authRequest({
+    url: `/travel/mini/booking/${id}/pay/create`,
+    method: "POST"
+  });
+}
+
+function confirmTravelPay(id) {
+  return authRequest({
+    url: `/travel/mini/booking/${id}/pay/confirm`,
+    method: "POST"
+  });
+}
+
 module.exports = {
   fetchTravelRoutes,
   fetchTravelRouteDetail,
+  fetchTravelSubscribeConfig,
   createTravelBooking,
   fetchMyTravelBookings,
-  cancelTravelBooking
+  cancelTravelBooking,
+  createTravelPay,
+  confirmTravelPay
 };

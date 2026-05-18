@@ -1,4 +1,6 @@
-const { cancelTravelBooking, fetchMyTravelBookings } = require("../../utils/travel-api");
+const { cancelTravelBooking, confirmTravelPay, createTravelPay, fetchMyTravelBookings, fetchTravelSubscribeConfig } = require("../../utils/travel-api");
+const { ensureMiniSession } = require("../../utils/mini-auth");
+const { requestSubscribeMessage } = require("../../utils/subscribe-message");
 
 Page({
   data: {
@@ -60,8 +62,42 @@ Page({
     });
   },
 
-  goPay() {
-    wx.showToast({ title: "旅游支付待接入微信支付", icon: "none" });
+  async goPay(event) {
+    const { id } = event.currentTarget.dataset;
+    if (!id || this.data.loading) return;
+
+    this.setData({ loading: true });
+    try {
+      await ensureMiniSession();
+      const config = await fetchTravelSubscribeConfig().catch(() => ({}));
+      await requestSubscribeMessage([config.paymentTemplateId]);
+      const payResult = await createTravelPay(id);
+
+      if (payResult && payResult.mode === "paid") {
+        wx.showToast({ title: "已完成缴费", icon: "success" });
+      } else if (payResult && payResult.mode === "mock") {
+        await confirmTravelPay(id);
+        wx.showToast({ title: "缴费成功", icon: "success" });
+      } else if (payResult && payResult.payment) {
+        await new Promise((resolve, reject) => {
+          wx.requestPayment({
+            ...payResult.payment,
+            success: resolve,
+            fail: reject
+          });
+        });
+        await confirmTravelPay(id);
+        wx.showToast({ title: "缴费成功", icon: "success" });
+      } else {
+        throw new Error("支付参数缺失");
+      }
+
+      await this.loadData();
+    } catch (error) {
+      wx.showToast({ title: error.message || "缴费失败", icon: "none" });
+    } finally {
+      this.setData({ loading: false });
+    }
   },
 
   goBack() {

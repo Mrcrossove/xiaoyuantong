@@ -1,5 +1,6 @@
-const { createTravelBooking, fetchTravelRouteDetail } = require("../../utils/travel-api");
+const { createTravelBooking, fetchTravelRouteDetail, fetchTravelSubscribeConfig } = require("../../utils/travel-api");
 const { getProfile } = require("../../utils/mini-auth");
+const { requestSubscribeMessage } = require("../../utils/subscribe-message");
 
 Page({
   data: {
@@ -62,6 +63,8 @@ Page({
     }
     this.setData({ submitting: true });
     try {
+      const config = await fetchTravelSubscribeConfig().catch(() => ({}));
+      await requestSubscribeMessage([config.paymentTemplateId]);
       await createTravelBooking({
         ...form,
         scheduleId: this.data.scheduleId

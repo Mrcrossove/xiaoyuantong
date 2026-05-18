@@ -2,8 +2,11 @@ import type { Request, Response } from "express";
 import { ok } from "../utils/response";
 import {
   cancelMiniTravelBooking,
+  confirmMiniTravelPay,
+  createMiniTravelPayParams,
   createMiniTravelBooking,
   getMiniTravelRouteDetail,
+  getMiniTravelSubscribeConfig,
   notifyAdminTravelSchedulePayment,
   queryAdminTravelBookings,
   queryAdminTravelProviders,
@@ -26,6 +29,11 @@ export async function getMiniTravelRouteAction(req: Request, res: Response) {
   return ok(res, data, req.traceId);
 }
 
+export async function getMiniTravelSubscribeConfigAction(req: Request, res: Response) {
+  const data = getMiniTravelSubscribeConfig();
+  return ok(res, data, req.traceId);
+}
+
 export async function createMiniTravelBookingAction(req: Request, res: Response) {
   const data = await createMiniTravelBooking(req.miniAuth!.userId, req.body);
   return ok(res, data, req.traceId);
@@ -39,6 +47,16 @@ export async function listMiniTravelBookingAction(req: Request, res: Response) {
 export async function cancelMiniTravelBookingAction(req: Request, res: Response) {
   const data = await cancelMiniTravelBooking(req.miniAuth!.userId, Number(req.params.id));
   return ok(res, data, req.traceId);
+}
+
+export async function createMiniTravelPayAction(req: Request, res: Response) {
+  const data = await createMiniTravelPayParams(req.miniAuth!.userId, Number(req.params.id));
+  return ok(res, data, req.traceId, "拉起旅游缴费成功");
+}
+
+export async function confirmMiniTravelPayAction(req: Request, res: Response) {
+  const data = await confirmMiniTravelPay(req.miniAuth!.userId, Number(req.params.id));
+  return ok(res, data, req.traceId, "旅游缴费成功");
 }
 
 export async function listAdminTravelProviderAction(req: Request, res: Response) {

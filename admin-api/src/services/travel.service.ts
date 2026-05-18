@@ -1,9 +1,13 @@
+import type { Prisma } from "@prisma/client";
+import { env } from "../config/env";
 import { prisma } from "../lib/prisma";
 import { ERROR_CODES } from "../constants/error-codes";
 import { ApiError } from "../utils/api-error";
 import { parsePageParams } from "../utils/pagination";
 import { formatDateTime } from "../utils/time";
 import { createMiniMessage } from "./mini-message.service";
+import { createWechatJsapiOrder, queryWechatOrderByOutTradeNo } from "./wechat-pay.service";
+import { sendTravelPaymentSubscribeMessage } from "./wechat-subscribe-message.service";
 
 const db = prisma as any;
 
@@ -35,6 +39,14 @@ const BOOKING_STATUS = {
 } as const;
 
 const BOOKING_STATUS_VALUES = new Set(Object.values(BOOKING_STATUS));
+
+type TravelPayOptions = {
+  paymentChannel?: string;
+  paymentMode?: string;
+  transactionId?: string;
+  paymentMeta?: Prisma.InputJsonValue;
+  paidAt?: Date;
+};
 
 function asArray(value: unknown) {
   return Array.isArray(value) ? value : [];
@@ -72,6 +84,10 @@ function money(value: unknown) {
   return Number(Number(value || 0).toFixed(2));
 }
 
+function moneyText(value: unknown) {
+  return Number(value || 0).toFixed(2);
+}
+
 function bookingNo() {
   return `LY${Date.now()}${Math.floor(Math.random() * 900 + 100)}`;
 }
@@ -82,6 +98,10 @@ function orderNo() {
 
 function badRequest(message: string) {
   throw new ApiError(message, ERROR_CODES.BAD_REQUEST, 400);
+}
+
+function isTravelOrderNo(value: string) {
+  return /^LYP\d+/.test(String(value || ""));
 }
 
 async function assertSuperAdmin(adminUserId: number) {
@@ -256,6 +276,185 @@ async function createOrGetTravelPaymentOrder(booking: any, schedule: any) {
   });
 }
 
+async function loadTravelPayContext(userId: number, bookingId: number) {
+  const booking = await db.travelBooking.findFirst({ where: { id: bookingId, userId } });
+  if (!booking) {
+    throw new ApiError("报名记录不存在", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  const [route, schedule, user] = await Promise.all([
+    db.travelRoute.findUnique({ where: { id: booking.routeId } }),
+    db.travelSchedule.findUnique({ where: { id: booking.scheduleId } }),
+    prisma.miniUser.findUnique({ where: { id: userId } })
+  ]);
+
+  if (!route || !schedule) {
+    throw new ApiError("旅游线路或排期不存在", ERROR_CODES.NOT_FOUND, 404);
+  }
+  if (!user) {
+    throw new ApiError("用户不存在", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  return { booking, route, schedule, user };
+}
+
+async function markTravelOrderPaid(order: any, options?: TravelPayOptions) {
+  if (order.payStatus === "paid") {
+    return order;
+  }
+
+  const paidAt = options?.paidAt || new Date();
+  const row = await prisma.$transaction(async (tx) => {
+    const updatedOrder = await (tx as any).travelOrder.update({
+      where: { id: order.id },
+      data: {
+        status: "paid",
+        payStatus: "paid",
+        paymentChannel: options?.paymentChannel || "微信支付",
+        paymentMode: options?.paymentMode || "小程序支付",
+        transactionId: options?.transactionId || order.transactionId || "",
+        paymentMeta: options?.paymentMeta || order.paymentMeta || undefined,
+        paidAt
+      }
+    });
+
+    await (tx as any).travelBooking.update({
+      where: { id: order.bookingId },
+      data: {
+        status: BOOKING_STATUS.paid,
+        paymentStatus: "paid",
+        orderId: order.id,
+        paidAt
+      }
+    });
+
+    return updatedOrder;
+  });
+
+  const booking = await db.travelBooking.findUnique({ where: { id: row.bookingId } });
+  if (booking) {
+    await recalcScheduleCounts(booking.scheduleId);
+    await createMiniMessage({
+      school: booking.school,
+      type: "system",
+      category: "出游缴费",
+      content: `你的出游报名 ${booking.bookingNo} 已缴费成功。`,
+      receiverUserId: booking.userId,
+      targetType: "travel_booking",
+      targetId: String(booking.id)
+    });
+  }
+
+  return row;
+}
+
+export async function markTravelOrderPaidByOutTradeNo(outTradeNo: string, options?: TravelPayOptions) {
+  if (!isTravelOrderNo(outTradeNo)) {
+    return null;
+  }
+
+  const order = await db.travelOrder.findUnique({ where: { orderNo: outTradeNo } });
+  if (!order) {
+    throw new ApiError("旅游支付订单不存在", ERROR_CODES.NOT_FOUND, 404);
+  }
+
+  return markTravelOrderPaid(order, options);
+}
+
+export async function createMiniTravelPayParams(userId: number, bookingId: number) {
+  const { booking, route, schedule, user } = await loadTravelPayContext(userId, bookingId);
+
+  if (booking.status === BOOKING_STATUS.paid || booking.paymentStatus === "paid") {
+    return {
+      mode: "paid",
+      bookingId: booking.id,
+      orderId: booking.orderId || 0,
+      amount: moneyText(Number(schedule.price || 0) * Number(booking.participantCount || 1)),
+      payment: null,
+      mockMessage: "该报名已完成缴费"
+    };
+  }
+
+  if (booking.status !== BOOKING_STATUS.payment || booking.paymentStatus !== "pending") {
+    throw new ApiError("当前报名暂未开放缴费", ERROR_CODES.BAD_REQUEST, 400);
+  }
+
+  const order = await createOrGetTravelPaymentOrder(booking, schedule);
+  if (booking.orderId !== order.id) {
+    await db.travelBooking.update({ where: { id: booking.id }, data: { orderId: order.id } });
+  }
+
+  if (env.payUseMock) {
+    return {
+      mode: "mock",
+      bookingId: booking.id,
+      orderId: order.id,
+      orderNo: order.orderNo,
+      amount: moneyText(order.amount),
+      payment: null,
+      mockMessage: "当前为本地模拟支付，确认后会直接完成旅游缴费。"
+    };
+  }
+
+  if (!user.openid) {
+    throw new ApiError("当前用户缺少微信 openid，请使用真实微信登录后再支付", ERROR_CODES.BAD_REQUEST, 400);
+  }
+
+  const paymentResult = await createWechatJsapiOrder({
+    description: `大学生特种兵旅行-${route.title}`.slice(0, 120),
+    outTradeNo: order.orderNo,
+    amount: Number(order.amount || 0),
+    payerOpenid: user.openid,
+    subMchId: env.wechatPaySubMchIdFallback
+  });
+
+  return {
+    mode: "wechat",
+    bookingId: booking.id,
+    orderId: order.id,
+    orderNo: order.orderNo,
+    amount: moneyText(order.amount),
+    payment: paymentResult.payment,
+    mockMessage: "",
+    wechatConfig: {
+      mchId: env.wechatPaySpMchId,
+      notifyUrl: env.wechatPayNotifyUrl,
+      serialNo: env.wechatPayMerchantSerialNo
+    }
+  };
+}
+
+export async function confirmMiniTravelPay(userId: number, bookingId: number) {
+  const { booking, schedule } = await loadTravelPayContext(userId, bookingId);
+  const order = await createOrGetTravelPaymentOrder(booking, schedule);
+
+  if (env.payUseMock) {
+    await markTravelOrderPaid(order, {
+      paymentChannel: "微信支付",
+      paymentMode: "模拟支付",
+      paymentMeta: { mode: "mock" }
+    });
+    const latest = await db.travelBooking.findUnique({ where: { id: booking.id } });
+    return mapBooking({ ...latest, schedule });
+  }
+
+  const result = await queryWechatOrderByOutTradeNo(order.orderNo, env.wechatPaySubMchIdFallback);
+  if (String(result.trade_state || "") !== "SUCCESS") {
+    throw new ApiError(result.trade_state_desc || "微信支付尚未完成", ERROR_CODES.BAD_REQUEST, 400);
+  }
+
+  await markTravelOrderPaid(order, {
+    paymentChannel: "微信支付",
+    paymentMode: "小程序支付",
+    transactionId: result.transaction_id || "",
+    paymentMeta: result as Prisma.InputJsonValue,
+    paidAt: result.success_time ? new Date(result.success_time) : new Date()
+  });
+
+  const latest = await db.travelBooking.findUnique({ where: { id: booking.id } });
+  return mapBooking({ ...latest, schedule });
+}
+
 export async function queryMiniTravelRoutes(rawQuery: Record<string, unknown>) {
   const school = String(rawQuery.school || "").trim();
   const rows = await db.travelRoute.findMany({
@@ -282,6 +481,12 @@ export async function queryMiniTravelRoutes(rawQuery: Record<string, unknown>) {
         return !school || !schools.length || schools.includes(school);
       })
       .map((item: any) => mapRoute({ ...item, schedules: scheduleMap.get(item.id) || [] }))
+  };
+}
+
+export function getMiniTravelSubscribeConfig() {
+  return {
+    paymentTemplateId: env.wechatTravelPaymentSubscribeTemplateId
   };
 }
 
@@ -514,8 +719,10 @@ export async function queryAdminTravelBookings(adminUserId: number, rawQuery: Re
   const { page, pageSize, skip } = parsePageParams(rawQuery);
   const keyword = String(rawQuery.keyword || "").trim();
   const status = String(rawQuery.status || "").trim();
+  const scheduleId = Number(rawQuery.scheduleId || 0);
   const where: any = {};
   if (status) where.status = status;
+  if (scheduleId) where.scheduleId = scheduleId;
   if (keyword) where.OR = [
     { bookingNo: { contains: keyword, mode: "insensitive" } },
     { contactName: { contains: keyword, mode: "insensitive" } },
@@ -595,6 +802,15 @@ export async function updateAdminTravelBookingStatus(adminUserId: number, id: nu
         receiverUserId: row.userId,
         targetType: "travel_booking",
         targetId: String(row.id)
+      });
+      const user = await prisma.miniUser.findUnique({ where: { id: row.userId }, select: { openid: true } });
+      await sendTravelPaymentSubscribeMessage({
+        openid: user?.openid,
+        routeTitle: route?.title || "出游活动",
+        amount: Number(order.amount || 0),
+        deadline: schedule?.paymentDeadline ? formatDateTime(schedule.paymentDeadline) : ""
+      }).catch((error) => {
+        console.error("travel subscribe message failed", error);
       });
     }
   }

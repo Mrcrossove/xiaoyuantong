@@ -16,7 +16,7 @@ type TokenCache = {
 
 let tokenCache: TokenCache | null = null;
 
-async function getWechatAccessToken() {
+export async function getWechatAccessToken() {
   if (tokenCache && tokenCache.expiresAt > Date.now() + 60 * 1000) {
     return tokenCache.token;
   }

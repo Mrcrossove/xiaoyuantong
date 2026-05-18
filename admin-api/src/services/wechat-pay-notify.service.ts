@@ -4,6 +4,7 @@ import { ApiError } from "../utils/api-error";
 import { markMiniOrderPaidByOutTradeNo } from "./mini-order.service";
 import { confirmWechatRefundSuccessByRequestNo } from "./mini-refund.service";
 import { confirmMiniWithdrawTransferByOutBillNo } from "./mini-withdraw-transfer.service";
+import { markTravelOrderPaidByOutTradeNo } from "./travel.service";
 import { decryptWechatPayResource, verifyWechatPaySignature } from "./wechat-pay.service";
 
 type NotifyHeaders = {
@@ -36,13 +37,18 @@ export async function handleWechatPayNotify(rawBody: string, headers: NotifyHead
   const resource = decryptWechatPayResource<any>(body.resource);
 
   if (String(resource.trade_state || "") === "SUCCESS" && resource.out_trade_no) {
-    await markMiniOrderPaidByOutTradeNo(String(resource.out_trade_no), {
+    const outTradeNo = String(resource.out_trade_no);
+    const payOptions = {
       paymentChannel: "\u5fae\u4fe1\u652f\u4ed8",
       paymentMode: "\u5c0f\u7a0b\u5e8f\u652f\u4ed8",
       transactionId: String(resource.transaction_id || ""),
       paymentMeta: resource as Prisma.InputJsonValue,
       paidAt: resource.success_time ? new Date(resource.success_time) : new Date()
-    });
+    };
+
+    if (!(await markTravelOrderPaidByOutTradeNo(outTradeNo, payOptions))) {
+      await markMiniOrderPaidByOutTradeNo(outTradeNo, payOptions);
+    }
   }
 
   return {

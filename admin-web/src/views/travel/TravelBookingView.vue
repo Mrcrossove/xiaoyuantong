@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
+import { useRoute } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { getTravelBookingListApi, updateTravelBookingStatusApi } from "../../api/modules/travel";
 import { exportTableToCsv } from "../../utils/export";
@@ -8,7 +9,8 @@ const loading = ref(false);
 const exporting = ref(false);
 const list = ref<any[]>([]);
 const total = ref(0);
-const query = reactive({ page: 1, pageSize: 10, keyword: "", status: "" });
+const route = useRoute();
+const query = reactive({ page: 1, pageSize: 10, keyword: "", status: "", scheduleId: "" });
 
 const statusText = (status: string) =>
   ({
@@ -40,6 +42,22 @@ function handleSearch() {
   loadData();
 }
 
+function buildExportRows(rows: any[]) {
+  return rows.map((item) => [
+    item.bookingNo,
+    item.routeTitle,
+    item.departDate,
+    item.contactName,
+    item.contactPhone,
+    item.school,
+    item.participantCount,
+    statusText(item.status),
+    item.paymentStatus,
+    item.remark,
+    item.createdAt
+  ]);
+}
+
 async function updateStatus(row: any, status: string) {
   try {
     const { value } = await ElMessageBox.prompt("请输入处理备注，可为空", "处理报名", {
@@ -55,32 +73,33 @@ async function updateStatus(row: any, status: string) {
   }
 }
 
-function exportRows() {
+async function exportRows() {
   exporting.value = true;
   try {
+    const first = await getTravelBookingListApi({ ...query, page: 1, pageSize: 100 });
+    const rows = [...(first.list || [])];
+    const pageCount = Math.ceil(Number(first.total || rows.length) / 100);
+    for (let page = 2; page <= pageCount; page += 1) {
+      const result = await getTravelBookingListApi({ ...query, page, pageSize: 100 });
+      rows.push(...(result.list || []));
+    }
     exportTableToCsv(
-      `旅游报名_${new Date().toISOString().slice(0, 10)}`,
+      `旅游报名_${query.scheduleId ? `排期${query.scheduleId}_` : ""}${new Date().toISOString().slice(0, 10)}`,
       ["报名号", "线路", "出发日期", "姓名", "手机", "学校", "人数", "状态", "支付状态", "备注", "报名时间"],
-      list.value.map((item) => [
-        item.bookingNo,
-        item.routeTitle,
-        item.departDate,
-        item.contactName,
-        item.contactPhone,
-        item.school,
-        item.participantCount,
-        statusText(item.status),
-        item.paymentStatus,
-        item.remark,
-        item.createdAt
-      ])
+      buildExportRows(rows)
     );
+    ElMessage.success(`已导出 ${rows.length} 条报名`);
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : "导出失败");
   } finally {
     exporting.value = false;
   }
 }
 
-onMounted(loadData);
+onMounted(() => {
+  query.scheduleId = String(route.query.scheduleId || "");
+  loadData();
+});
 </script>
 
 <template>
@@ -88,6 +107,7 @@ onMounted(loadData);
     <el-card shadow="never">
       <div class="toolbar">
         <el-input v-model="query.keyword" placeholder="报名号/姓名/手机/学校" clearable class="input" @keyup.enter="handleSearch" />
+        <el-input v-model="query.scheduleId" placeholder="排期ID" clearable class="schedule-input" @keyup.enter="handleSearch" />
         <el-select v-model="query.status" placeholder="全部状态" clearable class="select">
           <el-option label="已报名" value="submitted" />
           <el-option label="已确认占位" value="confirmed" />
@@ -97,7 +117,7 @@ onMounted(loadData);
           <el-option label="已驳回" value="rejected" />
         </el-select>
         <el-button type="primary" @click="handleSearch">查询</el-button>
-        <el-button v-permission="'travel:booking:export'" :loading="exporting" @click="exportRows">导出当前页</el-button>
+        <el-button v-permission="'travel:booking:export'" :loading="exporting" @click="exportRows">导出全部</el-button>
       </div>
     </el-card>
 
@@ -124,7 +144,16 @@ onMounted(loadData);
           </template>
         </el-table-column>
       </el-table>
-      <div class="pagination"><el-pagination background layout="total, prev, pager, next" :total="total" :page-size="query.pageSize" :current-page="query.page" @current-change="(p:number) => { query.page = p; loadData(); }" /></div>
+      <div class="pagination">
+        <el-pagination
+          background
+          layout="total, prev, pager, next"
+          :total="total"
+          :page-size="query.pageSize"
+          :current-page="query.page"
+          @current-change="(p:number) => { query.page = p; loadData(); }"
+        />
+      </div>
     </el-card>
   </div>
 </template>
@@ -133,6 +162,7 @@ onMounted(loadData);
 .page { display: grid; gap: 16px; }
 .toolbar { display: flex; flex-wrap: wrap; gap: 12px; }
 .input { width: 280px; }
+.schedule-input { width: 140px; }
 .select { width: 160px; }
 .pagination { margin-top: 16px; display: flex; justify-content: flex-end; }
 </style>

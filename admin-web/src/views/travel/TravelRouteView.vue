@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import {
   createTravelRouteApi,
@@ -12,6 +13,7 @@ import {
 } from "../../api/modules/travel";
 
 const loading = ref(false);
+const router = useRouter();
 const list = ref<any[]>([]);
 const providers = ref<any[]>([]);
 const total = ref(0);
@@ -181,6 +183,10 @@ async function notifyPayment(schedule: any) {
   }
 }
 
+function viewScheduleBookings(schedule: any) {
+  router.push({ path: "/travel/booking", query: { scheduleId: String(schedule.id) } });
+}
+
 function handleSearch() {
   query.page = 1;
   loadData();
@@ -220,6 +226,7 @@ onMounted(loadData);
               <span>{{ item.priceText }}</span>
               <span>{{ item.confirmedCount }}/{{ item.minGroupSize }}人成团</span>
               <el-tag size="small">{{ scheduleStatusText(item.status) }}</el-tag>
+              <el-button link type="success" @click="viewScheduleBookings(item)">看报名</el-button>
               <el-button link type="primary" @click="openEditSchedule(row, item)">编辑</el-button>
               <el-button link type="warning" @click="notifyPayment(item)">通知缴费</el-button>
             </div>

@@ -28,6 +28,8 @@ export const env = {
   wechatAppId: process.env.WECHAT_APP_ID || "",
   wechatAppSecret: process.env.WECHAT_APP_SECRET || "",
   wechatUseMock: process.env.WECHAT_USE_MOCK !== "false",
+  wechatTravelPaymentSubscribeTemplateId: process.env.WECHAT_TRAVEL_PAYMENT_SUBSCRIBE_TEMPLATE_ID || "",
+  wechatTravelPaymentSubscribePage: process.env.WECHAT_TRAVEL_PAYMENT_SUBSCRIBE_PAGE || "pages/my-travel-bookings/my-travel-bookings",
   allowMiniDevAccountSwitch: process.env.ALLOW_MINI_DEV_ACCOUNT_SWITCH === "true",
   merchantReferralUnitPriceCents: Number(process.env.MERCHANT_REFERRAL_UNIT_PRICE_CENTS || 100),
 

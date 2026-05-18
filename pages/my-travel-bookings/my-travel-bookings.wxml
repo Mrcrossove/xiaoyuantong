@@ -24,7 +24,7 @@
     </view>
     <view class="actions">
       <view wx:if="{{item.status === 'submitted' || item.status === 'confirmed'}}" class="btn ghost" data-id="{{item.id}}" bindtap="cancel">取消报名</view>
-      <view wx:if="{{item.status === 'payment'}}" class="btn" bindtap="goPay">去缴费</view>
+      <view wx:if="{{item.status === 'payment'}}" class="btn" data-id="{{item.id}}" bindtap="goPay">去缴费</view>
     </view>
   </view>
 </view>

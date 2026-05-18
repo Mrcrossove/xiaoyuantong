@@ -1,10 +1,13 @@
 import { Router } from "express";
 import {
   cancelMiniTravelBookingAction,
+  confirmMiniTravelPayAction,
   createAdminTravelProviderAction,
   createAdminTravelRouteAction,
   createAdminTravelScheduleAction,
+  createMiniTravelPayAction,
   createMiniTravelBookingAction,
+  getMiniTravelSubscribeConfigAction,
   getMiniTravelRouteAction,
   listAdminTravelBookingAction,
   listAdminTravelProviderAction,
@@ -23,10 +26,13 @@ import { requireAdminAuth, requireAdminMenuAccess, requireAdminPermission, requi
 const router = Router();
 
 router.get("/mini/route/list", asyncHandler(listMiniTravelRouteAction));
+router.get("/mini/subscribe-config", asyncHandler(getMiniTravelSubscribeConfigAction));
 router.get("/mini/route/:id", asyncHandler(getMiniTravelRouteAction));
 router.get("/mini/booking/list", requireMiniAuth, asyncHandler(listMiniTravelBookingAction));
 router.post("/mini/booking", requireMiniAuth, asyncHandler(createMiniTravelBookingAction));
 router.post("/mini/booking/:id/cancel", requireMiniAuth, asyncHandler(cancelMiniTravelBookingAction));
+router.post("/mini/booking/:id/pay/create", requireMiniAuth, asyncHandler(createMiniTravelPayAction));
+router.post("/mini/booking/:id/pay/confirm", requireMiniAuth, asyncHandler(confirmMiniTravelPayAction));
 
 router.get("/admin/provider/list", requireAdminAuth, requireAdminMenuAccess("/travel/provider"), asyncHandler(listAdminTravelProviderAction));
 router.post(

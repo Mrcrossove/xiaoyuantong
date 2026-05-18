@@ -1132,7 +1132,10 @@ model TravelOrder {
   amount        Float
   status        String
   payStatus     String
+  paymentChannel String?
+  paymentMode   String?
   transactionId String?
+  paymentMeta   Json?
   paidAt        DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
