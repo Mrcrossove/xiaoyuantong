@@ -2,6 +2,10 @@
   "pages": [
     "pages/index/index",
     "pages/search/search",
+    "pages/travel-home/travel-home",
+    "pages/travel-detail/travel-detail",
+    "pages/travel-apply/travel-apply",
+    "pages/my-travel-bookings/my-travel-bookings",
     "pages/storefront/storefront",
     "pages/store-category/store-category",
     "pages/store-detail/store-detail",

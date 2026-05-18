@@ -29,6 +29,7 @@ import schoolAdminApplicationRoutes from "./school-admin-application.routes";
 import statAdminRoutes from "./stat-admin.routes";
 import systemRoutes from "./system.routes";
 import tradeAdminRoutes from "./trade-admin.routes";
+import travelRoutes from "./travel.routes";
 import userPublishRoutes from "./user-publish.routes";
 import verificationRoutes from "./verification.routes";
 import wechatPayRoutes from "./wechat-pay.routes";
@@ -69,6 +70,7 @@ router.use("/product/admin", productAdminRoutes);
 router.use("/stat/admin", statAdminRoutes);
 router.use("/system", systemRoutes);
 router.use("/trade/admin", tradeAdminRoutes);
+router.use("/travel", travelRoutes);
 router.use("/wechat/pay", wechatPayRoutes);
 
 export default router;

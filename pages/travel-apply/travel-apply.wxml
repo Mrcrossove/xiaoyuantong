@@ -1,0 +1,32 @@
+<view class="apply-page" style="padding-top: {{statusBarHeight}}px;">
+  <view class="nav">
+    <view class="back" bindtap="goBack"></view>
+    <view class="title">提交出游报名</view>
+    <view class="nav-space"></view>
+  </view>
+
+  <view class="summary" wx:if="{{detail}}">
+    <view class="summary-title">{{detail.title}}</view>
+    <view class="summary-desc">报名后先占位，成团后平台通知缴费。</view>
+  </view>
+
+  <view class="form-card">
+    <view class="field"><text>姓名</text><input value="{{form.contactName}}" data-field="contactName" bindinput="onInput" placeholder="请填写真实姓名" /></view>
+    <view class="field"><text>手机号</text><input value="{{form.contactPhone}}" data-field="contactPhone" bindinput="onInput" placeholder="用于接收出行通知" type="number" /></view>
+    <view class="field"><text>学校</text><input value="{{form.school}}" data-field="school" bindinput="onInput" placeholder="请填写所在学校" /></view>
+    <view class="field count-field">
+      <text>出行人数</text>
+      <view class="counter">
+        <view class="counter-btn" data-delta="-1" bindtap="stepCount">-</view>
+        <view class="counter-value">{{form.participantCount}}</view>
+        <view class="counter-btn" data-delta="1" bindtap="stepCount">+</view>
+      </view>
+    </view>
+    <view class="field"><text>紧急联系人</text><input value="{{form.emergencyName}}" data-field="emergencyName" bindinput="onInput" placeholder="可选" /></view>
+    <view class="field"><text>紧急联系人电话</text><input value="{{form.emergencyPhone}}" data-field="emergencyPhone" bindinput="onInput" placeholder="可选" type="number" /></view>
+    <view class="textarea-field"><text>备注</text><textarea value="{{form.remark}}" data-field="remark" bindinput="onInput" placeholder="同行人、特殊需求等，可选"></textarea></view>
+  </view>
+
+  <view class="notice">提交即表示你同意平台在成团后通过站内消息/电话通知缴费与出行事项。</view>
+  <button class="submit-btn" loading="{{submitting}}" bindtap="submit">提交报名</button>
+</view>

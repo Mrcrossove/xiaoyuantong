@@ -102,6 +102,15 @@ export const adminMenus: AdminMenuItem[] = [
     ]
   },
   {
+    key: "travel",
+    title: "\u51fa\u6e38\u7ba1\u7406",
+    children: [
+      { key: "travel-route", title: "\u7ebf\u8def\u7ba1\u7406", path: "/travel/route" },
+      { key: "travel-booking", title: "\u62a5\u540d\u7ba1\u7406", path: "/travel/booking" },
+      { key: "travel-provider", title: "\u4f9b\u5e94\u65b9\u7ba1\u7406", path: "/travel/provider" }
+    ]
+  },
+  {
     key: "system",
     title: "系统设置",
     children: [

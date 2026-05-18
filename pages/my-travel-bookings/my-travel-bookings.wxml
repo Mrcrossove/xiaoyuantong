@@ -1,0 +1,30 @@
+<view class="booking-page" style="padding-top: {{statusBarHeight}}px;">
+  <view class="nav">
+    <view class="back" bindtap="goBack"></view>
+    <view class="title">我的出游报名</view>
+    <view class="nav-space"></view>
+  </view>
+
+  <view wx:if="{{loading}}" class="empty">正在加载</view>
+  <view wx:elif="{{!list.length}}" class="empty">暂无出游报名</view>
+
+  <view class="booking-card" wx:for="{{list}}" wx:key="id">
+    <view class="head">
+      <view>
+        <view class="route-title">{{item.routeTitle}}</view>
+        <view class="meta">{{item.departDate}} · {{item.destination}}</view>
+      </view>
+      <view class="status">{{item.statusLabel}}</view>
+    </view>
+    <view class="info">
+      <text>报名号：{{item.bookingNo}}</text>
+      <text>报名人：{{item.contactName}} {{item.contactPhone}}</text>
+      <text>出行人数：{{item.participantCount}}</text>
+      <text>支付状态：{{item.paymentStatus}}</text>
+    </view>
+    <view class="actions">
+      <view wx:if="{{item.status === 'submitted' || item.status === 'confirmed'}}" class="btn ghost" data-id="{{item.id}}" bindtap="cancel">取消报名</view>
+      <view wx:if="{{item.status === 'payment'}}" class="btn" bindtap="goPay">去缴费</view>
+    </view>
+  </view>
+</view>

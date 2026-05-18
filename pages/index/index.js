@@ -454,6 +454,12 @@ Page({
     });
   },
 
+  goTravelHome() {
+    wx.navigateTo({
+      url: "/pages/travel-home/travel-home"
+    });
+  },
+
   goProfile() {
     wx.redirectTo({
       url: "/pages/profile/profile"

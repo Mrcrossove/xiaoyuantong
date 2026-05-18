@@ -1,0 +1,19 @@
+.apply-page { min-height: 100vh; padding: 0 28rpx 48rpx; background: #f5f7fb; box-sizing: border-box; }
+.nav { height: 88rpx; display: flex; align-items: center; justify-content: space-between; }
+.back, .nav-space { width: 52rpx; height: 52rpx; }
+.back { border-radius: 50%; background: #fff; position: relative; }
+.back::after { content: ""; position: absolute; left: 22rpx; top: 16rpx; width: 16rpx; height: 16rpx; border-left: 4rpx solid #1f2937; border-bottom: 4rpx solid #1f2937; transform: rotate(45deg); }
+.title { font-size: 32rpx; font-weight: 800; color: #111827; }
+.summary, .form-card { margin-top: 22rpx; padding: 28rpx; border-radius: 26rpx; background: #fff; }
+.summary-title { font-size: 32rpx; font-weight: 900; color: #111827; }
+.summary-desc, .notice { margin-top: 10rpx; color: #667085; font-size: 24rpx; line-height: 1.6; }
+.field { min-height: 92rpx; display: flex; align-items: center; justify-content: space-between; border-bottom: 1rpx solid #eef2f7; }
+.field text, .textarea-field text { color: #111827; font-size: 27rpx; font-weight: 700; }
+.field input { flex: 1; text-align: right; font-size: 27rpx; color: #111827; }
+.counter { display: flex; align-items: center; gap: 18rpx; }
+.counter-btn { width: 54rpx; height: 54rpx; border-radius: 50%; background: #ecfdf5; color: #0f766e; display: flex; align-items: center; justify-content: center; font-size: 34rpx; font-weight: 800; }
+.counter-value { min-width: 40rpx; text-align: center; font-size: 30rpx; font-weight: 800; }
+.textarea-field { padding: 22rpx 0 0; }
+.textarea-field textarea { margin-top: 16rpx; width: 100%; min-height: 150rpx; padding: 18rpx; background: #f8fafc; border-radius: 18rpx; box-sizing: border-box; font-size: 26rpx; }
+.notice { padding: 0 6rpx; }
+.submit-btn { margin-top: 28rpx; height: 88rpx; border-radius: 999rpx; background: #0f766e; color: #fff; font-size: 30rpx; font-weight: 800; }

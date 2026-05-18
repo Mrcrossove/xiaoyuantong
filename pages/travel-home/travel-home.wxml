@@ -1,0 +1,36 @@
+<view class="travel-page" style="padding-top: {{statusBarHeight}}px;">
+  <view class="nav">
+    <view class="back" bindtap="goBack"></view>
+    <view class="title">大学生特种兵旅行</view>
+    <view class="my" bindtap="openMyBookings">我的</view>
+  </view>
+
+  <view class="hero">
+    <view class="hero-tag">先报名 · 满员再缴费</view>
+    <view class="hero-title">一日 / 两日周边游</view>
+    <view class="hero-desc">查看景点、排期和拼团进度，成团后平台通知缴费。</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="empty">正在加载线路</view>
+  <view wx:elif="{{!routes.length}}" class="empty">{{errorText || "暂无可报名线路"}}</view>
+
+  <view class="route-card" wx:for="{{routes}}" wx:key="id" data-id="{{item.id}}" bindtap="openDetail">
+    <image wx:if="{{item.cover}}" class="cover" src="{{item.cover}}" mode="aspectFill"></image>
+    <view wx:else class="cover cover-fallback"></view>
+    <view class="route-body">
+      <view class="route-title">{{item.title}}</view>
+      <view class="route-meta">{{item.tripType}} · {{item.destination}}</view>
+      <view wx:if="{{item.activeSchedule}}" class="progress">
+        <view class="progress-head">
+          <text>{{item.activeSchedule.confirmedCount}}/{{item.activeSchedule.minGroupSize}} 人成团</text>
+          <text>{{item.activeSchedule.priceText}}</text>
+        </view>
+        <view class="progress-track"><view class="progress-bar" style="width: {{item.activeSchedule.progress}}%;"></view></view>
+        <view class="route-date">出发 {{item.activeSchedule.departDate}} · {{item.activeSchedule.gatherPlace}}</view>
+      </view>
+      <view class="highlights">
+        <text wx:for="{{item.highlights}}" wx:key="*this">{{item}}</text>
+      </view>
+    </view>
+  </view>
+</view>

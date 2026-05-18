@@ -1,0 +1,60 @@
+<view class="detail-page" style="padding-top: {{statusBarHeight}}px;">
+  <view class="nav">
+    <view class="back" bindtap="goBack"></view>
+    <view class="title">线路详情</view>
+    <view class="my" bindtap="openMyBookings">我的</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="empty">正在加载</view>
+  <view wx:elif="{{!detail}}" class="empty">{{errorText}}</view>
+
+  <block wx:else>
+    <image wx:if="{{detail.cover}}" class="cover" src="{{detail.cover}}" mode="aspectFill"></image>
+    <view wx:else class="cover fallback"></view>
+    <view class="panel">
+      <view class="route-title">{{detail.title}}</view>
+      <view class="route-meta">{{detail.tripType}} · {{detail.destination}}</view>
+      <view class="tags"><text wx:for="{{detail.highlights}}" wx:key="*this">{{item}}</text></view>
+    </view>
+
+    <view class="panel">
+      <view class="section-title">选择排期</view>
+      <view class="schedule {{selectedScheduleId === item.id ? 'active' : ''}}" wx:for="{{detail.schedules}}" wx:key="id" data-id="{{item.id}}" bindtap="selectSchedule">
+        <view>
+          <view class="schedule-date">{{item.departDate}} 出发</view>
+          <view class="schedule-place">{{item.gatherTime}} · {{item.gatherPlace}}</view>
+        </view>
+        <view class="schedule-side">
+          <view class="price">{{item.priceText}}</view>
+          <view class="count">{{item.confirmedCount}}/{{item.minGroupSize}}人成团</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="panel" wx:if="{{detail.activeSchedule}}">
+      <view class="section-title">拼团进度</view>
+      <view class="progress-head">
+        <text>已确认 {{detail.activeSchedule.confirmedCount}} 人</text>
+        <text>{{detail.activeSchedule.minGroupSize}} 人成团</text>
+      </view>
+      <view class="progress-track"><view class="progress-bar" style="width: {{detail.activeSchedule.progress}}%;"></view></view>
+    </view>
+
+    <view class="panel">
+      <view class="section-title">行程安排</view>
+      <view class="line" wx:for="{{detail.itinerary}}" wx:key="*this">{{item}}</view>
+    </view>
+
+    <view class="panel">
+      <view class="section-title">费用说明</view>
+      <view class="text">费用包含：{{detail.feeIncluded || "以后台通知为准"}}</view>
+      <view class="text">费用不含：{{detail.feeExcluded || "个人额外消费"}}</view>
+      <view class="text">退款规则：{{detail.refundRule || "成团后以活动通知为准"}}</view>
+    </view>
+  </block>
+
+  <view class="bottom-bar">
+    <view class="bottom-note">先报名占位，成团后通知缴费</view>
+    <view class="apply-btn" bindtap="goApply">立即报名</view>
+  </view>
+</view>

@@ -1,0 +1,16 @@
+.booking-page { min-height: 100vh; padding: 0 28rpx 48rpx; background: #f5f7fb; box-sizing: border-box; }
+.nav { height: 88rpx; display: flex; align-items: center; justify-content: space-between; }
+.back, .nav-space { width: 52rpx; height: 52rpx; }
+.back { border-radius: 50%; background: #fff; position: relative; }
+.back::after { content: ""; position: absolute; left: 22rpx; top: 16rpx; width: 16rpx; height: 16rpx; border-left: 4rpx solid #1f2937; border-bottom: 4rpx solid #1f2937; transform: rotate(45deg); }
+.title { font-size: 32rpx; font-weight: 800; color: #111827; }
+.empty, .booking-card { margin-top: 22rpx; padding: 28rpx; border-radius: 26rpx; background: #fff; }
+.empty { color: #667085; text-align: center; }
+.head { display: flex; justify-content: space-between; gap: 20rpx; }
+.route-title { font-size: 30rpx; font-weight: 900; color: #111827; }
+.meta { margin-top: 8rpx; color: #667085; font-size: 24rpx; }
+.status { color: #0f766e; font-size: 24rpx; font-weight: 800; }
+.info { margin-top: 18rpx; display: grid; gap: 8rpx; color: #4b5563; font-size: 24rpx; }
+.actions { margin-top: 20rpx; display: flex; justify-content: flex-end; gap: 14rpx; }
+.btn { padding: 14rpx 24rpx; border-radius: 999rpx; background: #0f766e; color: #fff; font-size: 24rpx; font-weight: 800; }
+.btn.ghost { background: #f3f4f6; color: #374151; }

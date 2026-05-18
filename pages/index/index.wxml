@@ -77,6 +77,18 @@
     </swiper>
   </view>
 
+  <view class="travel-entry card" bindtap="goTravelHome">
+    <view class="travel-entry-main">
+      <text class="travel-entry-tag">先报名 · 满员再缴费</text>
+      <view class="travel-entry-title">大学生特种兵旅行</view>
+      <view class="travel-entry-desc">一日 / 两日周边游，查看景点与拼团进度</view>
+    </view>
+    <view class="travel-entry-progress">
+      <view class="travel-entry-dot"></view>
+      <view class="travel-entry-cta">去看看</view>
+    </view>
+  </view>
+
   <view class="services card">
     <view
       class="service-item {{activeServiceCategory === item.category ? 'active' : ''}}"

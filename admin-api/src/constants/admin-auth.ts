@@ -17,11 +17,7 @@ export interface AdminPermissionGroup {
 }
 
 export const ADMIN_MENU_TREE: AdminMenuNode[] = [
-  {
-    key: "dashboard",
-    title: "仪表盘",
-    children: [{ key: "dashboard-overview", title: "数据概览", path: "/dashboard/overview" }]
-  },
+  { key: "dashboard", title: "仪表盘", children: [{ key: "dashboard-overview", title: "数据概览", path: "/dashboard/overview" }] },
   {
     key: "school",
     title: "高校管理",
@@ -38,11 +34,7 @@ export const ADMIN_MENU_TREE: AdminMenuNode[] = [
       { key: "user-publish", title: "用户发布记录", path: "/user/publish" }
     ]
   },
-  {
-    key: "verify",
-    title: "校园认证",
-    children: [{ key: "verify-list", title: "认证申请", path: "/verify/list" }]
-  },
+  { key: "verify", title: "校园认证", children: [{ key: "verify-list", title: "认证申请", path: "/verify/list" }] },
   {
     key: "post",
     title: "帖子管理",
@@ -57,7 +49,7 @@ export const ADMIN_MENU_TREE: AdminMenuNode[] = [
     title: "店铺管理",
     children: [
       { key: "store-apply", title: "入驻申请", path: "/store/apply" },
-      { key: "store-list", title: "店铺列表", path: "/store/list" },
+      { key: "store-list", title: "店铺管理", path: "/store/list" },
       { key: "store-category", title: "店铺分类", path: "/store/category" }
     ]
   },
@@ -65,7 +57,7 @@ export const ADMIN_MENU_TREE: AdminMenuNode[] = [
     key: "product",
     title: "商品管理",
     children: [
-      { key: "product-list", title: "商品列表", path: "/product/list" },
+      { key: "product-list", title: "商品巡检", path: "/product/list" },
       { key: "product-spec", title: "商品规格管理", path: "/product/spec" },
       { key: "product-category", title: "商品分类", path: "/product/category" }
     ]
@@ -103,6 +95,15 @@ export const ADMIN_MENU_TREE: AdminMenuNode[] = [
     ]
   },
   {
+    key: "travel",
+    title: "出游管理",
+    children: [
+      { key: "travel-route", title: "线路管理", path: "/travel/route" },
+      { key: "travel-booking", title: "报名管理", path: "/travel/booking" },
+      { key: "travel-provider", title: "供应方管理", path: "/travel/provider" }
+    ]
+  },
+  {
     key: "stat",
     title: "数据统计",
     children: [
@@ -118,6 +119,7 @@ export const ADMIN_MENU_TREE: AdminMenuNode[] = [
     children: [
       { key: "system-basic", title: "基础配置", path: "/system/basic" },
       { key: "system-dict", title: "字典配置", path: "/system/dict" },
+      { key: "system-store-approval", title: "商品变更审批", path: "/system/store-approval" },
       { key: "system-log", title: "操作日志", path: "/system/log" },
       { key: "system-version", title: "版本信息", path: "/system/version" }
     ]
@@ -215,6 +217,16 @@ export const ADMIN_PERMISSION_GROUPS: AdminPermissionGroup[] = [
       { code: "supply:handle", title: "处理商品补给申请" },
       { code: "supply:export", title: "导出商品补给申请" },
       { code: "withdraw:review", title: "审核提现" }
+    ]
+  },
+  {
+    key: "travel",
+    title: "出游管理",
+    permissions: [
+      { code: "travel:route:edit", title: "维护旅游线路" },
+      { code: "travel:booking:review", title: "处理旅游报名" },
+      { code: "travel:booking:export", title: "导出旅游报名" },
+      { code: "travel:provider:edit", title: "维护旅游供应方" }
     ]
   }
 ];

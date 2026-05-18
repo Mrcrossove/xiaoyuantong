@@ -54,6 +54,8 @@ model AdminUser {
   handledSupplyRequests MerchantSupplyRequest[] @relation("SupplyRequestHandler")
   reviewedSchoolAdminApplications   SchoolAdminApplication[] @relation("SchoolAdminReviewer")
   assignedSchoolAdminApplications   SchoolAdminApplication[] @relation("SchoolAdminAssignedAdmin")
+  reviewedTravelBookings TravelBooking[] @relation("TravelBookingReviewer")
+  travelBookingLogs TravelBookingLog[] @relation("TravelBookingLogOperator")
   storeChangeLogs AdminStoreChangeLog[]
   requestedStoreProductApprovals StoreProductApproval[] @relation("StoreProductApprovalRequester")
   reviewedStoreProductApprovals  StoreProductApproval[] @relation("StoreProductApprovalReviewer")
@@ -88,6 +90,8 @@ model MiniUser {
   messageReads  MiniMessageRead[]
   messageDeletes MiniMessageDelete[]
   merchantReferrals MerchantReferral[]
+  travelBookings TravelBooking[] @relation("TravelBookingUser")
+  travelOrders TravelOrder[] @relation("TravelOrderUser")
   ownedStores   MiniStore[]       @relation("MiniStoreOwner")
   merchantAccount MerchantAccount?
   schoolAdminApplications SchoolAdminApplication[]
@@ -1013,4 +1017,141 @@ model AdminDictItem {
   updatedAt DateTime      @updatedAt
 
   @@index([typeId, sort])
+}
+
+model TravelProvider {
+  id              Int      @id @default(autoincrement())
+  name            String
+  contactName     String
+  contactPhone    String
+  licenseNo       String?
+  licenseImages   Json?
+  businessLicense Json?
+  status          String   @default("enabled")
+  remark          String?
+  routes          TravelRoute[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model TravelRoute {
+  id             Int      @id @default(autoincrement())
+  providerId     Int?
+  provider       TravelProvider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
+  title          String
+  tripType       String
+  destination    String
+  cover          String
+  banners        Json
+  highlights     Json
+  itinerary      Json
+  feeIncluded    String
+  feeExcluded    String
+  notice         String
+  refundRule     String
+  serviceSchools Json
+  status         String
+  sort           Int      @default(0)
+  schedules      TravelSchedule[]
+  bookings       TravelBooking[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([status, sort])
+}
+
+model TravelSchedule {
+  id              Int       @id @default(autoincrement())
+  routeId         Int
+  route           TravelRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  departDate      DateTime
+  returnDate      DateTime?
+  gatherTime      String
+  gatherPlace     String
+  price           Float
+  minGroupSize    Int
+  maxGroupSize    Int
+  signupDeadline  DateTime
+  paymentDeadline DateTime?
+  signupCount     Int       @default(0)
+  confirmedCount  Int       @default(0)
+  paidCount        Int       @default(0)
+  status          String
+  bookings        TravelBooking[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([routeId, status])
+  @@index([departDate])
+}
+
+model TravelBooking {
+  id               Int       @id @default(autoincrement())
+  bookingNo        String    @unique
+  userId           Int
+  user             MiniUser  @relation("TravelBookingUser", fields: [userId], references: [id], onDelete: Cascade)
+  school           String
+  routeId          Int
+  route            TravelRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  scheduleId       Int
+  schedule         TravelSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  contactName      String
+  contactPhone     String
+  participantCount Int       @default(1)
+  participants     Json?
+  emergencyName    String?
+  emergencyPhone   String?
+  remark           String?
+  status           String
+  paymentStatus    String    @default("unpaid")
+  orderId          Int?
+  reviewedById     Int?
+  reviewedBy       AdminUser? @relation("TravelBookingReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewNote       String?
+  notifiedAt       DateTime?
+  paidAt           DateTime?
+  canceledAt       DateTime?
+  orders           TravelOrder[]
+  logs             TravelBookingLog[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([school, status])
+  @@index([scheduleId, status])
+}
+
+model TravelOrder {
+  id            Int       @id @default(autoincrement())
+  orderNo       String    @unique
+  bookingId     Int
+  booking       TravelBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  userId        Int
+  user          MiniUser @relation("TravelOrderUser", fields: [userId], references: [id], onDelete: Cascade)
+  school        String
+  amount        Float
+  status        String
+  payStatus     String
+  transactionId String?
+  paidAt        DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([bookingId])
+  @@index([userId, createdAt])
+}
+
+model TravelBookingLog {
+  id         Int      @id @default(autoincrement())
+  bookingId Int
+  booking   TravelBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  action     String
+  operatorId Int?
+  operator  AdminUser? @relation("TravelBookingLogOperator", fields: [operatorId], references: [id], onDelete: SetNull)
+  beforeData Json?
+  afterData  Json?
+  remark     String?
+  createdAt  DateTime @default(now())
+
+  @@index([bookingId, createdAt])
 }

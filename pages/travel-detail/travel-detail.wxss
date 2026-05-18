@@ -1,0 +1,26 @@
+.detail-page { min-height: 100vh; padding: 0 28rpx 140rpx; background: #f5f7fb; box-sizing: border-box; }
+.nav { height: 88rpx; display: flex; align-items: center; justify-content: space-between; }
+.back { width: 52rpx; height: 52rpx; border-radius: 50%; background: #fff; position: relative; }
+.back::after { content: ""; position: absolute; left: 22rpx; top: 16rpx; width: 16rpx; height: 16rpx; border-left: 4rpx solid #1f2937; border-bottom: 4rpx solid #1f2937; transform: rotate(45deg); }
+.title { font-size: 32rpx; font-weight: 800; color: #111827; }
+.my { font-size: 26rpx; color: #0f766e; font-weight: 700; }
+.empty, .panel { margin-top: 22rpx; padding: 26rpx; border-radius: 26rpx; background: #fff; }
+.empty { color: #6b7280; text-align: center; }
+.cover { width: 100%; height: 360rpx; border-radius: 28rpx; display: block; background: linear-gradient(135deg, #bae6fd, #bbf7d0); }
+.route-title { font-size: 38rpx; font-weight: 900; color: #111827; }
+.route-meta, .text, .line { margin-top: 10rpx; color: #667085; font-size: 25rpx; line-height: 1.7; }
+.tags { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 16rpx; }
+.tags text { padding: 8rpx 12rpx; border-radius: 999rpx; background: #ecfdf5; color: #047857; font-size: 22rpx; }
+.section-title { font-size: 30rpx; font-weight: 800; color: #111827; margin-bottom: 14rpx; }
+.schedule { display: flex; justify-content: space-between; gap: 20rpx; padding: 20rpx; border: 2rpx solid #e5e7eb; border-radius: 20rpx; margin-top: 14rpx; }
+.schedule.active { border-color: #0f766e; background: #ecfdf5; }
+.schedule-date { font-size: 28rpx; font-weight: 800; color: #111827; }
+.schedule-place, .count { margin-top: 8rpx; font-size: 23rpx; color: #667085; }
+.schedule-side { text-align: right; }
+.price { font-size: 28rpx; font-weight: 900; color: #f97316; }
+.progress-head { display: flex; justify-content: space-between; color: #0f766e; font-size: 24rpx; font-weight: 700; }
+.progress-track { margin-top: 14rpx; height: 16rpx; border-radius: 999rpx; background: #e5e7eb; overflow: hidden; }
+.progress-bar { height: 100%; border-radius: 999rpx; background: linear-gradient(90deg, #14b8a6, #f59e0b); }
+.bottom-bar { position: fixed; left: 0; right: 0; bottom: 0; padding: 18rpx 28rpx 36rpx; background: rgba(255,255,255,.96); display: flex; align-items: center; justify-content: space-between; box-shadow: 0 -10rpx 30rpx rgba(15,23,42,.08); }
+.bottom-note { color: #667085; font-size: 23rpx; }
+.apply-btn { padding: 20rpx 42rpx; border-radius: 999rpx; background: #0f766e; color: #fff; font-size: 28rpx; font-weight: 800; }

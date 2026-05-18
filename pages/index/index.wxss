@@ -259,6 +259,61 @@
   padding: 18rpx;
 }
 
+.travel-entry {
+  margin-top: 20rpx;
+  padding: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #172554 0%, #0f766e 100%);
+  color: #fff;
+}
+
+.travel-entry-tag {
+  display: inline-flex;
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 22rpx;
+}
+
+.travel-entry-title {
+  margin-top: 14rpx;
+  font-size: 36rpx;
+  font-weight: 800;
+}
+
+.travel-entry-desc {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.travel-entry-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14rpx;
+}
+
+.travel-entry-dot {
+  width: 86rpx;
+  height: 86rpx;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 30%, #fef3c7 0 12rpx, transparent 13rpx),
+    linear-gradient(135deg, #f97316, #facc15);
+}
+
+.travel-entry-cta {
+  padding: 10rpx 18rpx;
+  border-radius: 999rpx;
+  background: #fff;
+  color: #0f766e;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
 .banner-swiper {
   width: 100%;
   height: 286rpx;
