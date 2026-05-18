@@ -1,6 +1,5 @@
-const { cancelTravelBooking, confirmTravelPay, createTravelPay, fetchMyTravelBookings, fetchTravelSubscribeConfig } = require("../../utils/travel-api");
+const { cancelTravelBooking, confirmTravelPay, createTravelPay, fetchMyTravelBookings } = require("../../utils/travel-api");
 const { ensureMiniSession } = require("../../utils/mini-auth");
-const { requestSubscribeMessage } = require("../../utils/subscribe-message");
 
 Page({
   data: {
@@ -69,8 +68,6 @@ Page({
     this.setData({ loading: true });
     try {
       await ensureMiniSession();
-      const config = await fetchTravelSubscribeConfig().catch(() => ({}));
-      await requestSubscribeMessage([config.paymentTemplateId]);
       const payResult = await createTravelPay(id);
 
       if (payResult && payResult.mode === "paid") {

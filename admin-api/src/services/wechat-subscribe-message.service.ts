@@ -19,18 +19,21 @@ export async function sendWechatSubscribeMessage(input: SendSubscribeMessageInpu
   }
 
   const token = await getWechatAccessToken();
-  const response = await fetch(`https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token=${encodeURIComponent(token)}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      touser: openid,
-      template_id: templateId,
-      page: input.page || "pages/index/index",
-      data: input.data
-    })
-  });
+  const response = await fetch(
+    `https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token=${encodeURIComponent(token)}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        touser: openid,
+        template_id: templateId,
+        page: input.page || "pages/index/index",
+        data: input.data
+      })
+    }
+  );
 
   const payload = (await response.json()) as { errcode?: number; errmsg?: string };
   if (!response.ok || payload.errcode) {
@@ -51,10 +54,9 @@ export async function sendTravelPaymentSubscribeMessage(input: {
     templateId: env.wechatTravelPaymentSubscribeTemplateId,
     page: env.wechatTravelPaymentSubscribePage,
     data: {
-      thing1: { value: input.routeTitle.slice(0, 20) },
-      thing2: { value: "已成团，请尽快缴费" },
-      amount3: { value: `${Number(input.amount || 0).toFixed(2)}元` },
-      time4: { value: input.deadline || "请尽快完成" }
+      amount1: { value: `${Number(input.amount || 0).toFixed(2)}元` },
+      short_thing2: { value: input.routeTitle.slice(0, 20) },
+      thing4: { value: input.deadline || "请尽快完成缴费" }
     }
   });
 }
